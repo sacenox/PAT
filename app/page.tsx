@@ -7,12 +7,14 @@ export default function Home() {
   );
   const [input, setInput] = useState("");
 
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const userMsg = { role: "user", content: input };
     setMessages((prev) => [...prev, userMsg]);
+    setInput("");
 
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -26,6 +28,30 @@ export default function Home() {
     setMessages((prev) => [...prev, botMsg]);
 
     setInput("");
+    setHistoryIndex(null);
+  };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const idx = historyIndex ?? messages.length;
+      if (idx > 0) {
+        const newIdx = idx - 1;
+        setHistoryIndex(newIdx);
+        setInput(messages[newIdx].content);
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex !== null) {
+        const newIdx = historyIndex + 1;
+        if (newIdx < messages.length) {
+          setHistoryIndex(newIdx);
+          setInput(messages[newIdx].content);
+        } else {
+          setHistoryIndex(null);
+          setInput("");
+        }
+      }
+    }
   };
 
   return (
@@ -56,6 +82,7 @@ export default function Home() {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
