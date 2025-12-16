@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
-import "highlight.js/styles/nord.css";
+import "./highlight-theme.css";
 
 type Thread = {
   id: number;
@@ -29,8 +29,9 @@ export default function Home() {
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const prevMessagesLengthRef = useRef<number>(0);
 
   const applyTheme = (mode: "device" | "dark" | "light") => {
     let shouldBeDark = false;
@@ -86,17 +87,21 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    // Scroll to the start of the newly added message
+    if (messages.length > prevMessagesLengthRef.current) {
+      const newMessage = messages[messages.length - 1];
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(() => {
+        const messageElement = messageRefs.current.get(newMessage.id);
+        if (messageElement && messagesContainerRef.current) {
+          const container = messagesContainerRef.current;
+          const messageTop = messageElement.offsetTop;
+          container.scrollTop = messageTop;
+        }
+      });
+      prevMessagesLengthRef.current = messages.length;
     }
   }, [messages]);
-
-  useEffect(() => {
-    // Initial scroll to bottom
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  }, []);
 
   const handleThemeChange = (mode: "device" | "dark" | "light") => {
     setThemeMode(mode);
@@ -108,29 +113,35 @@ export default function Home() {
     try {
       const res = await fetch(`/api/threads/${threadId}/messages`);
       const data = await res.json();
-      setMessages(data.messages || []);
+      const loadedMessages = data.messages || [];
+      setMessages(loadedMessages);
+      prevMessagesLengthRef.current = loadedMessages.length;
     } catch (error) {
       console.error("Failed to load messages", error);
     }
   };
 
-  const createNewThread = async () => {
+  const createNewThread = async (titleOverride?: string): Promise<number | null> => {
     try {
+      const title = titleOverride || (input.trim() ? input.substring(0, 20) : "New Thread");
       const res = await fetch("/api/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "New Thread" }),
+        body: JSON.stringify({ title }),
       });
       const data = await res.json();
       const newThread = data.thread;
       setCurrentThreadId(newThread.id);
       setMessages([]);
+      prevMessagesLengthRef.current = 0;
       // Reload threads to get the full list
       const threadsRes = await fetch("/api/threads");
       const threadsData = await threadsRes.json();
       setThreads(threadsData.threads || []);
+      return newThread.id;
     } catch (error) {
       console.error("Failed to create thread", error);
+      return null;
     }
   };
 
@@ -148,22 +159,8 @@ export default function Home() {
     let threadId = currentThreadId;
     if (!threadId) {
       // Create a new thread if none exists
-      try {
-        const res = await fetch("/api/threads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: input.substring(0, 50) }),
-        });
-        const data = await res.json();
-        threadId = data.thread.id;
-        setCurrentThreadId(threadId);
-        setMessages([]);
-        // Reload threads to ensure UI is in sync
-        const threadsRes = await fetch("/api/threads");
-        const threadsData = await threadsRes.json();
-        setThreads(threadsData.threads || []);
-      } catch (error) {
-        console.error("Failed to create thread", error);
+      threadId = await createNewThread(input.substring(0, 20));
+      if (!threadId) {
         setIsLoading(false);
         return;
       }
@@ -218,9 +215,11 @@ export default function Home() {
     setHistoryIndex(null);
   };
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Only cycle through user messages, not assistant messages
+    const userMessages = messages.filter((m) => m.role === "user");
+
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      const userMessages = messages.filter((m) => m.role === "user");
       const idx = historyIndex ?? userMessages.length;
       if (idx > 0) {
         const newIdx = idx - 1;
@@ -230,7 +229,6 @@ export default function Home() {
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       if (historyIndex !== null) {
-        const userMessages = messages.filter((m) => m.role === "user");
         const newIdx = historyIndex + 1;
         if (newIdx < userMessages.length) {
           setHistoryIndex(newIdx);
@@ -259,9 +257,9 @@ export default function Home() {
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="text-sm pt-2 px-2 flex-1 overflow-y-auto overflow-x-hidden bg-stone-100 dark:bg-stone-950"
+          className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-stone-100 dark:bg-stone-950"
         >
-          <div className="flex min-h-full flex-col justify-end gap-3">
+          <div className="flex min-h-full flex-col justify-end gap-8">
             {threads.length === 0 && messages.length === 0 && currentThreadId === null ? (
               <div className="min-w-0">
                 <div className="markdown-content p-1 bg-stone-200 text-stone-800 dark:bg-stone-900 dark:text-stone-200">
@@ -276,9 +274,19 @@ Once you've created a thread, you can start chatting with me by typing a message
               </div>
             ) : (
               messages.map((msg) => (
-                <div key={msg.id} className="min-w-0">
+                <div
+                  key={msg.id}
+                  ref={(el) => {
+                    if (el) {
+                      messageRefs.current.set(msg.id, el);
+                    } else {
+                      messageRefs.current.delete(msg.id);
+                    }
+                  }}
+                  className="min-w-0"
+                >
                   <div
-                    className={`markdown-content p-1 text-stone-800 dark:text-stone-200 ${
+                    className={`markdown-content p-2 text-stone-800 dark:text-stone-200 ${
                       msg.role === "assistant"
                         ? "bg-stone-200 dark:bg-stone-900"
                         : "bg-stone-300 dark:bg-stone-800 text-right"
@@ -301,10 +309,9 @@ Once you've created a thread, you can start chatting with me by typing a message
                 </div>
               ))
             )}
-            <div ref={messagesEndRef} />
           </div>
         </div>
-        <form onSubmit={sendMessage} className="flex">
+        <form onSubmit={sendMessage} className="flex shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-1px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3),0_-2px_4px_-1px_rgba(0,0,0,0.2)]">
           <input
             type="text"
             value={input}
@@ -324,9 +331,9 @@ Once you've created a thread, you can start chatting with me by typing a message
         </form>
       </div>
       <div className="w-64 bg-stone-200 p-1 dark:bg-stone-900">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 p-4">
           <button
-            onClick={createNewThread}
+            onClick={() => createNewThread()}
             className="bg-green-900 px-1 py-1 text-stone-100 hover:bg-green-800 dark:bg-green-500 dark:text-stone-900 dark:hover:bg-green-600"
           >
             New Thread
@@ -341,7 +348,7 @@ Once you've created a thread, you can start chatting with me by typing a message
                   handleThreadSelect(threadId);
                 }
               }}
-              className="bg-stone-100 px-1 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
+              className="bg-stone-100 px-3 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
             >
               <option value="">Select a thread...</option>
               {threads.map((thread) => (
@@ -356,7 +363,7 @@ Once you've created a thread, you can start chatting with me by typing a message
             <select
               value={themeMode}
               onChange={(e) => handleThemeChange(e.target.value as "device" | "dark" | "light")}
-              className="bg-stone-100 px-1 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
+              className="bg-stone-100 px-3 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
             >
               <option value="device">Device</option>
               <option value="dark">Dark</option>
