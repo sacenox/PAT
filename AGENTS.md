@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This is a personal assistant project, that renders a simple assistant chat layout as a web page, and provides access to an agentic model running locally via ollama. The project uses Next.js for it's typescript framework TailwindCSS for it's styling, and Ollama's typescript/javascript library itself for querying the model. This project is also responsible for augmenting the model's prompt with search results from DuckDuckGo.
+This is a personal assistant project, that renders a simple assistant chat layout as a web page, and provides access to an agentic model running locally via ollama. The project uses Next.js for it's typescript framework TailwindCSS for it's styling, and Ollama's typescript/javascript library itself for querying the model.
 
 ## Project Commands
 
@@ -73,7 +73,7 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 3. **Naming Conventions**:
    - Functions: `camelCase` (e.g., `fetchOllamaResponse`, `sendMessage`)
    - Components: `PascalCase` (e.g., `Home`, `RootLayout`)
-   - Interfaces: `PascalCase` (e.g., `DuckDuckGoResult`)
+   - Interfaces: `PascalCase` (e.g., `OllamaMessage`, `OllamaResponse`)
    - Constants: `UPPER_SNAKE_CASE` or `camelCase` depending on scope
 
 4. **TypeScript Types**:
@@ -137,7 +137,6 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 │       ├── db/
 │       │   ├── index.ts          # Database connection and setup
 │       │   └── schema.ts         # Drizzle ORM schema definitions
-│       ├── duckduckgo.ts         # DuckDuckGo API wrapper
 │       └── ollama.ts             # Ollama API wrapper
 ├── drizzle/                      # Generated migration files
 │   ├── meta/                     # Migration metadata
@@ -155,28 +154,24 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 ### UI Style
 
 - Always ensure support for both light and dark modes
-- Use slate color palette for backgrounds and text (not gray or stone)
-- Default text colors: `text-slate-800 dark:text-slate-200` (set on topmost container to cascade)
-- Background colors: `bg-slate-200/300` for light mode, `bg-slate-900/950` for dark mode
+- Use stone color palette for backgrounds and text (not gray or slate)
+- Default text colors: `text-stone-800 dark:text-stone-200` (set on topmost container to cascade)
+- Container backgrounds: `bg-stone-100` for light mode, `bg-stone-950` for dark mode
+- Child component backgrounds: `bg-stone-200` for light mode, `bg-stone-900` for dark mode
+- User message backgrounds: `bg-stone-300` for light mode, `bg-stone-800` for dark mode
+- Assistant message backgrounds: `bg-stone-200` for light mode, `bg-stone-900` for dark mode
 - Don't use round corners
 - The UI should always fit to the available space
-- Primary colors: emerald-500 for dark mode, emerald-900 for light mode
-- Alternate colors: indigo at an appropriate shade for current mode
+- Primary colors: green-500 for dark mode, green-900 for light mode
+- margins and paddings shouldn't stack, use gaps when possible
 
 ### Ollama Integration
 
 - Default model: `gpt-oss`
-- Function: `fetchOllamaResponse(prompt: string, model?: string)`
-- Returns: Promise<string> with the model's response
+- Function: `fetchOllamaResponse(messages: OllamaMessage[], model?: string)`
+- Returns: Promise<OllamaResponse> with `{ content: string, generationTimeMs: number }`
+- Uses `ollama.chat()` API with full conversation history
 - Located in: `src/lib/ollama.ts`
-
-### DuckDuckGo Integration
-
-- Endpoint: `https://api.duckduckgo.com/`
-- Function: `fetchDuckDuckGo(query: string)`
-- Returns: Promise<DuckDuckGoResult[]>
-- Interface: `{ title: string; snippet: string; url: string }`
-- Located in: `src/lib/duckduckgo.ts`
 
 ### Database Integration (Drizzle ORM)
 
@@ -196,11 +191,12 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 
 ### Chat API Flow
 
-1. Client sends POST request to `/api/chat` with `{ message: string }`
-2. API route fetches DuckDuckGo results for the message
-3. API route builds prompt with message + search results
-4. API route calls Ollama with the augmented prompt
-5. API route returns `{ answer: string }`
+1. Client sends POST request to `/api/chat` with `{ message: string, threadId: number }`
+2. API route fetches previous messages from the thread
+3. API route stores the user message
+4. API route calls Ollama with the full conversation history
+5. API route stores the assistant response with generation time
+6. API route returns `{ answer: string }`
 
 ## Development Workflow
 

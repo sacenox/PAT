@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { fetchOllamaResponse } from "@/src/lib/ollama";
-import { fetchDuckDuckGo } from "@/src/lib/duckduckgo";
+import { fetchOllamaResponse, type OllamaMessage } from "@/src/lib/ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 export async function POST(request: Request) {
   const { message, threadId } = await request.json();
@@ -13,36 +12,43 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. Store user message
-    const userMessage = await db
-      .insert(messages)
-      .values({
-        threadId: parseInt(threadId),
-        role: "user",
-        content: message,
-        createdAt: new Date(),
-      })
-      .returning();
+    // 1. Fetch previous messages from thread
+    const previousMessages = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.threadId, parseInt(threadId)))
+      .orderBy(asc(messages.createdAt));
 
-    // 2. Search DuckDuckGo
-    const searchResults = await fetchDuckDuckGo(message);
+    // 2. Store user message
+    await db.insert(messages).values({
+      threadId: parseInt(threadId),
+      role: "user",
+      content: message,
+      createdAt: new Date(),
+    });
 
-    console.debug("searchResults:", searchResults);
+    // 3. Build messages array for Ollama
+    const ollamaMessages: OllamaMessage[] = previousMessages.map((msg) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+    }));
 
-    // 3. Build prompt
-    const prompt = `${message}\n\nRelevant info from DuckDuckGo: ${JSON.stringify(
-      searchResults
-    )}\n\nAssistant:`;
+    // Add the new user message
+    ollamaMessages.push({
+      role: "user",
+      content: message,
+    });
 
     // 4. Get assistant response
-    const answer = await fetchOllamaResponse(prompt);
+    const { content: answer, generationTimeMs } = await fetchOllamaResponse(ollamaMessages);
 
-    // 5. Store assistant message
+    // 5. Store assistant message with generation time
     await db.insert(messages).values({
       threadId: parseInt(threadId),
       role: "assistant",
       content: answer,
       createdAt: new Date(),
+      generationTimeMs,
     });
 
     // 6. Update thread's updatedAt timestamp

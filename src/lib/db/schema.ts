@@ -23,6 +23,7 @@ export const messages = sqliteTable("messages", {
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
+  generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
 });
 
 // Define relations

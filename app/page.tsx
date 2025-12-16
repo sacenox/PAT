@@ -19,6 +19,7 @@ type Message = {
   role: string;
   content: string;
   createdAt: Date;
+  generationTimeMs: number | null;
 };
 
 export default function Home() {
@@ -174,6 +175,7 @@ export default function Home() {
       role: "user",
       content: input,
       createdAt: new Date(),
+      generationTimeMs: null,
     };
     setMessages((prev) => [...prev, userMsg]);
     const inputValue = input.trim();
@@ -195,6 +197,7 @@ export default function Home() {
         role: "assistant",
         content: data.answer || "",
         createdAt: new Date(),
+        generationTimeMs: null,
       };
       setMessages((prev) => [...prev, botMsg]);
 
@@ -240,6 +243,17 @@ export default function Home() {
     }
   };
 
+  const formatTimestamp = (date: Date | string): string => {
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleString();
+  };
+
+  const formatGenerationTime = (ms: number | null): string => {
+    if (!ms) return "";
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
   return (
     <div className="flex h-screen bg-stone-100 text-stone-800 dark:bg-stone-950 dark:text-stone-200">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -267,7 +281,7 @@ Once you've created a thread, you can start chatting with me by typing a message
                     className={`markdown-content p-1 text-stone-800 dark:text-stone-200 ${
                       msg.role === "assistant"
                         ? "bg-stone-200 dark:bg-stone-900"
-                        : "bg-stone-300 dark:bg-stone-800"
+                        : "bg-stone-300 dark:bg-stone-800 text-right"
                     }`}
                   >
                     {msg.role === "assistant" ? (
@@ -275,8 +289,14 @@ Once you've created a thread, you can start chatting with me by typing a message
                         {msg.content}
                       </ReactMarkdown>
                     ) : (
-                      <div className="text-right">{msg.content}</div>
+                      <div>{msg.content}</div>
                     )}
+                    <div className="text-xs text-stone-600 dark:text-stone-400 mt-1">
+                      sent on: {formatTimestamp(msg.createdAt)}
+                      {msg.role === "assistant" && msg.generationTimeMs && (
+                        <span className="ml-2">• generated in {formatGenerationTime(msg.generationTimeMs)}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
