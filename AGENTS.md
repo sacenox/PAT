@@ -154,12 +154,12 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 ### UI Style
 
 - Always ensure support for both light and dark modes
-- Use stone color palette for backgrounds and text (not gray or slate)
-- Default text colors: `text-stone-800 dark:text-stone-200` (set on topmost container to cascade)
-- Container backgrounds: `bg-stone-100` for light mode, `bg-stone-950` for dark mode
-- Child component backgrounds: `bg-stone-200` for light mode, `bg-stone-900` for dark mode
-- User message backgrounds: `bg-stone-300` for light mode, `bg-stone-800` for dark mode
-- Assistant message backgrounds: `bg-stone-200` for light mode, `bg-stone-900` for dark mode
+- Use neutral color palette for backgrounds and text (not gray or slate)
+- Default text colors: `text-neutral-800 dark:text-neutral-200` (set on topmost container to cascade)
+- Container backgrounds: `bg-neutral-100` for light mode, `bg-neutral-950` for dark mode
+- Child component backgrounds: `bg-neutral-200` for light mode, `bg-neutral-900` for dark mode
+- User message backgrounds: `bg-neutral-300` for light mode, `bg-neutral-800` for dark mode
+- Assistant message backgrounds: `bg-neutral-200` for light mode, `bg-neutral-900` for dark mode
 - Don't use round corners
 - The UI should always fit to the available space
 - Primary colors: green-500 for dark mode, green-900 for light mode

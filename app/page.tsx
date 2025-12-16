@@ -253,16 +253,16 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-stone-100 text-stone-800 dark:bg-stone-950 dark:text-stone-200">
+    <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-stone-100 dark:bg-stone-950"
+          className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 dark:bg-neutral-950"
         >
           <div className="flex min-h-full flex-col justify-end gap-8">
             {threads.length === 0 && messages.length === 0 && currentThreadId === null ? (
               <div className="min-w-0">
-                <div className="markdown-content p-1 bg-stone-200 text-stone-800 dark:bg-stone-900 dark:text-stone-200">
+                <div className="markdown-content p-1 bg-neutral-200 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                     {`# Welcome! 👋
 
@@ -286,10 +286,10 @@ Once you've created a thread, you can start chatting with me by typing a message
                   className="min-w-0"
                 >
                   <div
-                    className={`markdown-content p-2 text-stone-800 dark:text-stone-200 ${
+                    className={`markdown-content p-2 text-neutral-800 dark:text-neutral-200 ${
                       msg.role === "assistant"
-                        ? "bg-stone-200 dark:bg-stone-900"
-                        : "bg-stone-300 dark:bg-stone-800 text-right"
+                        ? "bg-neutral-200 dark:bg-neutral-900"
+                        : "bg-neutral-300 dark:bg-neutral-800 text-right"
                     }`}
                   >
                     {msg.role === "assistant" ? (
@@ -299,7 +299,7 @@ Once you've created a thread, you can start chatting with me by typing a message
                     ) : (
                       <div>{msg.content}</div>
                     )}
-                    <div className="text-xs text-stone-600 dark:text-stone-400 mt-1">
+                    <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
                       sent on: {formatTimestamp(msg.createdAt)}
                       {msg.role === "assistant" && msg.generationTimeMs && (
                         <span className="ml-2">• generated in {formatGenerationTime(msg.generationTimeMs)}</span>
@@ -319,22 +319,22 @@ Once you've created a thread, you can start chatting with me by typing a message
             onKeyDown={handleKeyDown}
             placeholder={isLoading ? "Loading answer..." : "Type a message..."}
             disabled={isLoading}
-            className="flex-1 bg-stone-200 px-2 py-2 placeholder:italic placeholder:text-stone-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-stone-900 dark:placeholder:text-stone-400"
+            className="flex-1 bg-neutral-200 px-2 py-2 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-neutral-900 dark:placeholder:text-neutral-400"
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-green-900 px-3 py-1 text-stone-100 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-500 dark:text-stone-900 dark:hover:bg-green-600"
+            className="bg-green-900 px-3 py-1 text-neutral-100 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-500 dark:text-neutral-900 dark:hover:bg-green-600"
           >
             <PaperPlaneIcon className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </form>
       </div>
-      <div className="w-64 bg-stone-200 p-1 dark:bg-stone-900">
+      <div className="w-64 bg-neutral-200 p-1 dark:bg-neutral-900">
         <div className="flex flex-col gap-2 p-4">
           <button
             onClick={() => createNewThread()}
-            className="bg-green-900 px-1 py-1 text-stone-100 hover:bg-green-800 dark:bg-green-500 dark:text-stone-900 dark:hover:bg-green-600"
+            className="bg-green-900 px-1 py-1 text-neutral-100 hover:bg-green-800 dark:bg-green-500 dark:text-neutral-900 dark:hover:bg-green-600"
           >
             New Thread
           </button>
@@ -348,7 +348,7 @@ Once you've created a thread, you can start chatting with me by typing a message
                   handleThreadSelect(threadId);
                 }
               }}
-              className="bg-stone-100 px-3 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
+              className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
             >
               <option value="">Select a thread...</option>
               {threads.map((thread) => (
@@ -363,7 +363,7 @@ Once you've created a thread, you can start chatting with me by typing a message
             <select
               value={themeMode}
               onChange={(e) => handleThemeChange(e.target.value as "device" | "dark" | "light")}
-              className="bg-stone-100 px-3 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
+              className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
             >
               <option value="device">Device</option>
               <option value="dark">Dark</option>

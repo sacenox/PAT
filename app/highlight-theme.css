@@ -1,4 +1,4 @@
-/* Custom highlight.js theme using Tailwind colors (stone, green, orange, indigo) */
+/* Custom highlight.js theme using Tailwind colors (neutral, green, orange, indigo) */
 
 /* Reset code block inheritance */
 .markdown-content pre,
@@ -14,7 +14,7 @@
 
 /* Light mode - code blocks only */
 .markdown-content pre {
-  background: #f5f5f4; /* stone-100 */
+  background: #f5f5f4; /* neutral-100 */
   padding: 0.5rem;
 }
 
@@ -25,14 +25,14 @@ pre code.hljs,
 pre .hljs,
 .hljs {
   background: transparent;
-  color: #292524; /* stone-800 */
+  color: #292524; /* neutral-800 */
 }
 
 .markdown-content .hljs-comment,
 .markdown-content .hljs-quote,
 .hljs-comment,
 .hljs-quote {
-  color: #78716c; /* stone-500 */
+  color: #78716c; /* neutral-500 */
   font-style: italic;
 }
 
@@ -116,7 +116,7 @@ pre .hljs,
 
 .markdown-content .hljs-meta,
 .hljs-meta {
-  color: #78716c; /* stone-500 */
+  color: #78716c; /* neutral-500 */
 }
 
 .hljs-deletion {
@@ -148,7 +148,7 @@ pre .hljs,
 }
 
 .dark .markdown-content pre {
-  background: #0c0a09; /* stone-950 */
+  background: #0c0a09; /* neutral-950 */
   padding: 0.5rem;
 }
 
@@ -159,14 +159,14 @@ pre .hljs,
 .dark pre .hljs,
 .dark .hljs {
   background: transparent;
-  color: #e7e5e4; /* stone-200 */
+  color: #e7e5e4; /* neutral-200 */
 }
 
 .dark .markdown-content .hljs-comment,
 .dark .markdown-content .hljs-quote,
 .dark .hljs-comment,
 .dark .hljs-quote {
-  color: #a8a29e; /* stone-400 */
+  color: #a8a29e; /* neutral-400 */
   font-style: italic;
 }
 
@@ -250,7 +250,7 @@ pre .hljs,
 
 .dark .markdown-content .hljs-meta,
 .dark .hljs-meta {
-  color: #a8a29e; /* stone-400 */
+  color: #a8a29e; /* neutral-400 */
 }
 
 .dark .hljs-deletion {
