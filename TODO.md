@@ -3,7 +3,7 @@
 ## BUGS:
 
 - use the chat() function of the ollama library instead of generate, so we can send the history of messages.
-- Improve websearch, currently not working at all.  Use this as a template: https://github.com/meirm/ollama-tools/blob/main/sample_functions.py#L5
+- Improve websearch, currently not working at all. Use this as a template: https://github.com/meirm/ollama-tools/blob/main/sample_functions.py#L5
 
 ## New features:
 

@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This is a personal assistant project, that renders a simple assistant chat layout as a web page, and provides access to an agentic model running locally via ollama.  The project uses Next.js for it's typescript framework TailwindCSS for it's styling, and Ollama's typescript/javascript library itself for querying the model.  This project is also responsible for augmenting the model's prompt with search results from DuckDuckGo.
+This is a personal assistant project, that renders a simple assistant chat layout as a web page, and provides access to an agentic model running locally via ollama. The project uses Next.js for it's typescript framework TailwindCSS for it's styling, and Ollama's typescript/javascript library itself for querying the model. This project is also responsible for augmenting the model's prompt with search results from DuckDuckGo.
 
 ## Project Commands
 

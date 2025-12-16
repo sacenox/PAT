@@ -25,5 +25,3 @@ export const db = drizzle(sqlite, { schema });
 export function closeDatabase() {
   sqlite.close();
 }
-
-

@@ -16,4 +16,3 @@ export default {
     url: "./data/database.db",
   },
 } satisfies Config;
-

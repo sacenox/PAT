@@ -12,7 +12,7 @@
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  @apply font-bold mt-4 mb-2;
+  @apply mb-2 mt-4 font-bold;
 }
 
 .markdown-content h1 {
@@ -49,27 +49,27 @@
 }
 
 .markdown-content blockquote {
-  @apply border-l-4 border-slate-500 dark:border-slate-400 pl-4 italic my-2;
+  @apply my-2 border-l-4 border-slate-500 pl-4 italic dark:border-slate-400;
 }
 
 .markdown-content a {
-  @apply text-emerald-700 dark:text-emerald-400 underline;
+  @apply text-emerald-700 underline dark:text-emerald-400;
 }
 
 .markdown-content table {
-  @apply border-collapse border border-slate-500 dark:border-slate-400 mb-2;
+  @apply mb-2 border-collapse border border-slate-500 dark:border-slate-400;
 }
 
 .markdown-content th,
 .markdown-content td {
-  @apply border border-slate-500 dark:border-slate-400 px-2 py-1;
+  @apply border border-slate-500 px-2 py-1 dark:border-slate-400;
 }
 
 .markdown-content th {
-  @apply bg-slate-400 dark:bg-slate-800 font-bold;
+  @apply bg-slate-400 font-bold dark:bg-slate-800;
 }
 
 /* Code block styling */
 .markdown-content pre {
-  @apply p-3 mb-2 overflow-x-auto;
+  @apply mb-2 overflow-x-auto p-3;
 }

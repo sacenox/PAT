@@ -15,4 +15,3 @@ export default function PaperPlaneIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-

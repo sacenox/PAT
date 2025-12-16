@@ -39,7 +39,9 @@ export default function Home() {
         let permissionState = "unknown";
         if (navigator.permissions) {
           try {
-            const permission = await navigator.permissions.query({ name: "geolocation" as PermissionName });
+            const permission = await navigator.permissions.query({
+              name: "geolocation" as PermissionName,
+            });
             permissionState = permission.state;
           } catch (e) {
             // Permissions API might not support geolocation query
@@ -48,22 +50,19 @@ export default function Home() {
 
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(
-              resolve,
-              reject,
-              { 
-                timeout: 10000,
-                enableHighAccuracy: false,
-                maximumAge: 60000
-              }
-            );
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 10000,
+              enableHighAccuracy: false,
+              maximumAge: 60000,
+            });
           });
           const { latitude, longitude } = position.coords;
           parts.push(`**Location:** ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         } catch (error: any) {
           let errorMsg = "Unable to retrieve";
           if (error?.code === 1) {
-            errorMsg = permissionState === "prompt" ? "Permission prompt shown" : "Permission denied";
+            errorMsg =
+              permissionState === "prompt" ? "Permission prompt shown" : "Permission denied";
           } else if (error?.code === 2) {
             errorMsg = "Position unavailable";
           } else if (error?.code === 3) {
@@ -80,18 +79,18 @@ export default function Home() {
       // Local time
       const now = new Date();
       const timeString = now.toLocaleString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short'
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
       });
       parts.push(`**Local Time:** ${timeString}`);
 
-      const message = parts.join('\n\n');
+      const message = parts.join("\n\n");
       setMessages([{ role: "assistant", content: message }]);
     };
 
@@ -170,26 +169,18 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen flex bg-slate-200 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-      <div className="flex-1 flex flex-col min-w-0">
-        <div 
+    <div className="flex h-screen bg-slate-200 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-200 dark:bg-slate-900"
         >
-          <div className="flex flex-col justify-end min-h-full">
+          <div className="flex min-h-full flex-col justify-end">
             {messages.map((msg, i) => (
-              <div
-                key={i}
-                className="min-w-0"
-              >
-                <div
-                  className="p-2 m-2 bg-slate-300 dark:bg-slate-950 text-slate-800 dark:text-slate-200 markdown-content"
-                >
+              <div key={i} className="min-w-0">
+                <div className="markdown-content m-2 bg-slate-300 p-2 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
                   {msg.role === "assistant" ? (
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeHighlight]}
-                    >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                       {msg.content}
                     </ReactMarkdown>
                   ) : (
@@ -208,17 +199,17 @@ export default function Home() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 px-3 py-2 bg-slate-300 dark:bg-slate-950 placeholder:italic placeholder:text-slate-600 dark:placeholder:text-slate-400 focus:outline-none"
+            className="flex-1 bg-slate-300 px-3 py-2 placeholder:italic placeholder:text-slate-600 focus:outline-none dark:bg-slate-950 dark:placeholder:text-slate-400"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-emerald-900 dark:bg-emerald-500 text-slate-100 dark:text-slate-900 hover:bg-emerald-800 dark:hover:bg-emerald-600"
+            className="bg-emerald-900 px-4 py-2 text-slate-100 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
           >
-            <PaperPlaneIcon className="w-5 h-5" />
+            <PaperPlaneIcon className="h-5 w-5" />
           </button>
         </form>
       </div>
-      <div className="w-64 bg-slate-300 dark:bg-slate-950 p-4">
+      <div className="w-64 bg-slate-300 p-4 dark:bg-slate-950">
         <div className="flex items-center justify-between">
           <span>Dark Mode</span>
           <button
@@ -228,7 +219,7 @@ export default function Home() {
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform bg-slate-200 dark:bg-slate-100 transition-transform ${
+              className={`inline-block h-4 w-4 transform bg-slate-200 transition-transform dark:bg-slate-100 ${
                 isDark ? "translate-x-6" : "translate-x-1"
               }`}
             />

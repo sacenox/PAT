@@ -13,16 +13,13 @@ export async function POST(request: Request) {
 
     // 2. Build prompt
     const prompt = `${message}\n\nRelevant info from DuckDuckGo: ${JSON.stringify(
-      searchResults,
+      searchResults
     )}\n\nAssistant:`;
 
     const answer = await fetchOllamaResponse(prompt);
     return NextResponse.json({ answer });
   } catch (error) {
     console.error("Chat API error", error);
-    return NextResponse.json(
-      { answer: "Sorry, something went wrong." },
-      { status: 500 },
-    );
+    return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }
