@@ -38,18 +38,20 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Scroll to top when a thread is selected
+    if (currentThreadId !== null && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+    }
+  }, [currentThreadId]);
+
+  useEffect(() => {
     // Scroll to the start of the newly added message
     if (messages.length > prevMessagesLengthRef.current) {
       const newMessage = messages[messages.length - 1];
-      // Use requestAnimationFrame to ensure DOM has updated
-      requestAnimationFrame(() => {
-        const messageElement = messageRefs.current.get(newMessage.id);
-        if (messageElement && messagesContainerRef.current) {
-          const container = messagesContainerRef.current;
-          const messageTop = messageElement.offsetTop;
-          container.scrollTop = messageTop;
-        }
-      });
+      const messageElement = messageRefs.current.get(newMessage.id);
+      if (messageElement) {
+        messageElement.scrollIntoView({ block: "start", behavior: "instant" });
+      }
       prevMessagesLengthRef.current = messages.length;
     }
   }, [messages]);
@@ -181,7 +183,7 @@ export default function Home() {
           ref={messagesContainerRef}
           className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 dark:bg-neutral-950"
         >
-          <div className="flex min-h-full flex-col justify-end gap-8">
+          <div className="flex min-h-full flex-col justify-end gap-8 max-w-4xl mx-auto">
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={threads.length} />
             ) : (
@@ -195,13 +197,13 @@ export default function Home() {
                       messageRefs.current.delete(msg.id);
                     }
                   }}
-                  className="min-w-0"
+                  className="min-w-0 w-full"
                 >
                   <div
-                    className={`markdown-content p-2 text-neutral-800 dark:text-neutral-200 ${
+                    className={`p-2 ${
                       msg.role === "assistant"
-                        ? "bg-neutral-200 dark:bg-neutral-900"
-                        : "bg-neutral-300 dark:bg-neutral-800 text-right"
+                        ? "bg-neutral-200 dark:bg-neutral-900 prose prose-neutral dark:prose-invert max-w-none"
+                        : "bg-neutral-300 dark:bg-neutral-800 text-right w-1/2 min-w-64 ml-auto"
                     }`}
                   >
                     {msg.role === "assistant" ? (

@@ -26,6 +26,7 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **react**: 18.2.0 - React library
 - **react-dom**: 18.2.0 - React DOM rendering
 - **tailwindcss**: ^3.4.0 - Utility-first CSS framework
+- **@tailwindcss/typography**: ^0.5.x - Tailwind CSS plugin for beautiful typographic defaults
 - **typescript**: ^5.4.2 - TypeScript compiler
 - **ollama**: ^0.6.3 - Official Ollama npm package for model interaction
 - **autoprefixer**: ^10.4.17 - CSS post-processor
@@ -100,6 +101,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Use responsive design utilities when appropriate
    - Set default text colors on topmost container to cascade: `text-neutral-800 dark:text-neutral-200`
    - Use neutral color palette (not slate or gray)
+   - **Markdown Styling**: Use Tailwind Typography plugin with `prose` classes for markdown content
+     - Use `prose prose-neutral dark:prose-invert max-w-none` for assistant messages
+     - The typography plugin is configured in `tailwind.config.js`
+     - Custom syntax highlighting styles are in `app/highlight-theme.css` using `.prose` selectors
 
 7. **Code Formatting**:
    - Use Prettier for code formatting: `npm run format` to format all files
@@ -111,7 +116,7 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 
 8. **Error Handling**:
    - Use `console.error` for errors
-   - Use `console.debug` for debug information
+   - Use `lib/debug` for debug information
    - Return user-friendly error messages in API responses
    - Handle API errors gracefully with try/catch blocks
 
@@ -237,10 +242,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 
 ### Component Structure
 
-- **Home** (`app/page.tsx`): Main page component that orchestrates the chat interface. Loads threads on mount but does not automatically select the latest thread - user must manually select a thread or create a new one.
+- **Home** (`app/page.tsx`): Main page component that orchestrates the chat interface. Loads threads on mount but does not automatically select the latest thread - user must manually select a thread or create a new one. Messages are rendered with ReactMarkdown using Tailwind Typography prose classes for assistant messages.
 - **Sidebar** (`src/components/Sidebar.tsx`): Sidebar with thread selection, new thread button, and theme selector
 - **MessageInput** (`src/components/MessageInput.tsx`): Input form for sending messages with keyboard history navigation (ArrowUp/ArrowDown to cycle through previous user messages)
-- **NoThreadSelected** (`src/components/NoThreadSelected.tsx`): Welcome screen displayed when no thread is selected, shows PAT introduction, current time (updates every second), and thread count
+- **NoThreadSelected** (`src/components/NoThreadSelected.tsx`): Welcome screen displayed when no thread is selected, shows PAT introduction, current time (updates every second), and thread count. Uses ReactMarkdown with Tailwind Typography prose classes.
 - **useTheme** (`src/hooks/useTheme.ts`): Custom hook managing theme state (device/dark/light) with localStorage persistence and automatic device preference detection
 
 ### Type Definitions
@@ -282,4 +287,4 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **DO** maintain existing code style and patterns
 - **DO** use existing utility functions from `src/lib/`
 - **DO** follow the App Router conventions for Next.js 16
-- **DO** keep this file up to date as changes are made in the code
+- **DO** ALWAY Skeep this file up to date as changes are made in the code 
