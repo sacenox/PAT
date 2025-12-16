@@ -24,22 +24,43 @@ type Message = {
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isDark, setIsDark] = useState(false);
+  const [themeMode, setThemeMode] = useState<"device" | "dark" | "light">("device");
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const darkMode = localStorage.getItem("darkMode") === "true";
-    setIsDark(darkMode);
-    if (darkMode) {
+  const applyTheme = (mode: "device" | "dark" | "light") => {
+    let shouldBeDark = false;
+    if (mode === "device") {
+      shouldBeDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } else {
+      shouldBeDark = mode === "dark";
+    }
+
+    if (shouldBeDark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+  };
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem("themeMode") as "device" | "dark" | "light" | null;
+    const mode = savedMode || "device";
+    setThemeMode(mode);
+    applyTheme(mode);
   }, []);
+
+  useEffect(() => {
+    if (themeMode === "device") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = () => applyTheme("device");
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+  }, [themeMode]);
 
   useEffect(() => {
     const loadThreads = async () => {
@@ -76,15 +97,10 @@ export default function Home() {
     }
   }, []);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDark;
-    setIsDark(newDarkMode);
-    localStorage.setItem("darkMode", String(newDarkMode));
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+  const handleThemeChange = (mode: "device" | "dark" | "light") => {
+    setThemeMode(mode);
+    localStorage.setItem("themeMode", mode);
+    applyTheme(mode);
   };
 
   const loadMessages = async (threadId: number) => {
@@ -225,16 +241,16 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-200 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
+    <div className="flex h-screen bg-stone-100 text-stone-800 dark:bg-stone-950 dark:text-stone-200">
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-200 dark:bg-slate-900"
+          className="text-sm pt-2 px-2 flex-1 overflow-y-auto overflow-x-hidden bg-stone-100 dark:bg-stone-950"
         >
-          <div className="flex min-h-full flex-col justify-end">
+          <div className="flex min-h-full flex-col justify-end gap-3">
             {threads.length === 0 && messages.length === 0 && currentThreadId === null ? (
               <div className="min-w-0">
-                <div className="markdown-content m-1 p-1 bg-slate-300 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <div className="markdown-content p-1 bg-stone-200 text-stone-800 dark:bg-stone-900 dark:text-stone-200">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                     {`# Welcome! 👋
 
@@ -247,7 +263,13 @@ Once you've created a thread, you can start chatting with me by typing a message
             ) : (
               messages.map((msg) => (
                 <div key={msg.id} className="min-w-0">
-                  <div className="markdown-content m-1 p-1 bg-slate-300 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                  <div
+                    className={`markdown-content p-1 text-stone-800 dark:text-stone-200 ${
+                      msg.role === "assistant"
+                        ? "bg-stone-200 dark:bg-stone-900"
+                        : "bg-stone-300 dark:bg-stone-800"
+                    }`}
+                  >
                     {msg.role === "assistant" ? (
                       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
                         {msg.content}
@@ -270,22 +292,22 @@ Once you've created a thread, you can start chatting with me by typing a message
             onKeyDown={handleKeyDown}
             placeholder={isLoading ? "Loading answer..." : "Type a message..."}
             disabled={isLoading}
-            className="flex-1 bg-slate-300 px-3 py-2 placeholder:italic placeholder:text-slate-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-950 dark:placeholder:text-slate-400"
+            className="flex-1 bg-stone-200 px-2 py-2 placeholder:italic placeholder:text-stone-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-stone-900 dark:placeholder:text-stone-400"
           />
           <button
             type="submit"
             disabled={isLoading}
-            className="bg-emerald-900 px-4 py-2 text-slate-100 hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
+            className="bg-green-900 px-3 py-1 text-stone-100 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-500 dark:text-stone-900 dark:hover:bg-green-600"
           >
             <PaperPlaneIcon className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </form>
       </div>
-      <div className="w-64 bg-slate-300 p-4 dark:bg-slate-950">
-        <div className="flex flex-col gap-4">
+      <div className="w-64 bg-stone-200 p-1 dark:bg-stone-900">
+        <div className="flex flex-col gap-2">
           <button
             onClick={createNewThread}
-            className="bg-emerald-900 px-3 py-2 text-slate-100 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
+            className="bg-green-900 px-1 py-1 text-stone-100 hover:bg-green-800 dark:bg-green-500 dark:text-stone-900 dark:hover:bg-green-600"
           >
             New Thread
           </button>
@@ -299,7 +321,7 @@ Once you've created a thread, you can start chatting with me by typing a message
                   handleThreadSelect(threadId);
                 }
               }}
-              className="bg-slate-200 px-2 py-1 text-slate-800 focus:outline-none dark:bg-slate-900 dark:text-slate-200"
+              className="bg-stone-100 px-1 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
             >
               <option value="">Select a thread...</option>
               {threads.map((thread) => (
@@ -309,20 +331,17 @@ Once you've created a thread, you can start chatting with me by typing a message
               ))}
             </select>
           </div>
-          <div className="flex items-center justify-between">
-            <span>Dark Mode</span>
-            <button
-              onClick={toggleDarkMode}
-              className={`relative inline-flex h-6 w-11 items-center transition-colors ${
-                isDark ? "bg-indigo-500" : "bg-slate-400"
-              }`}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold">Theme</label>
+            <select
+              value={themeMode}
+              onChange={(e) => handleThemeChange(e.target.value as "device" | "dark" | "light")}
+              className="bg-stone-100 px-1 py-1 text-stone-800 focus:outline-none dark:bg-stone-950 dark:text-stone-200"
             >
-              <span
-                className={`inline-block h-4 w-4 transform bg-slate-200 transition-transform dark:bg-slate-100 ${
-                  isDark ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+              <option value="device">Device</option>
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
         </div>
       </div>
