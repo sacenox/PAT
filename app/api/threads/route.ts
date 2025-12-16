@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const totalCount = totalCountResult[0]?.count || 0;
     const hasMore = offset + limit < totalCount;
 
-    return NextResponse.json({ threads: threadsList, hasMore });
+    return NextResponse.json({ threads: threadsList, hasMore, totalCount });
   } catch (error) {
     console.error("Get threads error", error);
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });

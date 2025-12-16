@@ -15,6 +15,7 @@ export default function Home() {
   const { themeMode, handleThemeChange } = useTheme();
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [totalThreadCount, setTotalThreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreThreads, setHasMoreThreads] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -31,6 +32,7 @@ export default function Home() {
         const threadsList = data.threads || [];
         setThreads(threadsList);
         setHasMoreThreads(data.hasMore || false);
+        setTotalThreadCount(data.totalCount || 0);
       } catch (error) {
         console.error("Failed to load threads", error);
       }
@@ -90,6 +92,7 @@ export default function Home() {
       const threadsList = threadsData.threads || [];
       setThreads(threadsList);
       setHasMoreThreads(threadsData.hasMore || false);
+      setTotalThreadCount(threadsData.totalCount || 0);
       return newThread.id;
     } catch (error) {
       console.error("Failed to create thread", error);
@@ -181,6 +184,7 @@ export default function Home() {
       const threadsList = threadsData.threads || [];
       setThreads(threadsList);
       setHasMoreThreads(threadsData.hasMore || false);
+      setTotalThreadCount(threadsData.totalCount || 0);
     } catch (error) {
       console.error("Failed to send message", error);
     } finally {
@@ -206,9 +210,9 @@ export default function Home() {
           ref={messagesContainerRef}
           className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 dark:bg-neutral-950"
         >
-          <div className="flex min-h-full flex-col justify-end gap-8 max-w-4xl mx-auto">
+          <div className="flex min-h-full flex-col justify-end gap-8 max-w-5xl mx-auto">
             {currentThreadId === null ? (
-              <NoThreadSelected threadCount={threads.length} />
+              <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
               messages.map((msg) => (
                 <div
