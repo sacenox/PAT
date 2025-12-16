@@ -155,7 +155,8 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 │   │   ├── db/
 │   │   │   ├── index.ts          # Database connection and setup
 │   │   │   └── schema.ts         # Drizzle ORM schema definitions
-│   │   └── ollama.ts             # Ollama API wrapper
+│   │   ├── debug.ts              # Debug logging utility (development only)
+│   │   └── ollama.ts             # Ollama API wrapper with tool calling support
 │   └── types.ts                  # Shared TypeScript type definitions
 ├── drizzle/                      # Generated migration files
 │   ├── meta/                     # Migration metadata
@@ -187,10 +188,28 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 ### Ollama Integration
 
 - Default model: `gpt-oss`
-- Function: `fetchOllamaResponse(messages: OllamaMessage[], model?: string)`
+- Function: `fetchOllamaResponse(messages: OllamaMessageInput[], model?: string)`
 - Returns: Promise<OllamaResponse> with `{ content: string, generationTimeMs: number }`
 - Uses `ollama.chat()` API with full conversation history
+- **Tool Calling Support**: Supports tool calling with automatic iteration to exhaust tool calls
+  - Tools are executed and results are sent back to the model until a final response is generated
+  - Maximum 10 iterations to prevent infinite loops
+  - Currently supports: `query_duckduckgo` tool for DuckDuckGo Instant Answer API queries
 - Located in: `src/lib/ollama.ts`
+
+### Tool Integration
+
+- **DuckDuckGo Tool** (`query_duckduckgo`): Queries DuckDuckGo's Instant Answer API for quick information
+  - Function: `queryDuckDuckGo(query: string): Promise<string>`
+  - Returns formatted information including heading, abstract, answer, definition, and related topics
+  - Handles cases where no instant answer is available (limited API coverage)
+  - Located in: `src/lib/ollama.ts`
+
+### Debug Utility
+
+- **Debug Logging** (`src/lib/debug.ts`): Development-only debug logging utility
+  - Function: `debug(...args: any[]): void`
+  - Only logs when `NODE_ENV === "development"`
 
 ### Database Integration (Drizzle ORM)
 

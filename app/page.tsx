@@ -95,8 +95,10 @@ export default function Home() {
     loadMessages(threadId);
   };
 
-  const handleCreateNewThread = async () => {
-    await createNewThread();
+  const handleCreateNewThread = () => {
+    setCurrentThreadId(null);
+    setMessages([]);
+    prevMessagesLengthRef.current = 0;
   };
 
   const sendMessage = async (message: string) => {

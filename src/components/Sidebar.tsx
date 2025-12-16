@@ -6,7 +6,7 @@ type SidebarProps = {
   threads: Thread[];
   currentThreadId: number | null;
   themeMode: "device" | "dark" | "light";
-  onCreateNewThread: () => Promise<void>;
+  onCreateNewThread: () => void;
   onThreadSelect: (threadId: number) => void;
   onThemeChange: (mode: "device" | "dark" | "light") => void;
 };

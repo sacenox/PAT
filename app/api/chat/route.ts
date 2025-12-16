@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchOllamaResponse, type OllamaMessage } from "@/src/lib/ollama";
+import { fetchOllamaResponse, type OllamaMessageInput } from "@/src/lib/ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     });
 
     // 3. Build messages array for Ollama
-    const ollamaMessages: OllamaMessage[] = previousMessages.map((msg) => ({
+    const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
       role: msg.role as "user" | "assistant",
       content: msg.content,
     }));
