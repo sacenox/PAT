@@ -10,6 +10,11 @@ All commands should be run from the project root directory:
 - **Build**: `npm run build` - Builds the production-ready Next.js application
 - **Start Production**: `npm run start` - Starts the production server (requires build first)
 - **Lint**: `npm run lint` - Runs ESLint to check code quality
+- **Format**: `npm run format` - Formats all files with Prettier
+- **Format Check**: `npm run format:check` - Checks code formatting without making changes
+- **DB Generate**: `npm run db:generate` - Generates database migrations using Drizzle Kit
+- **DB Migrate**: `npm run db:migrate` - Runs database migrations
+- **DB Studio**: `npm run db:studio` - Opens Drizzle Studio for database management
 
 ## Dependencies
 
@@ -25,6 +30,8 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **ollama**: ^0.6.3 - Official Ollama npm package for model interaction
 - **autoprefixer**: ^10.4.17 - CSS post-processor
 - **postcss**: ^8.4.30 - CSS transformation tool
+- **drizzle-orm**: ^0.45.1 - TypeScript ORM for SQL databases
+- **better-sqlite3**: ^12.5.0 - Fast SQLite3 database driver
 
 ### Dev Dependencies
 
@@ -33,6 +40,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **@types/react-dom**: ^18.2.19 - TypeScript types for React DOM
 - **eslint**: ^8.56.0 - JavaScript/TypeScript linter
 - **eslint-config-next**: ^13.5.6 - Next.js ESLint configuration
+- **prettier**: ^3.2.5 - Code formatter
+- **prettier-plugin-tailwindcss**: ^0.5.11 - Prettier plugin for sorting Tailwind CSS classes
+- **drizzle-kit**: ^0.31.8 - Drizzle ORM migration and introspection tool
+- **@types/better-sqlite3**: ^7.6.13 - TypeScript types for better-sqlite3
 
 ## Code Style Guidelines
 
@@ -84,8 +95,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Set default text colors on topmost container to cascade: `text-slate-800 dark:text-slate-200`
 
 7. **Code Formatting**:
+   - Use Prettier for code formatting: `npm run format` to format all files
+   - Prettier configuration is in `.prettierrc` (2 spaces, semicolons, double quotes, 100 char width)
+   - Prettier automatically sorts Tailwind CSS classes via `prettier-plugin-tailwindcss`
    - Use consistent indentation (2 spaces)
-   - Use single quotes for strings in some contexts, double quotes in others (maintain existing file style)
    - Add trailing commas in multi-line objects/arrays
    - Use semicolons
 
@@ -120,8 +133,17 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 │   │   └── icons/
 │   │       └── PaperPlaneIcon.tsx # Reusable icon components
 │   └── lib/
+│       ├── db/
+│       │   ├── index.ts          # Database connection and setup
+│       │   └── schema.ts         # Drizzle ORM schema definitions
 │       ├── duckduckgo.ts         # DuckDuckGo API wrapper
-│       └── ollama.ts              # Ollama API wrapper
+│       └── ollama.ts             # Ollama API wrapper
+├── drizzle/                      # Generated migration files
+│   ├── meta/                     # Migration metadata
+│   └── *.sql                     # SQL migration files
+├── data/                         # Database files (created at runtime)
+│   └── database.db               # SQLite database file
+├── drizzle.config.ts             # Drizzle Kit configuration
 ├── package.json
 ├── tsconfig.json
 └── tailwind.config.js
@@ -155,6 +177,22 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - Interface: `{ title: string; snippet: string; url: string }`
 - Located in: `src/lib/duckduckgo.ts`
 
+### Database Integration (Drizzle ORM)
+
+- **Database**: SQLite using better-sqlite3
+- **Location**: `data/database.db` (created automatically)
+- **Schema**: Defined in `src/lib/db/schema.ts`
+- **Connection**: Exported from `src/lib/db/index.ts` as `db`
+- **Tables**:
+  - `threads`: Stores conversation threads with id, title, createdAt, updatedAt
+  - `messages`: Stores messages with id, threadId, role, content, createdAt
+- **Relations**: Messages belong to threads (one-to-many)
+- **Types**: Exported types `Thread`, `NewThread`, `Message`, `NewMessage`
+- **Configuration**: `drizzle.config.ts` defines schema path and database location
+- **Migrations**: Generated in `drizzle/` directory using `npm run db:generate`
+- **Foreign Keys**: Enabled automatically in database connection
+- **Usage**: Import `db` from `src/lib/db/index.ts` to query the database
+
 ### Chat API Flow
 
 1. Client sends POST request to `/api/chat` with `{ message: string }`
@@ -168,8 +206,9 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 1. Start development server: `npm run dev`
 2. Make code changes
 3. Test in browser (typically `http://localhost:3000`)
-4. Run linter: `npm run lint`
-5. Build for production: `npm run build`
+4. Format code: `npm run format`
+5. Run linter: `npm run lint`
+6. Build for production: `npm run build`
 
 ## Important Constraints
 
