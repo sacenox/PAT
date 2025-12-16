@@ -32,6 +32,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **postcss**: ^8.4.30 - CSS transformation tool
 - **drizzle-orm**: ^0.45.1 - TypeScript ORM for SQL databases
 - **better-sqlite3**: ^12.5.0 - Fast SQLite3 database driver
+- **react-markdown**: ^10.1.0 - React component for rendering markdown
+- **remark-gfm**: ^4.0.1 - GitHub Flavored Markdown plugin for remark
+- **rehype-highlight**: ^7.0.2 - Syntax highlighting plugin for rehype
+- **highlight.js**: ^11.11.1 - Syntax highlighting library
 
 ### Dev Dependencies
 
@@ -62,6 +66,8 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Library utilities in `src/lib/`
    - Reusable components in `src/components/`
    - Icon components in `src/components/icons/`
+   - Custom React hooks in `src/hooks/`
+   - Shared TypeScript types in `src/types.ts`
    - Use TypeScript for all code files (`.ts`, `.tsx`)
 
 2. **Component Style**:
@@ -90,9 +96,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 6. **Styling**:
    - Use TailwindCSS utility classes exclusively
    - Inline Tailwind classes in JSX
-   - Follow existing patterns: `className="flex flex-col bg-slate-200 dark:bg-slate-900 p-4"`
+   - Follow existing patterns: `className="flex flex-col bg-neutral-200 dark:bg-neutral-900 p-4"`
    - Use responsive design utilities when appropriate
-   - Set default text colors on topmost container to cascade: `text-slate-800 dark:text-slate-200`
+   - Set default text colors on topmost container to cascade: `text-neutral-800 dark:text-neutral-200`
+   - Use neutral color palette (not slate or gray)
 
 7. **Code Formatting**:
    - Use Prettier for code formatting: `npm run format` to format all files
@@ -124,20 +131,32 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 /home/xonecas/src/personal-assistant-thing/
 ├── app/
 │   ├── api/
-│   │   └── chat/
-│   │       └── route.ts          # Chat API endpoint
+│   │   ├── chat/
+│   │   │   └── route.ts          # Chat API endpoint
+│   │   └── threads/
+│   │       ├── route.ts          # Threads API endpoint (GET, POST)
+│   │       └── [id]/
+│   │           └── messages/
+│   │               └── route.ts  # Thread messages API endpoint
 │   ├── globals.css               # Global styles
+│   ├── highlight-theme.css       # Syntax highlighting theme
 │   ├── layout.tsx                # Root layout component
 │   └── page.tsx                  # Main page component
 ├── src/
 │   ├── components/
-│   │   └── icons/
-│   │       └── PaperPlaneIcon.tsx # Reusable icon components
-│   └── lib/
-│       ├── db/
-│       │   ├── index.ts          # Database connection and setup
-│       │   └── schema.ts         # Drizzle ORM schema definitions
-│       └── ollama.ts             # Ollama API wrapper
+│   │   ├── icons/
+│   │   │   └── PaperPlaneIcon.tsx # Reusable icon components
+│   │   ├── MessageInput.tsx      # Message input form component
+│   │   ├── NoThreadSelected.tsx # Welcome screen when no thread selected
+│   │   └── Sidebar.tsx           # Sidebar component with thread selection
+│   ├── hooks/
+│   │   └── useTheme.ts           # Custom hook for theme management
+│   ├── lib/
+│   │   ├── db/
+│   │   │   ├── index.ts          # Database connection and setup
+│   │   │   └── schema.ts         # Drizzle ORM schema definitions
+│   │   └── ollama.ts             # Ollama API wrapper
+│   └── types.ts                  # Shared TypeScript type definitions
 ├── drizzle/                      # Generated migration files
 │   ├── meta/                     # Migration metadata
 │   └── *.sql                     # SQL migration files
@@ -181,13 +200,27 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **Connection**: Exported from `src/lib/db/index.ts` as `db`
 - **Tables**:
   - `threads`: Stores conversation threads with id, title, createdAt, updatedAt
-  - `messages`: Stores messages with id, threadId, role, content, createdAt
+  - `messages`: Stores messages with id, threadId, role, content, createdAt, generationTimeMs
 - **Relations**: Messages belong to threads (one-to-many)
-- **Types**: Exported types `Thread`, `NewThread`, `Message`, `NewMessage`
+- **Types**: Type definitions for `Thread` and `Message` are in `src/types.ts` (shared across the application)
 - **Configuration**: `drizzle.config.ts` defines schema path and database location
 - **Migrations**: Generated in `drizzle/` directory using `npm run db:generate`
 - **Foreign Keys**: Enabled automatically in database connection
 - **Usage**: Import `db` from `src/lib/db/index.ts` to query the database
+
+### Component Structure
+
+- **Home** (`app/page.tsx`): Main page component that orchestrates the chat interface. Loads threads on mount but does not automatically select the latest thread - user must manually select a thread or create a new one.
+- **Sidebar** (`src/components/Sidebar.tsx`): Sidebar with thread selection, new thread button, and theme selector
+- **MessageInput** (`src/components/MessageInput.tsx`): Input form for sending messages with keyboard history navigation (ArrowUp/ArrowDown to cycle through previous user messages)
+- **NoThreadSelected** (`src/components/NoThreadSelected.tsx`): Welcome screen displayed when no thread is selected, shows PAT introduction, current time (updates every second), and thread count
+- **useTheme** (`src/hooks/useTheme.ts`): Custom hook managing theme state (device/dark/light) with localStorage persistence and automatic device preference detection
+
+### Type Definitions
+
+- **Types** (`src/types.ts`): Shared TypeScript types
+  - `Thread`: Thread type with id, title, createdAt, updatedAt
+  - `Message`: Message type with id, threadId, role, content, createdAt, generationTimeMs
 
 ### Chat API Flow
 
@@ -197,6 +230,12 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 4. API route calls Ollama with the full conversation history
 5. API route stores the assistant response with generation time
 6. API route returns `{ answer: string }`
+
+### Threads API
+
+- **GET** `/api/threads`: Returns list of all threads sorted by most recent
+- **POST** `/api/threads`: Creates a new thread with optional title, returns the created thread
+- **GET** `/api/threads/[id]/messages`: Returns all messages for a specific thread
 
 ## Development Workflow
 
