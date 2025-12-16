@@ -49,6 +49,8 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Use Next.js App Router structure (`app/` directory)
    - API routes in `app/api/[route]/route.ts`
    - Library utilities in `src/lib/`
+   - Reusable components in `src/components/`
+   - Icon components in `src/components/icons/`
    - Use TypeScript for all code files (`.ts`, `.tsx`)
 
 2. **Component Style**:
@@ -77,8 +79,9 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 6. **Styling**:
    - Use TailwindCSS utility classes exclusively
    - Inline Tailwind classes in JSX
-   - Follow existing patterns: `className="flex flex-col bg-gray-100 p-4"`
+   - Follow existing patterns: `className="flex flex-col bg-slate-200 dark:bg-slate-900 p-4"`
    - Use responsive design utilities when appropriate
+   - Set default text colors on topmost container to cascade: `text-slate-800 dark:text-slate-200`
 
 7. **Code Formatting**:
    - Use consistent indentation (2 spaces)
@@ -96,9 +99,10 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Optional: Add file path comments at the top of library files (e.g., `/* personal-assistant-thing/src/lib/ollama.ts */`)
 
 10. **Imports**:
-    - Use relative imports for local files
+    - Use relative imports for local files (e.g., `import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon"`)
     - Group imports: external packages first, then local imports
     - Use named imports from libraries (e.g., `import { NextResponse } from "next/server"`)
+    - Use default imports for component files (e.g., `import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon"`)
 
 ## Project Structure
 
@@ -112,6 +116,9 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 │   ├── layout.tsx                # Root layout component
 │   └── page.tsx                  # Main page component
 ├── src/
+│   ├── components/
+│   │   └── icons/
+│   │       └── PaperPlaneIcon.tsx # Reusable icon components
 │   └── lib/
 │       ├── duckduckgo.ts         # DuckDuckGo API wrapper
 │       └── ollama.ts              # Ollama API wrapper
@@ -125,10 +132,12 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 ### UI Style
 
 - Always ensure support for both light and dark modes
-- Use grays for backgrounds, and darker grey borders
+- Use slate color palette for backgrounds and text (not gray or stone)
+- Default text colors: `text-slate-800 dark:text-slate-200` (set on topmost container to cascade)
+- Background colors: `bg-slate-200/300` for light mode, `bg-slate-900/950` for dark mode
 - Don't use round corners
 - The UI should always fit to the available space
-- Primary colors: sky-400 for dark mode, cyan-900 for light mode
+- Primary colors: emerald-500 for dark mode, emerald-900 for light mode
 - Alternate colors: indigo at an appropriate shade for current mode
 
 ### Ollama Integration

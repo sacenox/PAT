@@ -1,11 +1,34 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon";
 
 export default function Home() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
     [],
   );
   const [input, setInput] = useState("");
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const darkMode = localStorage.getItem("darkMode") === "true";
+    setIsDark(darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDark;
+    setIsDark(newDarkMode);
+    localStorage.setItem("darkMode", String(newDarkMode));
+    if (newDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const sendMessage = async (e: React.FormEvent) => {
@@ -55,44 +78,60 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 p-4">
-      <h1 className="text-3xl font-bold mb-4 text-center">
-        Personal Assistant
-      </h1>
-      <div className="flex-1 overflow-y-auto mb-4 p-4 bg-white rounded shadow">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`mb-3 flex ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}
-          >
+    <div className="h-screen flex bg-slate-200 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 overflow-y-auto p-4 bg-slate-200 dark:bg-slate-900">
+          {messages.map((msg, i) => (
             <div
-              className={`max-w-xs rounded p-3 ${
-                msg.role === "assistant"
-                  ? "bg-blue-100 text-blue-900"
-                  : "bg-green-100 text-green-900"
-              }`}
+              key={i}
+              className={`mb-3 flex ${msg.role === "assistant" ? "justify-start" : "justify-end"}`}
             >
-              {msg.content}
+              <div
+                className={`max-w-xs p-3 ${
+                  msg.role === "assistant"
+                    ? "bg-emerald-900 dark:bg-emerald-500 text-slate-100 dark:text-slate-900"
+                    : "bg-indigo-700 dark:bg-indigo-500 text-slate-100 dark:text-slate-100"
+                }`}
+              >
+                {msg.content}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <form onSubmit={sendMessage} className="flex">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 px-3 py-2 bg-slate-300 dark:bg-slate-950 placeholder:italic placeholder:text-slate-600 dark:placeholder:text-slate-400 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-emerald-900 dark:bg-emerald-500 text-slate-100 dark:text-slate-900 hover:bg-emerald-800 dark:hover:bg-emerald-600"
+          >
+            <PaperPlaneIcon className="w-5 h-5" />
+          </button>
+        </form>
       </div>
-      <form onSubmit={sendMessage} className="flex space-x-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Send
-        </button>
-      </form>
+      <div className="w-64 bg-slate-300 dark:bg-slate-950 p-4">
+        <div className="flex items-center justify-between">
+          <span>Dark Mode</span>
+          <button
+            onClick={toggleDarkMode}
+            className={`relative inline-flex h-6 w-11 items-center transition-colors ${
+              isDark ? "bg-indigo-500" : "bg-slate-400"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform bg-slate-200 dark:bg-slate-100 transition-transform ${
+                isDark ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
