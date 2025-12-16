@@ -3,13 +3,30 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon";
+import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
 import "highlight.js/styles/nord.css";
 
+type Thread = {
+  id: number;
+  title: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type Message = {
+  id: number;
+  threadId: number;
+  role: string;
+  content: string;
+  createdAt: Date;
+};
+
 export default function Home() {
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isDark, setIsDark] = useState(false);
+  const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
+  const [threads, setThreads] = useState<Thread[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -24,77 +41,25 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const buildWelcomeMessage = async () => {
-      const parts: string[] = [];
+    const loadThreads = async () => {
+      try {
+        const res = await fetch("/api/threads");
+        const data = await res.json();
+        const threadsList = data.threads || [];
+        setThreads(threadsList);
 
-      // User agent information
-      const userAgent = navigator.userAgent;
-      const platform = navigator.platform;
-      parts.push(`**User Agent:** ${userAgent}`);
-      parts.push(`**Platform:** ${platform}`);
-
-      // Location information
-      if (navigator.geolocation) {
-        // Check permission state first if available
-        let permissionState = "unknown";
-        if (navigator.permissions) {
-          try {
-            const permission = await navigator.permissions.query({
-              name: "geolocation" as PermissionName,
-            });
-            permissionState = permission.state;
-          } catch (e) {
-            // Permissions API might not support geolocation query
-          }
+        // Load the most recent thread if available
+        if (threadsList.length > 0) {
+          const mostRecentThread = threadsList[0];
+          setCurrentThreadId(mostRecentThread.id);
+          await loadMessages(mostRecentThread.id);
         }
-
-        try {
-          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 10000,
-              enableHighAccuracy: false,
-              maximumAge: 60000,
-            });
-          });
-          const { latitude, longitude } = position.coords;
-          parts.push(`**Location:** ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        } catch (error: any) {
-          let errorMsg = "Unable to retrieve";
-          if (error?.code === 1) {
-            errorMsg =
-              permissionState === "prompt" ? "Permission prompt shown" : "Permission denied";
-          } else if (error?.code === 2) {
-            errorMsg = "Position unavailable";
-          } else if (error?.code === 3) {
-            errorMsg = "Request timeout";
-          } else if (error?.message) {
-            errorMsg = error.message;
-          }
-          parts.push(`**Location:** ${errorMsg} (permission: ${permissionState})`);
-        }
-      } else {
-        parts.push(`**Location:** Geolocation not supported`);
+      } catch (error) {
+        console.error("Failed to load threads", error);
       }
-
-      // Local time
-      const now = new Date();
-      const timeString = now.toLocaleString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        timeZoneName: "short",
-      });
-      parts.push(`**Local Time:** ${timeString}`);
-
-      const message = parts.join("\n\n");
-      setMessages([{ role: "assistant", content: message }]);
     };
 
-    buildWelcomeMessage();
+    loadThreads();
   }, []);
 
   useEffect(() => {
@@ -121,25 +86,100 @@ export default function Home() {
     }
   };
 
+  const loadMessages = async (threadId: number) => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}/messages`);
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } catch (error) {
+      console.error("Failed to load messages", error);
+    }
+  };
+
+  const createNewThread = async () => {
+    try {
+      const res = await fetch("/api/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "New Thread" }),
+      });
+      const data = await res.json();
+      const newThread = data.thread;
+      setCurrentThreadId(newThread.id);
+      setMessages([]);
+      // Reload threads to get the full list
+      const threadsRes = await fetch("/api/threads");
+      const threadsData = await threadsRes.json();
+      setThreads(threadsData.threads || []);
+    } catch (error) {
+      console.error("Failed to create thread", error);
+    }
+  };
+
+  const handleThreadSelect = (threadId: number) => {
+    setCurrentThreadId(threadId);
+    loadMessages(threadId);
+  };
+
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMsg = { role: "user", content: input };
+    let threadId = currentThreadId;
+    if (!threadId) {
+      // Create a new thread if none exists
+      try {
+        const res = await fetch("/api/threads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: input.substring(0, 50) }),
+        });
+        const data = await res.json();
+        threadId = data.thread.id;
+        setCurrentThreadId(threadId);
+        setThreads((prev) => [data.thread, ...prev.slice(0, 9)]);
+      } catch (error) {
+        console.error("Failed to create thread", error);
+        return;
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now(),
+      threadId: threadId!,
+      role: "user",
+      content: input,
+      createdAt: new Date(),
+    };
     setMessages((prev) => [...prev, userMsg]);
+    const inputValue = input;
     setInput("");
 
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
+      body: JSON.stringify({ message: inputValue, threadId }),
     });
 
     const data = await res.json();
 
-    const botMsg = { role: "assistant", content: data.answer || "" };
+    const botMsg: Message = {
+      id: Date.now() + 1,
+      threadId: threadId!,
+      role: "assistant",
+      content: data.answer || "",
+      createdAt: new Date(),
+    };
     setMessages((prev) => [...prev, botMsg]);
+
+    // Reload messages to get correct IDs from database
+    await loadMessages(threadId!);
+
+    // Reload threads to update the order
+    const threadsRes = await fetch("/api/threads");
+    const threadsData = await threadsRes.json();
+    setThreads(threadsData.threads || []);
 
     setInput("");
     setHistoryIndex(null);
@@ -147,19 +187,21 @@ export default function Home() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      const idx = historyIndex ?? messages.length;
+      const userMessages = messages.filter((m) => m.role === "user");
+      const idx = historyIndex ?? userMessages.length;
       if (idx > 0) {
         const newIdx = idx - 1;
         setHistoryIndex(newIdx);
-        setInput(messages[newIdx].content);
+        setInput(userMessages[newIdx].content);
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       if (historyIndex !== null) {
+        const userMessages = messages.filter((m) => m.role === "user");
         const newIdx = historyIndex + 1;
-        if (newIdx < messages.length) {
+        if (newIdx < userMessages.length) {
           setHistoryIndex(newIdx);
-          setInput(messages[newIdx].content);
+          setInput(userMessages[newIdx].content);
         } else {
           setHistoryIndex(null);
           setInput("");
@@ -176,19 +218,33 @@ export default function Home() {
           className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-200 dark:bg-slate-900"
         >
           <div className="flex min-h-full flex-col justify-end">
-            {messages.map((msg, i) => (
-              <div key={i} className="min-w-0">
-                <div className="markdown-content m-2 bg-slate-300 p-2 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
-                  {msg.role === "assistant" ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                      {msg.content}
-                    </ReactMarkdown>
-                  ) : (
-                    <div className="text-right">{msg.content}</div>
-                  )}
+            {threads.length === 0 && messages.length === 0 && currentThreadId === null ? (
+              <div className="min-w-0">
+                <div className="markdown-content m-1 p-1 bg-slate-300 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                    {`# Welcome! 👋
+
+I'm your personal assistant. To get started, click the **"New Thread"** button in the sidebar to create your first conversation thread.
+
+Once you've created a thread, you can start chatting with me by typing a message below.`}
+                  </ReactMarkdown>
                 </div>
               </div>
-            ))}
+            ) : (
+              messages.map((msg) => (
+                <div key={msg.id} className="min-w-0">
+                  <div className="markdown-content m-1 p-1 bg-slate-300 text-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                    {msg.role === "assistant" ? (
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <div className="text-right">{msg.content}</div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
             <div ref={messagesEndRef} />
           </div>
         </div>
@@ -210,20 +266,48 @@ export default function Home() {
         </form>
       </div>
       <div className="w-64 bg-slate-300 p-4 dark:bg-slate-950">
-        <div className="flex items-center justify-between">
-          <span>Dark Mode</span>
+        <div className="flex flex-col gap-4">
           <button
-            onClick={toggleDarkMode}
-            className={`relative inline-flex h-6 w-11 items-center transition-colors ${
-              isDark ? "bg-indigo-500" : "bg-slate-400"
-            }`}
+            onClick={createNewThread}
+            className="bg-emerald-900 px-3 py-2 text-slate-100 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
           >
-            <span
-              className={`inline-block h-4 w-4 transform bg-slate-200 transition-transform dark:bg-slate-100 ${
-                isDark ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
+            New Thread
           </button>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold">Threads</label>
+            <select
+              value={currentThreadId || ""}
+              onChange={(e) => {
+                const threadId = e.target.value ? parseInt(e.target.value) : null;
+                if (threadId) {
+                  handleThreadSelect(threadId);
+                }
+              }}
+              className="bg-slate-200 px-2 py-1 text-slate-800 focus:outline-none dark:bg-slate-900 dark:text-slate-200"
+            >
+              <option value="">Select a thread...</option>
+              {threads.map((thread) => (
+                <option key={thread.id} value={thread.id}>
+                  {thread.title || `Thread ${thread.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Dark Mode</span>
+            <button
+              onClick={toggleDarkMode}
+              className={`relative inline-flex h-6 w-11 items-center transition-colors ${
+                isDark ? "bg-indigo-500" : "bg-slate-400"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform bg-slate-200 transition-transform dark:bg-slate-100 ${
+                  isDark ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>

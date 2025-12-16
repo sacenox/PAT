@@ -112,10 +112,11 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
    - Optional: Add file path comments at the top of library files (e.g., `/* personal-assistant-thing/src/lib/ollama.ts */`)
 
 10. **Imports**:
-    - Use relative imports for local files (e.g., `import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon"`)
+    - Use absolute imports with `@/` prefix for local files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
     - Group imports: external packages first, then local imports
     - Use named imports from libraries (e.g., `import { NextResponse } from "next/server"`)
-    - Use default imports for component files (e.g., `import PaperPlaneIcon from "../src/components/icons/PaperPlaneIcon"`)
+    - Use default imports for component files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
+    - Path alias `@/` is configured in `tsconfig.json` to point to the project root
 
 ## Project Structure
 

@@ -12,7 +12,7 @@
 .markdown-content h4,
 .markdown-content h5,
 .markdown-content h6 {
-  @apply mb-2 mt-4 font-bold;
+  @apply mb-1 font-bold;
 }
 
 .markdown-content h1 {
@@ -28,12 +28,12 @@
 }
 
 .markdown-content p {
-  @apply mb-2;
+  @apply mb-1;
 }
 
 .markdown-content ul,
 .markdown-content ol {
-  @apply mb-2 ml-6;
+  @apply mb-1 ml-6;
 }
 
 .markdown-content ul {
@@ -57,7 +57,7 @@
 }
 
 .markdown-content table {
-  @apply mb-2 border-collapse border border-slate-500 dark:border-slate-400;
+  @apply mb-1 border-collapse border border-slate-500 dark:border-slate-400;
 }
 
 .markdown-content th,
@@ -71,5 +71,5 @@
 
 /* Code block styling */
 .markdown-content pre {
-  @apply mb-2 overflow-x-auto p-3;
+  @apply mb-1 overflow-x-auto p-3;
 }

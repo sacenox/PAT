@@ -6,4 +6,4 @@ build
 *.min.js
 *.min.css
 drizzle
-
+data/
