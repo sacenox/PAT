@@ -16,6 +16,7 @@ export default function Home() {
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasMoreThreads, setHasMoreThreads] = useState(true);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const prevMessagesLengthRef = useRef<number>(0);
@@ -25,10 +26,11 @@ export default function Home() {
   useEffect(() => {
     const loadThreads = async () => {
       try {
-        const res = await fetch("/api/threads");
+        const res = await fetch("/api/threads?limit=8");
         const data = await res.json();
         const threadsList = data.threads || [];
         setThreads(threadsList);
+        setHasMoreThreads(data.hasMore || false);
       } catch (error) {
         console.error("Failed to load threads", error);
       }
@@ -83,9 +85,11 @@ export default function Home() {
       setMessages([]);
       prevMessagesLengthRef.current = 0;
       // Reload threads to get the full list
-      const threadsRes = await fetch("/api/threads");
+      const threadsRes = await fetch("/api/threads?limit=8");
       const threadsData = await threadsRes.json();
-      setThreads(threadsData.threads || []);
+      const threadsList = threadsData.threads || [];
+      setThreads(threadsList);
+      setHasMoreThreads(threadsData.hasMore || false);
       return newThread.id;
     } catch (error) {
       console.error("Failed to create thread", error);
@@ -106,6 +110,23 @@ export default function Home() {
     setTimeout(() => {
       messageInputRef.current?.focus();
     }, 0);
+  };
+
+  const loadMoreThreads = async () => {
+    try {
+      const offset = threads.length;
+      const res = await fetch(`/api/threads?offset=${offset}&limit=8`);
+      const data = await res.json();
+      const newThreads = data.threads || [];
+      if (newThreads.length > 0) {
+        setThreads((prev) => [...prev, ...newThreads]);
+        setHasMoreThreads(data.hasMore || false);
+      } else {
+        setHasMoreThreads(false);
+      }
+    } catch (error) {
+      console.error("Failed to load more threads", error);
+    }
   };
 
   const sendMessage = async (message: string) => {
@@ -155,9 +176,11 @@ export default function Home() {
       await loadMessages(threadId!);
 
       // Reload threads to update the order
-      const threadsRes = await fetch("/api/threads");
+      const threadsRes = await fetch("/api/threads?limit=8");
       const threadsData = await threadsRes.json();
-      setThreads(threadsData.threads || []);
+      const threadsList = threadsData.threads || [];
+      setThreads(threadsList);
+      setHasMoreThreads(threadsData.hasMore || false);
     } catch (error) {
       console.error("Failed to send message", error);
     } finally {
@@ -234,6 +257,8 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
+        onLoadMore={loadMoreThreads}
+        hasMoreThreads={hasMoreThreads}
       />
     </div>
   );

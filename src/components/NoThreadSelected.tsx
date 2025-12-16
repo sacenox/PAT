@@ -30,16 +30,16 @@ export default function NoThreadSelected({ threadCount }: NoThreadSelectedProps)
 
   return (
     <div className="min-w-0 max-w-4xl mx-auto">
-      <div className="p-1 bg-neutral-200 dark:bg-neutral-900 prose prose-neutral dark:prose-invert">
+      <div className="p-8 bg-neutral-200 dark:bg-neutral-900 prose prose-neutral dark:prose-invert">
         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
           {`# Welcome to PAT 👋
 
-**PAT** (Personal Assistant Thing) is your personal assistant. To get started, click the **"New Thread"** button in the sidebar or start typing below to create your a conversation thread.
+**PAT** (Personal Assistant Thing) is your personal assistant. Start typing below to start new a conversation thread or pick a previous conversation thread from the sidebar.
 
 ---
 
 ${timeDisplay ? `*Current time: ${timeDisplay}*` : ""}  
-*${threadCount} ${threadCount === 1 ? "thread" : "threads"} available*`}
+*${threadCount} ${threadCount === 1 ? "thread" : "threads"} created*`}
         </ReactMarkdown>
       </div>
     </div>

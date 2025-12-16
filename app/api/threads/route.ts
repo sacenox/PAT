@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, count } from "drizzle-orm";
 
 export async function POST(request: Request) {
   try {
@@ -22,15 +22,24 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const limit = parseInt(searchParams.get("limit") || "8", 10);
+
     const threadsList = await db
       .select()
       .from(threads)
       .orderBy(desc(threads.updatedAt))
-      .limit(10);
+      .limit(limit)
+      .offset(offset);
 
-    return NextResponse.json({ threads: threadsList });
+    const totalCountResult = await db.select({ count: count() }).from(threads);
+    const totalCount = totalCountResult[0]?.count || 0;
+    const hasMore = offset + limit < totalCount;
+
+    return NextResponse.json({ threads: threadsList, hasMore });
   } catch (error) {
     console.error("Get threads error", error);
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });
