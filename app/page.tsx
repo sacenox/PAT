@@ -138,7 +138,11 @@ export default function Home() {
         const data = await res.json();
         threadId = data.thread.id;
         setCurrentThreadId(threadId);
-        setThreads((prev) => [data.thread, ...prev.slice(0, 9)]);
+        setMessages([]);
+        // Reload threads to ensure UI is in sync
+        const threadsRes = await fetch("/api/threads");
+        const threadsData = await threadsRes.json();
+        setThreads(threadsData.threads || []);
       } catch (error) {
         console.error("Failed to create thread", error);
         return;
@@ -153,7 +157,8 @@ export default function Home() {
       createdAt: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
-    const inputValue = input;
+    const inputValue = input.trim();
+    if (!inputValue) return;
     setInput("");
 
     const res = await fetch("/api/chat", {
