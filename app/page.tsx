@@ -27,6 +27,7 @@ export default function Home() {
   const [isDark, setIsDark] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -124,8 +125,9 @@ export default function Home() {
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
+    setIsLoading(true);
     let threadId = currentThreadId;
     if (!threadId) {
       // Create a new thread if none exists
@@ -145,6 +147,7 @@ export default function Home() {
         setThreads(threadsData.threads || []);
       } catch (error) {
         console.error("Failed to create thread", error);
+        setIsLoading(false);
         return;
       }
     }
@@ -161,30 +164,36 @@ export default function Home() {
     if (!inputValue) return;
     setInput("");
 
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: inputValue, threadId }),
-    });
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: inputValue, threadId }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    const botMsg: Message = {
-      id: Date.now() + 1,
-      threadId: threadId!,
-      role: "assistant",
-      content: data.answer || "",
-      createdAt: new Date(),
-    };
-    setMessages((prev) => [...prev, botMsg]);
+      const botMsg: Message = {
+        id: Date.now() + 1,
+        threadId: threadId!,
+        role: "assistant",
+        content: data.answer || "",
+        createdAt: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
 
-    // Reload messages to get correct IDs from database
-    await loadMessages(threadId!);
+      // Reload messages to get correct IDs from database
+      await loadMessages(threadId!);
 
-    // Reload threads to update the order
-    const threadsRes = await fetch("/api/threads");
-    const threadsData = await threadsRes.json();
-    setThreads(threadsData.threads || []);
+      // Reload threads to update the order
+      const threadsRes = await fetch("/api/threads");
+      const threadsData = await threadsRes.json();
+      setThreads(threadsData.threads || []);
+    } catch (error) {
+      console.error("Failed to send message", error);
+    } finally {
+      setIsLoading(false);
+    }
 
     setInput("");
     setHistoryIndex(null);
@@ -259,14 +268,16 @@ Once you've created a thread, you can start chatting with me by typing a message
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="flex-1 bg-slate-300 px-3 py-2 placeholder:italic placeholder:text-slate-600 focus:outline-none dark:bg-slate-950 dark:placeholder:text-slate-400"
+            placeholder={isLoading ? "Loading answer..." : "Type a message..."}
+            disabled={isLoading}
+            className="flex-1 bg-slate-300 px-3 py-2 placeholder:italic placeholder:text-slate-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-950 dark:placeholder:text-slate-400"
           />
           <button
             type="submit"
-            className="bg-emerald-900 px-4 py-2 text-slate-100 hover:bg-emerald-800 dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
+            disabled={isLoading}
+            className="bg-emerald-900 px-4 py-2 text-slate-100 hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-emerald-500 dark:text-slate-900 dark:hover:bg-emerald-600"
           >
-            <PaperPlaneIcon className="h-5 w-5" />
+            <PaperPlaneIcon className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
           </button>
         </form>
       </div>
