@@ -194,7 +194,7 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **Tool Calling Support**: Supports tool calling with automatic iteration to exhaust tool calls
   - Tools are executed and results are sent back to the model until a final response is generated
   - Maximum 10 iterations to prevent infinite loops
-  - Currently supports: `query_duckduckgo` tool for DuckDuckGo Instant Answer API queries
+  - Currently supports: `query_duckduckgo` tool for DuckDuckGo Instant Answer API queries, and `query_weather` tool for Open-Meteo weather API queries
 - Located in: `src/lib/ollama.ts`
 
 ### Tool Integration
@@ -203,6 +203,14 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
   - Function: `queryDuckDuckGo(query: string): Promise<string>`
   - Returns formatted information including heading, abstract, answer, definition, and related topics
   - Handles cases where no instant answer is available (limited API coverage)
+  - Located in: `src/lib/ollama.ts`
+
+- **Weather Tool** (`query_weather`): Queries Open-Meteo's weather API for current conditions and forecasts
+  - Function: `queryWeather(location: string): Promise<string>`
+  - Automatically geocodes location names to coordinates using Open-Meteo's geocoding API
+  - Returns current weather conditions (temperature, humidity, wind speed, conditions) and 3-day forecast
+  - Supports any location worldwide (city names, cities with countries, etc.)
+  - Uses WMO weather codes converted to human-readable descriptions
   - Located in: `src/lib/ollama.ts`
 
 ### Debug Utility
