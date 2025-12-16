@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import Sidebar from "@/src/components/Sidebar";
-import MessageInput from "@/src/components/MessageInput";
+import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
 import type { Thread, Message } from "@/src/types";
@@ -19,6 +19,7 @@ export default function Home() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const prevMessagesLengthRef = useRef<number>(0);
+  const messageInputRef = useRef<MessageInputRef>(null);
 
 
   useEffect(() => {
@@ -99,6 +100,10 @@ export default function Home() {
     setCurrentThreadId(null);
     setMessages([]);
     prevMessagesLengthRef.current = 0;
+    // Focus the input after a short delay to ensure DOM has updated
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 0);
   };
 
   const sendMessage = async (message: string) => {
@@ -218,7 +223,7 @@ export default function Home() {
             )}
           </div>
         </div>
-        <MessageInput isLoading={isLoading} messages={messages} onSubmit={sendMessage} />
+        <MessageInput ref={messageInputRef} isLoading={isLoading} messages={messages} onSubmit={sendMessage} />
       </div>
       <Sidebar
         threads={threads}
