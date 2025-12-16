@@ -68,7 +68,7 @@ export default function Home() {
 
   const createNewThread = async (titleOverride?: string, firstMessage?: string): Promise<number | null> => {
     try {
-      const title = titleOverride || (firstMessage ? firstMessage.substring(0, 20) : "New Thread");
+      const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
       const res = await fetch("/api/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,7 +108,7 @@ export default function Home() {
     let threadId = currentThreadId;
     if (!threadId) {
       // Create a new thread if none exists
-      threadId = await createNewThread(message.substring(0, 20), message);
+      threadId = await createNewThread(message.substring(0, 100), message);
       if (!threadId) {
         setIsLoading(false);
         return;

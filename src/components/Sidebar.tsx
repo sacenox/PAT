@@ -30,23 +30,29 @@ export default function Sidebar({
         </button>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Threads</label>
-          <select
-            value={currentThreadId || ""}
-            onChange={(e) => {
-              const threadId = e.target.value ? parseInt(e.target.value) : null;
-              if (threadId) {
-                onThreadSelect(threadId);
-              }
-            }}
-            className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
-          >
-            <option value="">Select a thread...</option>
-            {threads.map((thread) => (
-              <option key={thread.id} value={thread.id}>
-                {thread.title || `Thread ${thread.id}`}
-              </option>
-            ))}
-          </select>
+          <div className="flex flex-col gap-1">
+            {threads.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400">
+                No threads yet
+              </div>
+            ) : (
+              threads.map((thread) => (
+                <button
+                  key={thread.id}
+                  onClick={() => onThreadSelect(thread.id)}
+                  className={`px-3 py-2 text-left text-sm border-2 hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
+                    currentThreadId === thread.id
+                      ? "bg-neutral-300 dark:bg-neutral-800 border-green-900 dark:border-green-500"
+                      : "bg-neutral-100 dark:bg-neutral-950 border-transparent"
+                  }`}
+                >
+                  <div className="line-clamp-2 break-words">
+                    {thread.title || `Thread ${thread.id}`}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Theme</label>
