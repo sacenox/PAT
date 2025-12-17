@@ -54,6 +54,7 @@ export default function Home() {
         <MessageInput
           ref={messageInputRef}
           isLoading={isLoading}
+          isLoadingMessages={isLoadingMessages}
           messages={messages}
           onSubmit={handleSendMessage}
         />
@@ -61,7 +62,6 @@ export default function Home() {
       <Sidebar
         threads={threads}
         currentThreadId={currentThreadId}
-        isLoadingThread={isLoadingMessages}
         themeMode={themeMode}
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}

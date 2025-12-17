@@ -79,23 +79,4 @@
   .animate-spin-and-color-cycle {
     animation: spin-and-color-cycle 3s linear infinite;
   }
-
-  @keyframes color-cycle {
-    0% {
-      color: rgb(239 68 68); /* red-500 */
-    }
-    33.33% {
-      color: rgb(249 115 22); /* orange-500 */
-    }
-    66.66% {
-      color: rgb(245 158 11); /* amber-500 */
-    }
-    100% {
-      color: rgb(239 68 68); /* red-500 */
-    }
-  }
-
-  .animate-color-cycle {
-    animation: color-cycle 3s linear infinite;
-  }
 }

@@ -7,6 +7,7 @@ import type { Message } from "@/src/lib/db/schema";
 
 type MessageInputProps = {
   isLoading: boolean;
+  isLoadingMessages: boolean;
   messages: Message[];
   onSubmit: (message: string) => void;
 };
@@ -16,7 +17,7 @@ export type MessageInputRef = {
 };
 
 const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
-  ({ isLoading, messages, onSubmit }, ref) => {
+  ({ isLoading, isLoadingMessages, messages, onSubmit }, ref) => {
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,11 +56,13 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       textarea.style.height = `${newHeight}px`;
     }, [input]);
 
+    const isAnyLoading = isLoading || isLoadingMessages;
+
     const handleSubmit = (e?: React.FormEvent) => {
       if (e) {
         e.preventDefault();
       }
-      if (!input.trim() || isLoading) return;
+      if (!input.trim() || isAnyLoading) return;
 
       const inputValue = input.trim();
       onSubmit(inputValue);
@@ -113,15 +116,15 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isLoading ? "Loading answer..." : "Type a message..."}
-            disabled={isLoading}
+            placeholder={isAnyLoading ? "Loading..." : "Type a message..."}
+            disabled={isAnyLoading}
             rows={3}
             className="w-full resize-none overflow-y-auto p-4 pr-12 placeholder:italic placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 bg-transparent"
           />
           <div className="absolute bottom-2 right-2">
-            <BasicButton color="neutral" type="submit" disabled={isLoading}>
+            <BasicButton color="neutral" type="submit" disabled={isAnyLoading}>
               <PaperPlaneIcon
-                className={`h-8 w-10 p-1.5 ${isLoading ? "animate-spin-and-color-cycle" : ""}`}
+                className={`h-8 w-10 p-1.5 ${isAnyLoading ? "animate-spin-and-color-cycle" : ""}`}
               />
             </BasicButton>
           </div>

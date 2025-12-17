@@ -8,7 +8,6 @@ import Anchor from "@/src/components/Anchor";
 type SidebarProps = {
   threads: Thread[];
   currentThreadId: number | null;
-  isLoadingThread: boolean;
   themeMode: "device" | "dark" | "light";
   onCreateNewThread: () => void;
   onThreadSelect: (threadId: number) => void;
@@ -20,7 +19,6 @@ type SidebarProps = {
 export default function Sidebar({
   threads,
   currentThreadId,
-  isLoadingThread,
   themeMode,
   onCreateNewThread,
   onThreadSelect,
@@ -47,7 +45,6 @@ export default function Sidebar({
               ) : (
                 threads.map((thread) => {
                   const isSelected = currentThreadId === thread.id;
-                  const isLoading = isLoadingThread && isSelected;
                   return (
                     <Anchor
                       key={thread.id}
@@ -58,7 +55,7 @@ export default function Sidebar({
                       }}
                       isSelected={isSelected}
                     >
-                      <span className={`min-w-0 truncate ${isLoading ? "animate-color-cycle" : ""}`}>
+                      <span className="min-w-0 truncate">
                         {thread.title || `Thread ${thread.id}`}
                       </span>
                     </Anchor>
