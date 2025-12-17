@@ -37,9 +37,10 @@ export function useMessages(threadId: number | null) {
   const sendMessage = async (
     message: string,
     currentThreadId: number | null,
-    onCreateThread: (title?: string, firstMessage?: string) => Promise<number | null>,
+    onCreateThread: (title?: string, firstMessage?: string, model?: string) => Promise<number | null>,
     onThreadSelect: (id: number) => void,
-    onThreadsReload: () => void
+    onThreadsReload: () => void,
+    selectedModel: string = "gpt-oss"
   ) => {
     if (!message.trim() || isLoading) return;
 
@@ -48,8 +49,8 @@ export function useMessages(threadId: number | null) {
 
     if (!targetThreadId) {
       // Create a new thread if none exists
-      const model = localStorage.getItem("selectedModel") || "gpt-oss";
-      targetThreadId = await onCreateThread(message.substring(0, 100), message, model);
+      // Use the validated selectedModel instead of reading from localStorage
+      targetThreadId = await onCreateThread(message.substring(0, 100), message, selectedModel);
       if (!targetThreadId) {
         setIsLoading(false);
         return;

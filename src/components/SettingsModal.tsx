@@ -29,7 +29,22 @@ export default function SettingsModal({
       fetch("/api/models")
         .then((res) => res.json())
         .then((data) => {
-          setModels(data.models || []);
+          const availableModels = data.models || [];
+          setModels(availableModels);
+          
+          // Validate selected model against available models
+          if (availableModels.length > 0) {
+            const modelExists = availableModels.some(
+              (m: { name: string; model: string }) => m.model === selectedModel
+            );
+            
+            if (!modelExists) {
+              // Selected model doesn't exist, fall back to first available
+              const fallbackModel = availableModels[0].model;
+              onModelChange(fallbackModel);
+            }
+          }
+          
           setIsLoadingModels(false);
         })
         .catch((error) => {
@@ -37,7 +52,7 @@ export default function SettingsModal({
           setIsLoadingModels(false);
         });
     }
-  }, [isOpen]);
+  }, [isOpen, selectedModel, onModelChange]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

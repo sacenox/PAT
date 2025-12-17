@@ -36,7 +36,7 @@ export default function Home() {
   };
 
   const handleSendMessage = async (message: string) => {
-    await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads);
+    await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads, selectedModel);
   };
 
   // Get the model name for the current thread, or use selected model if no thread
