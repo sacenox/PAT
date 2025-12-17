@@ -49,13 +49,25 @@ async function executeToolCall(toolCall: {
   let result: string;
   switch (name) {
     case "query_duckduckgo":
-      result = await queryDuckDuckGo(parsedArgs.query);
+      if (!parsedArgs.query || typeof parsedArgs.query !== "string") {
+        result = `Error: Missing or invalid "query" parameter for query_duckduckgo`;
+      } else {
+        result = await queryDuckDuckGo(parsedArgs.query);
+      }
       break;
     case "query_weather":
-      result = await queryWeather(parsedArgs.location);
+      if (!parsedArgs.location || typeof parsedArgs.location !== "string") {
+        result = `Error: Missing or invalid "location" parameter for query_weather`;
+      } else {
+        result = await queryWeather(parsedArgs.location);
+      }
       break;
     case "query_web_search":
-      result = await queryWebSearch(parsedArgs.query);
+      if (!parsedArgs.query || typeof parsedArgs.query !== "string") {
+        result = `Error: Missing or invalid "query" parameter for query_web_search`;
+      } else {
+        result = await queryWebSearch(parsedArgs.query);
+      }
       break;
     default:
       debug(`[Tool] Unknown tool: ${name}`);

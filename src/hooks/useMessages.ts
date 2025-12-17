@@ -48,7 +48,8 @@ export function useMessages(threadId: number | null) {
 
     if (!targetThreadId) {
       // Create a new thread if none exists
-      targetThreadId = await onCreateThread(message.substring(0, 100), message);
+      const model = localStorage.getItem("selectedModel") || "gpt-oss";
+      targetThreadId = await onCreateThread(message.substring(0, 100), message, model);
       if (!targetThreadId) {
         setIsLoading(false);
         return;

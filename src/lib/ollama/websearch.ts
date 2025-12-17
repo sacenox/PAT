@@ -26,6 +26,10 @@ const webSearchRateLimiter = createRateLimiter({
  * @returns A formatted string containing search results.
  */
 export async function queryWebSearch(query: string): Promise<string> {
+  if (!query || typeof query !== "string") {
+    return `Error: Invalid query parameter. Expected a non-empty string, got: ${typeof query}`;
+  }
+
   // Check cache first
   const cacheKey = `websearch:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

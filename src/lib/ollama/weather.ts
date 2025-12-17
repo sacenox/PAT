@@ -63,6 +63,10 @@ function getWeatherDescription(code: number): string {
  * @returns A formatted string containing weather information.
  */
 export async function queryWeather(location: string): Promise<string> {
+  if (!location || typeof location !== "string") {
+    return `Error: Invalid location parameter. Expected a non-empty string, got: ${typeof location}`;
+  }
+
   // Check cache first
   const cacheKey = `weather:${location.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

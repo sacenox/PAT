@@ -5,6 +5,7 @@ import { relations } from "drizzle-orm";
 export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title"),
+  model: text("model").notNull().default("gpt-oss"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

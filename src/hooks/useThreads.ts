@@ -38,14 +38,16 @@ export function useThreads() {
 
   const createThread = async (
     titleOverride?: string,
-    firstMessage?: string
+    firstMessage?: string,
+    model?: string
   ): Promise<number | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
+      const modelToUse = model || localStorage.getItem("selectedModel") || "gpt-oss";
       const res = await fetch("/api/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, model: modelToUse }),
       });
       const data = await res.json();
       const newThread = data.thread;

@@ -1,0 +1,1 @@
+ALTER TABLE "threads" ADD COLUMN "model" text DEFAULT 'gpt-oss' NOT NULL;

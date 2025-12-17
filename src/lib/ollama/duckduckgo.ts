@@ -24,6 +24,10 @@ const duckDuckGoRateLimiter = createRateLimiter({
  * @returns A formatted string containing the instant answer information.
  */
 export async function queryDuckDuckGo(query: string): Promise<string> {
+  if (!query || typeof query !== "string") {
+    return `Error: Invalid query parameter. Expected a non-empty string, got: ${typeof query}`;
+  }
+
   // Check cache first
   const cacheKey = `duckduckgo:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

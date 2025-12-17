@@ -10,6 +10,7 @@ type MessageInputProps = {
   isLoadingMessages: boolean;
   messages: Message[];
   onSubmit: (message: string) => void;
+  modelName?: string;
 };
 
 export type MessageInputRef = {
@@ -17,7 +18,7 @@ export type MessageInputRef = {
 };
 
 const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
-  ({ isLoading, isLoadingMessages, messages, onSubmit }, ref) => {
+  ({ isLoading, isLoadingMessages, messages, onSubmit, modelName = "gpt-oss" }, ref) => {
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,7 +122,8 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             rows={3}
             className="w-full resize-none overflow-y-auto bg-transparent p-4 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:placeholder:text-neutral-400"
           />
-          <div className="absolute bottom-2 right-2">
+          <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
+            <div className="text-xs text-neutral-600 dark:text-neutral-400">{modelName}</div>
             <BasicButton color="neutral" type="submit" disabled={isAnyLoading}>
               <PaperPlaneIcon
                 className={`h-8 w-10 p-1.5 ${isAnyLoading ? "animate-spin-and-color-cycle" : ""}`}

@@ -12,14 +12,25 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. Fetch previous messages from thread
+    // 1. Fetch thread to get its model
+    const thread = await db
+      .select()
+      .from(threads)
+      .where(eq(threads.id, parseInt(threadId)))
+      .limit(1);
+    if (thread.length === 0) {
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
+    }
+    const threadModel = thread[0].model || "gpt-oss";
+
+    // 2. Fetch previous messages from thread
     const previousMessages = await db
       .select()
       .from(messages)
       .where(eq(messages.threadId, parseInt(threadId)))
       .orderBy(asc(messages.createdAt));
 
-    // 2. Store user message
+    // 3. Store user message
     await db.insert(messages).values({
       threadId: parseInt(threadId),
       role: "user",
@@ -27,7 +38,7 @@ export async function POST(request: Request) {
       createdAt: new Date(),
     });
 
-    // 3. Build messages array for Ollama
+    // 4. Build messages array for Ollama
     const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
       role: msg.role as "user" | "assistant" | "system",
       content: msg.content,
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
       content: message,
     });
 
-    // 4. Stream assistant response
+    // 5. Stream assistant response
     let accumulatedContent = "";
     let accumulatedThinking = "";
     const allToolCalls: any[] = [];
@@ -77,10 +88,11 @@ export async function POST(request: Request) {
 
           const { generationTimeMs, toolCalls } = await fetchOllamaResponse(
             ollamaMessages,
-            onChunk
+            onChunk,
+            threadModel
           );
 
-          // 5. Store assistant message with generation time and tool calls
+          // 6. Store assistant message with generation time and tool calls
           await db.insert(messages).values({
             threadId: parseInt(threadId),
             role: "assistant",
@@ -90,7 +102,7 @@ export async function POST(request: Request) {
             toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
           });
 
-          // 6. Update thread's updatedAt timestamp
+          // 7. Update thread's updatedAt timestamp
           await db
             .update(threads)
             .set({ updatedAt: new Date() })

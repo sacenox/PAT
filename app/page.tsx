@@ -5,6 +5,7 @@ import MessageInput, { type MessageInputRef } from "@/src/components/MessageInpu
 import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
+import { useModel } from "@/src/hooks/useModel";
 import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
@@ -12,6 +13,7 @@ import "./highlight-theme.css";
 
 export default function Home() {
   const { themeMode, handleThemeChange } = useTheme();
+  const { selectedModel, handleModelChange } = useModel();
   const { threads, totalThreadCount, hasMoreThreads, loadThreads, loadMoreThreads, createThread } =
     useThreads();
   const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
@@ -37,6 +39,12 @@ export default function Home() {
     await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads);
   };
 
+  // Get the model name for the current thread, or use selected model if no thread
+  const currentModelName =
+    currentThreadId !== null
+      ? threads.find((t) => t.id === currentThreadId)?.model || selectedModel || "gpt-oss"
+      : selectedModel || "gpt-oss";
+
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
       <div className="relative flex min-w-0 flex-1 flex-col">
@@ -60,6 +68,7 @@ export default function Home() {
           isLoadingMessages={isLoadingMessages}
           messages={messages}
           onSubmit={handleSendMessage}
+          modelName={currentModelName}
         />
       </div>
       <Sidebar
@@ -69,6 +78,8 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
+        selectedModel={selectedModel}
+        onModelChange={handleModelChange}
         onLoadMore={loadMoreThreads}
         hasMoreThreads={hasMoreThreads}
       />
