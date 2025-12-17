@@ -62,6 +62,19 @@ export function useMessages(threadId: number | null) {
     };
     setMessages((prev) => [...prev, userMsg]);
 
+    // Create assistant message placeholder
+    const assistantMsgId = Date.now() + 1;
+    const botMsg: Message = {
+      id: assistantMsgId,
+      threadId: targetThreadId,
+      role: "assistant",
+      content: "",
+      createdAt: new Date(),
+      generationTimeMs: null,
+      toolCalls: null,
+    };
+    setMessages((prev) => [...prev, botMsg]);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -69,26 +82,66 @@ export function useMessages(threadId: number | null) {
         body: JSON.stringify({ message: message.trim(), threadId: targetThreadId }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
 
-      const botMsg: Message = {
-        id: Date.now() + 1,
-        threadId: targetThreadId,
-        role: "assistant",
-        content: data.answer || "",
-        createdAt: new Date(),
-        generationTimeMs: null,
-        toolCalls: null,
-      };
-      setMessages((prev) => [...prev, botMsg]);
+      if (!res.body) {
+        throw new Error("Response body is null");
+      }
 
-      // Reload messages to get correct IDs from database
-      await loadMessages(targetThreadId);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulatedContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.trim() === "") continue; // Skip empty lines
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === "content") {
+                accumulatedContent += data.content || "";
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMsgId
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  )
+                );
+              } else if (data.type === "done") {
+                // Final update with complete answer
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMsgId
+                      ? { ...msg, content: data.answer || accumulatedContent }
+                      : msg
+                  )
+                );
+              } else if (data.type === "error") {
+                throw new Error(data.error || "Unknown error");
+              }
+            } catch (parseError) {
+              console.error("Failed to parse SSE data", parseError);
+            }
+          }
+        }
+      }
 
       // Reload threads to update the order
       onThreadsReload();
     } catch (error) {
       console.error("Failed to send message", error);
+      // Remove the assistant message on error
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
     } finally {
       setIsLoading(false);
     }

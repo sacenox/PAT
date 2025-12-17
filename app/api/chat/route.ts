@@ -39,30 +39,87 @@ export async function POST(request: Request) {
       content: message,
     });
 
-    // 4. Get assistant response
-    const {
-      content: answer,
-      generationTimeMs,
-      toolCalls,
-    } = await fetchOllamaResponse(ollamaMessages);
+    // 4. Stream assistant response
+    let accumulatedContent = "";
+    let accumulatedThinking = "";
+    const allToolCalls: any[] = [];
 
-    // 5. Store assistant message with generation time and tool calls
-    await db.insert(messages).values({
-      threadId: parseInt(threadId),
-      role: "assistant",
-      content: answer,
-      createdAt: new Date(),
-      generationTimeMs,
-      toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          const onChunk = (chunk: {
+            content?: string;
+            thinking?: string;
+            toolCalls?: any[];
+          }) => {
+            if (chunk.content) {
+              accumulatedContent += chunk.content;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`)
+              );
+            }
+            if (chunk.thinking) {
+              accumulatedThinking += chunk.thinking;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`)
+              );
+            }
+            if (chunk.toolCalls) {
+              allToolCalls.push(...chunk.toolCalls);
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`)
+              );
+            }
+          };
+
+          const { generationTimeMs, toolCalls } = await fetchOllamaResponse(
+            ollamaMessages,
+            onChunk
+          );
+
+          // 5. Store assistant message with generation time and tool calls
+          await db.insert(messages).values({
+            threadId: parseInt(threadId),
+            role: "assistant",
+            content: accumulatedContent,
+            createdAt: new Date(),
+            generationTimeMs,
+            toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
+          });
+
+          // 6. Update thread's updatedAt timestamp
+          await db
+            .update(threads)
+            .set({ updatedAt: new Date() })
+            .where(eq(threads.id, parseInt(threadId)));
+
+          // Send final message
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "done", answer: accumulatedContent })}\n\n`
+            )
+          );
+          controller.close();
+        } catch (error) {
+          console.error("Chat API error", error);
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "error", error: "Sorry, something went wrong." })}\n\n`
+            )
+          );
+          controller.close();
+        }
+      },
     });
 
-    // 6. Update thread's updatedAt timestamp
-    await db
-      .update(threads)
-      .set({ updatedAt: new Date() })
-      .where(eq(threads.id, parseInt(threadId)));
-
-    return NextResponse.json({ answer });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (error) {
     console.error("Chat API error", error);
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
