@@ -1,6 +1,9 @@
 /* personal-assistant-thing/src/lib/ollama/weather.ts */
 
 import { debug } from "../debug";
+import { getCache, setCache } from "../cache";
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 /**
  * Converts WMO weather code to human-readable description.
@@ -43,11 +46,20 @@ function getWeatherDescription(code: number): string {
 
 /**
  * Queries Open-Meteo's weather API for current weather and forecast information.
+ * Results are cached for 6 hours.
  *
  * @param location - The location name (e.g., "New York", "London", "Tokyo").
  * @returns A formatted string containing weather information.
  */
 export async function queryWeather(location: string): Promise<string> {
+  // Check cache first
+  const cacheKey = `weather:${location.toLowerCase().trim()}`;
+  const cached = await getCache<string>(cacheKey);
+  if (cached !== null) {
+    debug(`[Weather] Cache hit for: "${location}"`);
+    return cached;
+  }
+
   debug(`[Weather] Querying weather for: "${location}"`);
 
   try {
@@ -143,9 +155,13 @@ export async function queryWeather(location: string): Promise<string> {
       }
     }
 
-    return parts.join("\n");
+    const result = parts.join("\n");
+    // Cache successful results
+    await setCache(cacheKey, result, CACHE_TTL_MS);
+    return result;
   } catch (error) {
     console.error("Weather query error:", error);
+    // Don't cache errors
     return `Error querying weather: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }

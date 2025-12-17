@@ -2,6 +2,9 @@
 
 import { google } from "googleapis";
 import { debug, loadRateLimitState, saveRateLimitState } from "../debug";
+import { getCache, setCache } from "../cache";
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 /**
  * Rate limiter for web search requests.
@@ -107,11 +110,20 @@ function incrementWebSearchRateLimit(): void {
 /**
  * Performs a web search using Google Custom Search API.
  * Enforces a rate limit of 100 requests per 24 hours.
+ * Results are cached for 6 hours.
  *
  * @param query - The search query to execute.
  * @returns A formatted string containing search results.
  */
 export async function queryWebSearch(query: string): Promise<string> {
+  // Check cache first
+  const cacheKey = `websearch:${query.toLowerCase().trim()}`;
+  const cached = await getCache<string>(cacheKey);
+  if (cached !== null) {
+    debug(`[WebSearch] Cache hit for: "${query}"`);
+    return cached;
+  }
+
   debug(`[WebSearch] Querying: "${query}"`);
 
   const apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
@@ -146,7 +158,10 @@ export async function queryWebSearch(query: string): Promise<string> {
 
     if (!res.data.items || res.data.items.length === 0) {
       debug(`[WebSearch] No results found for query: "${query}"`);
-      return `No search results found for query: "${query}"`;
+      const result = `No search results found for query: "${query}"`;
+      // Cache even "no results" responses to avoid repeated API calls
+      await setCache(cacheKey, result, CACHE_TTL_MS);
+      return result;
     }
 
     debug(`[WebSearch] Found ${res.data.items.length} results`);
@@ -165,9 +180,13 @@ export async function queryWebSearch(query: string): Promise<string> {
       parts.push(""); // Empty line between results
     });
 
-    return parts.join("\n").trim();
+    const result = parts.join("\n").trim();
+    // Cache successful results
+    await setCache(cacheKey, result, CACHE_TTL_MS);
+    return result;
   } catch (error) {
     console.error("Web search error:", error);
+    // Don't cache errors
     return `Error performing web search: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }

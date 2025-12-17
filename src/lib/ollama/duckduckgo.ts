@@ -1,14 +1,26 @@
 /* personal-assistant-thing/src/lib/ollama/duckduckgo.ts */
 
 import { debug } from "../debug";
+import { getCache, setCache } from "../cache";
+
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 /**
  * Queries DuckDuckGo's Instant Answer API for information about a given query.
+ * Results are cached for 6 hours.
  *
  * @param query - The search query to send to DuckDuckGo.
  * @returns A formatted string containing the instant answer information.
  */
 export async function queryDuckDuckGo(query: string): Promise<string> {
+  // Check cache first
+  const cacheKey = `duckduckgo:${query.toLowerCase().trim()}`;
+  const cached = await getCache<string>(cacheKey);
+  if (cached !== null) {
+    debug(`[DuckDuckGo] Cache hit for: "${query}"`);
+    return cached;
+  }
+
   debug(`[DuckDuckGo] Querying: "${query}"`);
 
   try {
@@ -70,12 +82,19 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
       // DuckDuckGo Instant Answer API has limitations - it doesn't support all query types
       // (e.g., weather forecasts, real-time data). This is expected behavior.
       debug(`[DuckDuckGo] No instant answer data available for this query type`);
-      return `No instant answer available for query: "${query}". Note: DuckDuckGo Instant Answer API has limited coverage and may not support weather forecasts, real-time data, or certain query types.`;
+      const result = `No instant answer available for query: "${query}". Note: DuckDuckGo Instant Answer API has limited coverage and may not support weather forecasts, real-time data, or certain query types.`;
+      // Cache even "no answer" responses to avoid repeated API calls
+      await setCache(cacheKey, result, CACHE_TTL_MS);
+      return result;
     }
 
-    return parts.join("\n\n");
+    const result = parts.join("\n\n");
+    // Cache successful results
+    await setCache(cacheKey, result, CACHE_TTL_MS);
+    return result;
   } catch (error) {
     console.error("DuckDuckGo query error:", error);
+    // Don't cache errors
     return `Error querying DuckDuckGo: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
 }
