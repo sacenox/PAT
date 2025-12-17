@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, ne, and } from "drizzle-orm";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const messagesList = await db
       .select()
       .from(messages)
-      .where(eq(messages.threadId, threadId))
+      .where(and(eq(messages.threadId, threadId), ne(messages.role, "system")))
       .orderBy(asc(messages.createdAt));
 
     return NextResponse.json({ messages: messagesList });

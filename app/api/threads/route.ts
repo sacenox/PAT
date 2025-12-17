@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
-import { threads } from "@/src/lib/db/schema";
+import { threads, messages } from "@/src/lib/db/schema";
 import { desc, count } from "drizzle-orm";
 
 export async function POST(request: Request) {
@@ -14,6 +14,20 @@ export async function POST(request: Request) {
         updatedAt: new Date(),
       })
       .returning();
+
+    const threadId = newThread[0].id;
+
+    // Insert system message with guidelines
+    await db.insert(messages).values({
+      threadId,
+      role: "system",
+      content: `You are PAT, a helpful assistant. Please follow these guidelines:
+- Tool calls should not be used more than once per user request
+- Use simple and concise language
+- Reply with markdown whenever possible
+- When asked for code or text return it in a markdown code block`,
+      createdAt: new Date(),
+    });
 
     return NextResponse.json({ thread: newThread[0] });
   } catch (error) {

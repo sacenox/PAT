@@ -29,7 +29,7 @@ export async function POST(request: Request) {
 
     // 3. Build messages array for Ollama
     const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
-      role: msg.role as "user" | "assistant",
+      role: msg.role as "user" | "assistant" | "system",
       content: msg.content,
     }));
 
