@@ -26,7 +26,7 @@ export default function Sidebar({
   hasMoreThreads,
 }: SidebarProps) {
   return (
-    <div className="w-64 bg-neutral-200 p-1 dark:bg-neutral-900">
+    <div className="h-full w-64 overflow-y-auto bg-neutral-200 p-1 dark:bg-neutral-900">
       <div className="flex flex-col gap-2 p-4">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Threads</label>
