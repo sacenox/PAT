@@ -62,17 +62,13 @@
       transform: rotate(0deg);
       color: rgb(239 68 68); /* red-500 */
     }
-    25% {
-      transform: rotate(90deg);
+    33.33% {
+      transform: rotate(120deg);
       color: rgb(249 115 22); /* orange-500 */
     }
-    50% {
-      transform: rotate(180deg);
+    66.66% {
+      transform: rotate(240deg);
       color: rgb(245 158 11); /* amber-500 */
-    }
-    75% {
-      transform: rotate(270deg);
-      color: rgb(234 179 8); /* yellow-500 */
     }
     100% {
       transform: rotate(360deg);
@@ -81,21 +77,18 @@
   }
 
   .animate-spin-and-color-cycle {
-    animation: spin-and-color-cycle 4s linear infinite;
+    animation: spin-and-color-cycle 3s linear infinite;
   }
 
   @keyframes color-cycle {
     0% {
       color: rgb(239 68 68); /* red-500 */
     }
-    25% {
+    33.33% {
       color: rgb(249 115 22); /* orange-500 */
     }
-    50% {
+    66.66% {
       color: rgb(245 158 11); /* amber-500 */
-    }
-    75% {
-      color: rgb(234 179 8); /* yellow-500 */
     }
     100% {
       color: rgb(239 68 68); /* red-500 */
@@ -103,6 +96,6 @@
   }
 
   .animate-color-cycle {
-    animation: color-cycle 4s linear infinite;
+    animation: color-cycle 3s linear infinite;
   }
 }
