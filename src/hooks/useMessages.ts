@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 
 export function useMessages(threadId: number | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
+  const sendingToThreadIdRef = useRef<number | null>(null);
 
   const loadMessages = useCallback(async (id: number) => {
     setIsLoadingMessages(true);
@@ -22,7 +24,10 @@ export function useMessages(threadId: number | null) {
 
   useEffect(() => {
     if (threadId !== null) {
-      loadMessages(threadId);
+      // Don't reload messages if we're currently sending a message to this thread (to preserve optimistic updates)
+      if (sendingToThreadIdRef.current !== threadId) {
+        loadMessages(threadId);
+      }
     } else {
       setMessages([]);
       setIsLoadingMessages(false);
@@ -48,7 +53,11 @@ export function useMessages(threadId: number | null) {
         setIsLoading(false);
         return;
       }
+      // Mark that we're sending to this thread before selecting it
+      sendingToThreadIdRef.current = targetThreadId;
       onThreadSelect(targetThreadId);
+    } else {
+      sendingToThreadIdRef.current = targetThreadId;
     }
 
     const userMsg: Message = {
@@ -74,6 +83,7 @@ export function useMessages(threadId: number | null) {
       toolCalls: null,
     };
     setMessages((prev) => [...prev, botMsg]);
+    setStreamingMessageId(assistantMsgId);
 
     try {
       const res = await fetch("/api/chat", {
@@ -126,6 +136,7 @@ export function useMessages(threadId: number | null) {
                       : msg
                   )
                 );
+                setStreamingMessageId(null);
               } else if (data.type === "error") {
                 throw new Error(data.error || "Unknown error");
               }
@@ -142,8 +153,10 @@ export function useMessages(threadId: number | null) {
       console.error("Failed to send message", error);
       // Remove the assistant message on error
       setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
+      setStreamingMessageId(null);
     } finally {
       setIsLoading(false);
+      sendingToThreadIdRef.current = null;
     }
   };
 
@@ -155,6 +168,7 @@ export function useMessages(threadId: number | null) {
     messages,
     isLoading,
     isLoadingMessages,
+    streamingMessageId,
     sendMessage,
     clearMessages,
   };

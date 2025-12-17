@@ -7,9 +7,10 @@ import UserMessage from "./UserMessage";
 
 type MessageListProps = {
   messages: Message[];
+  streamingMessageId: number | null;
 };
 
-export default function MessageList({ messages }: MessageListProps) {
+export default function MessageList({ messages, streamingMessageId }: MessageListProps) {
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const prevMessagesLengthRef = useRef<number>(0);
 
@@ -41,7 +42,7 @@ export default function MessageList({ messages }: MessageListProps) {
         >
           <div className="p-2">
             {msg.role === "assistant" ? (
-              <AssistantMessage message={msg} />
+              <AssistantMessage message={msg} isStreaming={streamingMessageId === msg.id} />
             ) : (
               <UserMessage message={msg} />
             )}

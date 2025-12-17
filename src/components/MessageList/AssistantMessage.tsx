@@ -8,9 +8,10 @@ import "../../../app/highlight-theme.css";
 
 type AssistantMessageProps = {
   message: Message;
+  isStreaming?: boolean;
 };
 
-export default function AssistantMessage({ message }: AssistantMessageProps) {
+export default function AssistantMessage({ message, isStreaming = false }: AssistantMessageProps) {
   const formatTimestamp = (date: Date | string): string => {
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleString();
@@ -46,11 +47,20 @@ export default function AssistantMessage({ message }: AssistantMessageProps) {
     }
   };
 
+  const hasContent = message.content && message.content.trim() !== "";
+
   return (
     <div className="prose prose-neutral max-w-none dark:prose-invert">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-        {message.content}
-      </ReactMarkdown>
+      {hasContent && (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+          {message.content}
+        </ReactMarkdown>
+      )}
+      {isStreaming && (
+        <p className={`text-sm text-neutral-600 dark:text-neutral-400 ${hasContent ? "mt-2" : ""}`}>
+          <span className="animate-color-cycle">thinking</span>
+        </p>
+      )}
       <div className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">
         generated on {formatTimestamp(message.createdAt)}
         {message.generationTimeMs && (

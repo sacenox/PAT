@@ -16,7 +16,7 @@ export default function Home() {
     useThreads();
   const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
     useThreadSelection();
-  const { messages, isLoading, isLoadingMessages, sendMessage, clearMessages } =
+  const { messages, isLoading, isLoadingMessages, streamingMessageId, sendMessage, clearMessages } =
     useMessages(currentThreadId);
   const messageInputRef = useRef<MessageInputRef>(null);
 
@@ -50,7 +50,7 @@ export default function Home() {
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
-              <MessageList messages={messages} />
+              <MessageList messages={messages} streamingMessageId={streamingMessageId} />
             )}
           </div>
         </div>
