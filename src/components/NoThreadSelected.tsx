@@ -36,7 +36,12 @@ export default function NoThreadSelected({ threadCount }: NoThreadSelectedProps)
         </p>
         <hr className="border-neutral-300 dark:border-neutral-700" />
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-        {timeDisplay && <><em>Current time: {timeDisplay}</em><br /></>}
+          {timeDisplay && (
+            <>
+              <em>Current time: {timeDisplay}</em>
+              <br />
+            </>
+          )}
           <em>
             {threadCount} {threadCount === 1 ? "thread" : "threads"} created
           </em>

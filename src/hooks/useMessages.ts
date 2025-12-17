@@ -35,7 +35,7 @@ export function useMessages(threadId: number | null) {
 
     setIsLoading(true);
     let targetThreadId = currentThreadId;
-    
+
     if (!targetThreadId) {
       // Create a new thread if none exists
       targetThreadId = await onCreateThread(message.substring(0, 100), message);
@@ -100,4 +100,3 @@ export function useMessages(threadId: number | null) {
     clearMessages,
   };
 }
-

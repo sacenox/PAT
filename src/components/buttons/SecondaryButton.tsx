@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import BasicButton from "./BasicButton";
 
 type SecondaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
@@ -18,16 +19,8 @@ export default function SecondaryButton({
   ...props
 }: SecondaryButtonProps) {
   return (
-    <button
-      className={`border-2 px-3 py-2 text-left hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
-        isSelected
-          ? "border-green-900 bg-neutral-300 dark:border-green-500 dark:bg-neutral-800"
-          : "border-transparent bg-neutral-100 dark:bg-neutral-950"
-      } ${className}`}
-      {...props}
-    >
+    <BasicButton color="neutral" className={className} {...props}>
       {children}
-    </button>
+    </BasicButton>
   );
 }
-

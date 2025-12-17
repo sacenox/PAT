@@ -4,7 +4,7 @@ import type { Thread } from "@/src/lib/db/schema";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
 import AlternateButton from "@/src/components/buttons/AlternateButton";
-import SecondaryButton from "@/src/components/buttons/SecondaryButton";
+import Anchor from "@/src/components/Anchor";
 
 type SidebarProps = {
   threads: Thread[];
@@ -38,21 +38,25 @@ export default function Sidebar({
               New Thread
             </AlternateButton>
             {threads.length === 0 ? (
-              <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                No threads yet
-              </div>
+              <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">No threads yet</div>
             ) : (
-              threads.map((thread) => (
-                <SecondaryButton
-                  key={thread.id}
-                  onClick={() => onThreadSelect(thread.id)}
-                  isSelected={currentThreadId === thread.id}
-                >
-                  <div className="line-clamp-2 break-words">
+              threads.map((thread) => {
+                const isSelected = currentThreadId === thread.id;
+                return (
+                  <Anchor
+                    key={thread.id}
+                    href={`#thread-${thread.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onThreadSelect(thread.id);
+                    }}
+                    isSelected={isSelected}
+                    color="green"
+                  >
                     {thread.title || `Thread ${thread.id}`}
-                  </div>
-                </SecondaryButton>
-              ))
+                  </Anchor>
+                );
+              })
             )}
           </div>
           {hasMoreThreads && (

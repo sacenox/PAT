@@ -49,10 +49,10 @@ export function useThreads() {
       });
       const data = await res.json();
       const newThread = data.thread;
-      
+
       // Reload threads to get the full list
       await loadThreads(8);
-      
+
       return newThread.id;
     } catch (error) {
       console.error("Failed to create thread", error);
@@ -73,4 +73,3 @@ export function useThreads() {
     createThread,
   };
 }
-

@@ -115,8 +115,7 @@ function UserMessageContent({ content }: { content: string }) {
   useEffect(() => {
     const checkOverflow = () => {
       if (contentRef.current) {
-        const isScrollable =
-          contentRef.current.scrollHeight > contentRef.current.clientHeight;
+        const isScrollable = contentRef.current.scrollHeight > contentRef.current.clientHeight;
         setShowGradient(isScrollable);
       }
     };
@@ -148,4 +147,3 @@ function UserMessageContent({ content }: { content: string }) {
     </div>
   );
 }
-

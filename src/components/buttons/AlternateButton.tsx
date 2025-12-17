@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import BasicButton from "./BasicButton";
 
 type AlternateButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
@@ -16,12 +17,8 @@ export default function AlternateButton({
   ...props
 }: AlternateButtonProps) {
   return (
-    <button
-      className={`flex items-center justify-center gap-1 bg-indigo-200 px-1 py-1 text-indigo-900 hover:bg-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-700 ${className}`}
-      {...props}
-    >
+    <BasicButton color="indigo" className={className} {...props}>
       {children}
-    </button>
+    </BasicButton>
   );
 }
-

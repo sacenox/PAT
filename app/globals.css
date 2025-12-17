@@ -12,7 +12,7 @@
   .prose {
     font-size: inherit;
   }
-  
+
   .prose p,
   .prose ul,
   .prose ol,
@@ -28,29 +28,29 @@
   .prose h6 {
     font-size: inherit;
   }
-  
+
   .prose h1 {
     font-size: 1.5em;
   }
-  
+
   .prose h2 {
     font-size: 1.3em;
   }
-  
+
   .prose h3 {
     font-size: 1.15em;
   }
-  
+
   .prose h4,
   .prose h5,
   .prose h6 {
     font-size: 1.05em;
   }
-  
+
   .prose code {
     font-size: 0.9em;
   }
-  
+
   .prose pre {
     font-size: 0.9em;
   }

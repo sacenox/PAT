@@ -34,19 +34,19 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 
       // Reset height to auto to get the correct scrollHeight
       textarea.style.height = "auto";
-      
+
       // Calculate line height from computed styles
       const computedStyle = getComputedStyle(textarea);
       const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
       const paddingTop = parseFloat(computedStyle.paddingTop) || 8;
       const paddingBottom = parseFloat(computedStyle.paddingBottom) || 8;
-      
+
       // Minimum height for 3 lines
       const minHeight = lineHeight * 3 + paddingTop + paddingBottom;
-      
+
       // Maximum height for 10 lines
       const maxHeight = lineHeight * 10 + paddingTop + paddingBottom;
-      
+
       // Set height to scrollHeight or minHeight, whichever is larger
       // Add one extra line height to keep an empty line at the bottom
       // Cap at maxHeight to enable scrolling after 10 lines
@@ -65,7 +65,7 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onSubmit(inputValue);
       setInput("");
       setHistoryIndex(null);
-      
+
       // Reset textarea height after submit
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
@@ -115,11 +115,11 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           placeholder={isLoading ? "Loading answer..." : "Type a message..."}
           disabled={isLoading}
           rows={3}
-          className="w-full bg-neutral-200 px-2 py-2 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:text-neutral-400 resize-none overflow-y-auto"
+          className="w-full resize-none overflow-y-auto bg-neutral-200 px-2 py-2 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:text-neutral-400"
         />
         <div className="absolute bottom-2 right-2">
           <PrimaryButton type="submit" disabled={isLoading}>
-            <PaperPlaneIcon className={`h-8 w-5 ${isLoading ? "animate-spin" : ""}`} />
+            <PaperPlaneIcon className={`h-9 w-9 p-1.5 ${isLoading ? "animate-spin" : ""}`} />
           </PrimaryButton>
         </div>
       </form>

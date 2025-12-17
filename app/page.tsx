@@ -36,7 +36,6 @@ export default function Home() {
     await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads);
   };
 
-
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
       <div className="flex min-w-0 flex-1 flex-col">

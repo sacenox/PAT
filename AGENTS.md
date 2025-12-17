@@ -72,7 +72,6 @@ Add tests when prompted only.
    - Prettier configuration is in `.prettierrc`
    - Prettier automatically sorts Tailwind CSS classes via `prettier-plugin-tailwindcss`
 
-
 8. **Error Handling**:
    - Use `console.error` for errors
    - Use `lib/debug` for debug information
@@ -80,11 +79,11 @@ Add tests when prompted only.
    - Handle API errors gracefully with try/catch blocks
 
 9. **Imports**:
-    - Use absolute imports with `@/` prefix for local files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
-    - Group imports: external packages first, then local imports
-    - Use named imports from libraries (e.g., `import { NextResponse } from "next/server"`)
-    - Use default imports for component files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
-    - Path alias `@/` is configured in `tsconfig.json` to point to the project root
+   - Use absolute imports with `@/` prefix for local files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
+   - Group imports: external packages first, then local imports
+   - Use named imports from libraries (e.g., `import { NextResponse } from "next/server"`)
+   - Use default imports for component files (e.g., `import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon"`)
+   - Path alias `@/` is configured in `tsconfig.json` to point to the project root
 
 ## Key Implementation Details
 
