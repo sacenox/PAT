@@ -23,7 +23,6 @@ export default function Home() {
   const prevMessagesLengthRef = useRef<number>(0);
   const messageInputRef = useRef<MessageInputRef>(null);
 
-
   useEffect(() => {
     const loadThreads = async () => {
       try {
@@ -60,7 +59,6 @@ export default function Home() {
     }
   }, [messages]);
 
-
   const loadMessages = async (threadId: number) => {
     try {
       const res = await fetch(`/api/threads/${threadId}/messages`);
@@ -73,7 +71,10 @@ export default function Home() {
     }
   };
 
-  const createNewThread = async (titleOverride?: string, firstMessage?: string): Promise<number | null> => {
+  const createNewThread = async (
+    titleOverride?: string,
+    firstMessage?: string
+  ): Promise<number | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
       const res = await fetch("/api/threads", {
@@ -208,9 +209,9 @@ export default function Home() {
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="text-sm p-4 flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 dark:bg-neutral-950"
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 text-sm dark:bg-neutral-950"
         >
-          <div className="flex min-h-full flex-col justify-end gap-8 max-w-5xl mx-auto">
+          <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-end gap-8">
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
@@ -224,13 +225,13 @@ export default function Home() {
                       messageRefs.current.delete(msg.id);
                     }
                   }}
-                  className="min-w-0 w-full"
+                  className="w-full min-w-0"
                 >
                   <div
                     className={`p-2 ${
                       msg.role === "assistant"
-                        ? "bg-neutral-200 dark:bg-neutral-900 prose prose-neutral dark:prose-invert max-w-none"
-                        : "bg-neutral-300 dark:bg-neutral-800 text-right w-1/2 min-w-64 ml-auto"
+                        ? "prose prose-neutral max-w-none bg-neutral-200 dark:prose-invert dark:bg-neutral-900"
+                        : "ml-auto w-1/2 min-w-64 bg-neutral-300 text-right dark:bg-neutral-800"
                     }`}
                   >
                     {msg.role === "assistant" ? (
@@ -240,10 +241,12 @@ export default function Home() {
                     ) : (
                       <div>{msg.content}</div>
                     )}
-                    <div className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                    <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                       sent on: {formatTimestamp(msg.createdAt)}
                       {msg.role === "assistant" && msg.generationTimeMs && (
-                        <span className="ml-2">• generated in {formatGenerationTime(msg.generationTimeMs)}</span>
+                        <span className="ml-2">
+                          • generated in {formatGenerationTime(msg.generationTimeMs)}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -252,7 +255,12 @@ export default function Home() {
             )}
           </div>
         </div>
-        <MessageInput ref={messageInputRef} isLoading={isLoading} messages={messages} onSubmit={sendMessage} />
+        <MessageInput
+          ref={messageInputRef}
+          isLoading={isLoading}
+          messages={messages}
+          onSubmit={sendMessage}
+        />
       </div>
       <Sidebar
         threads={threads}

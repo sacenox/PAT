@@ -14,4 +14,3 @@ export default function ChevronDownIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-

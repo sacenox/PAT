@@ -29,8 +29,8 @@ export default function NoThreadSelected({ threadCount }: NoThreadSelectedProps)
   const timeDisplay = currentTime ? formatTime(currentTime) : "";
 
   return (
-    <div className="min-w-0 max-w-5xl mx-auto">
-      <div className="p-8 bg-neutral-200 dark:bg-neutral-900 prose prose-neutral dark:prose-invert max-w-none">
+    <div className="mx-auto min-w-0 max-w-5xl">
+      <div className="prose prose-neutral max-w-none bg-neutral-200 p-8 dark:prose-invert dark:bg-neutral-900">
         <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
           {`# Welcome to PAT 👋
 
@@ -45,4 +45,3 @@ ${timeDisplay ? `*Current time: ${timeDisplay}*` : ""}
     </div>
   );
 }
-

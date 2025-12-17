@@ -13,4 +13,3 @@ export type Message = {
   createdAt: Date;
   generationTimeMs: number | null;
 };
-

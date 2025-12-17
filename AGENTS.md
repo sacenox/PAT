@@ -287,4 +287,4 @@ Agents MUST use only these existing dependencies. Do NOT add new dependencies wi
 - **DO** maintain existing code style and patterns
 - **DO** use existing utility functions from `src/lib/`
 - **DO** follow the App Router conventions for Next.js 16
-- **DO** ALWAY Skeep this file up to date as changes are made in the code 
+- **DO** ALWAY Skeep this file up to date as changes are made in the code

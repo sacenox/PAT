@@ -74,4 +74,3 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Styling**: TailwindCSS
 - **Database**: SQLite with Drizzle ORM
 - **LLM**: Ollama
-

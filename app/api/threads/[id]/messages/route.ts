@@ -3,10 +3,7 @@ import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const threadId = parseInt(id);
@@ -26,4 +23,3 @@ export async function GET(
     return NextResponse.json({ error: "Failed to get messages" }, { status: 500 });
   }
 }
-

@@ -42,4 +42,3 @@ export function useTheme() {
 
   return { themeMode, handleThemeChange };
 }
-

@@ -64,7 +64,10 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     };
 
     return (
-      <form onSubmit={handleSubmit} className="flex shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-1px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3),0_-2px_4px_-1px_rgba(0,0,0,0.2)]">
+      <form
+        onSubmit={handleSubmit}
+        className="flex shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-1px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3),0_-2px_4px_-1px_rgba(0,0,0,0.2)]"
+      >
         <input
           ref={inputRef}
           type="text"
@@ -73,12 +76,12 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           onKeyDown={handleKeyDown}
           placeholder={isLoading ? "Loading answer..." : "Type a message..."}
           disabled={isLoading}
-          className="flex-1 bg-neutral-200 px-2 py-2 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed dark:bg-neutral-900 dark:placeholder:text-neutral-400"
+          className="flex-1 bg-neutral-200 px-2 py-2 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:text-neutral-400"
         />
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-green-900 px-3 py-1 text-neutral-100 hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-green-500 dark:text-neutral-900 dark:hover:bg-green-600"
+          className="bg-green-900 px-3 py-1 text-neutral-100 hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:text-neutral-900 dark:hover:bg-green-600"
         >
           <PaperPlaneIcon className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
         </button>
@@ -90,4 +93,3 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
 MessageInput.displayName = "MessageInput";
 
 export default MessageInput;
-

@@ -47,10 +47,10 @@ export default function Sidebar({
                 <button
                   key={thread.id}
                   onClick={() => onThreadSelect(thread.id)}
-                  className={`px-3 py-2 text-left text-sm border-2 hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
+                  className={`border-2 px-3 py-2 text-left text-sm hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
                     currentThreadId === thread.id
-                      ? "bg-neutral-300 dark:bg-neutral-800 border-green-900 dark:border-green-500"
-                      : "bg-neutral-100 dark:bg-neutral-950 border-transparent"
+                      ? "border-green-900 bg-neutral-300 dark:border-green-500 dark:bg-neutral-800"
+                      : "border-transparent bg-neutral-100 dark:bg-neutral-950"
                   }`}
                 >
                   <div className="line-clamp-2 break-words">
@@ -86,4 +86,3 @@ export default function Sidebar({
     </div>
   );
 }
-
