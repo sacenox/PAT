@@ -106,10 +106,10 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     };
 
     return (
-      <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center p-1 pointer-events-none">
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex justify-center p-1">
         <form
           onSubmit={handleSubmit}
-          className="relative w-full max-w-5xl bg-neutral-300 dark:bg-neutral-700 rounded-lg shadow-lg m-4 pointer-events-auto"
+          className="pointer-events-auto relative m-4 w-full max-w-5xl rounded-lg bg-neutral-300 shadow-lg dark:bg-neutral-700"
         >
           <textarea
             ref={textareaRef}
@@ -119,7 +119,7 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             placeholder={isAnyLoading ? "Loading..." : "Type a message..."}
             disabled={isAnyLoading}
             rows={3}
-            className="w-full resize-none overflow-y-auto p-4 pr-12 placeholder:italic placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 bg-transparent"
+            className="w-full resize-none overflow-y-auto bg-transparent p-4 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:placeholder:text-neutral-400"
           />
           <div className="absolute bottom-2 right-2">
             <BasicButton color="neutral" type="submit" disabled={isAnyLoading}>

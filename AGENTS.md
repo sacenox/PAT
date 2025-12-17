@@ -130,12 +130,16 @@ Add tests when prompted only.
 
 ### Cache Utility
 
-- **File-based Caching** (`src/lib/cache.ts`): Persistent caching utility with TTL support
-  - Functions: `getCache<T>(key: string)`, `setCache<T>(key: string, value: T, ttlMs?: number)`, `deleteCache(key: string)`, `clearCache()`, `hasCache(key: string)`
-  - Stores cache data in `data/cache.json` (created automatically)
-  - Automatically cleans up expired entries on load
+- **Valkey-based Caching** (`src/lib/cache/`): Persistent caching utility with TTL support using Valkey (Redis-compatible)
+  - Functions: `getCache<T>(key: string)`, `setCache<T>(key: string, value: T, ttlMs?: number)`
+  - Cache API located in: `src/lib/cache/index.ts`
+  - Valkey connection logic in: `src/lib/cache/valkey.ts`
+  - Uses Valkey (Redis-compatible in-memory data store) for persistence
+  - Automatically connects to Valkey on first cache operation
+  - Uses Valkey's native TTL support (converts milliseconds to seconds)
+  - Requires `VALKEY_URL` environment variable (format: `redis://:password@host:port`)
   - Used by tool implementations to cache API responses (6-hour TTL)
-  - Thread-safe file operations with error handling
+  - Graceful error handling - cache operations continue even if persistence fails
 
 ### Rate Limit Utility
 
@@ -203,4 +207,4 @@ Add tests when prompted only.
 
 # Known issues:
 
-The google based websearch can randomly fail with Request Entity not found.  Generating a new custom search engine ID fixes the issue.  Google has ignored all efforts to report this issue to them.
+The google based websearch can randomly fail with Request Entity not found. Generating a new custom search engine ID fixes the issue. Google has ignored all efforts to report this issue to them.

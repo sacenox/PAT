@@ -37,7 +37,7 @@ export default function UserMessage({ message }: UserMessageProps) {
   }, [message.content]);
 
   return (
-    <div className="ml-auto w-1/2 min-w-64 p-2 rounded-lg bg-neutral-200 dark:bg-neutral-800">
+    <div className="ml-auto w-1/2 min-w-64 rounded-lg bg-neutral-200 p-2 dark:bg-neutral-800">
       <div className="relative">
         <div
           ref={contentRef}
@@ -56,4 +56,3 @@ export default function UserMessage({ message }: UserMessageProps) {
     </div>
   );
 }
-

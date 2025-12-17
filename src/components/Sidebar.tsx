@@ -36,16 +36,21 @@ export default function Sidebar({
         <div className="flex flex-col gap-2">
           <label className="text-neutral-500">Threads</label>
           <div className="flex flex-col gap-2">
-            <Anchor href="#" onClick={(e) => {
-              e.preventDefault();
-              onCreateNewThread();
-            }}>
+            <Anchor
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onCreateNewThread();
+              }}
+            >
               <PlusIcon className="h-4 w-4" />
               New Thread
             </Anchor>
             <div className="flex flex-col">
               {threads.length === 0 ? (
-                <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">No threads yet</div>
+                <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
+                  No threads yet
+                </div>
               ) : (
                 threads.map((thread) => {
                   const isSelected = currentThreadId === thread.id;
@@ -69,11 +74,15 @@ export default function Sidebar({
             </div>
           </div>
           {hasMoreThreads && (
-            <Anchor href="#" className="text-xs" onClick={(e) => {
-              e.preventDefault();
-              onLoadMore();
-            }}>
-              <ChevronDownIcon className="h-3 w-3 mt-0.5" />
+            <Anchor
+              href="#"
+              className="text-xs"
+              onClick={(e) => {
+                e.preventDefault();
+                onLoadMore();
+              }}
+            >
+              <ChevronDownIcon className="mt-0.5 h-3 w-3" />
               Load More
             </Anchor>
           )}

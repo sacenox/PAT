@@ -99,7 +99,7 @@ export async function fetchOllamaResponse(
     role: msg.role,
     content: msg.content,
   }));
-  const maxIterations = 4; // Prevent infinite loops
+  const maxIterations = 6; // Prevent infinite loops
   let iterations = 0;
   const allToolCalls: any[] = []; // Collect all tool calls across iterations
 
@@ -184,34 +184,17 @@ export async function fetchOllamaResponse(
     };
   }
 
-  // If we hit max iterations, force a final response without tools
-  debug(`[Ollama] Max iterations reached (${maxIterations}), getting final response...`);
-
-  // Add a system message to force a text response
-  const finalMessages: OllamaMessage[] = [
-    ...currentMessages,
-    {
-      role: "system",
-      content:
-        "You have reached the maximum number of tool call iterations. Please provide a final answer based on the information you have gathered so far. Do not make any more tool calls.",
-    },
-  ];
+  // If we hit max iterations, send one more request without tools
+  debug(`[Ollama] Max iterations reached (${maxIterations}), sending final request without tools...`);
 
   const lastResult = await ollama.chat({
     model,
-    messages: finalMessages,
+    messages: currentMessages,
     // Don't pass tools to force a text-only response
   });
   totalDuration += lastResult.total_duration;
-  let content = lastResult.message.content || "";
 
-  // If content is still empty, provide a fallback message
-  if (!content || content.trim().length === 0) {
-    content =
-      "I've gathered information from multiple sources, but I'm unable to provide a complete answer at this time. The search results may not have contained the specific information you're looking for. Please try rephrasing your question or providing more specific details.";
-    debug(`[Ollama] Final response was empty, using fallback message`);
-  }
-
+  const content = lastResult.message.content || "";
   const generationTimeMs = Math.round(totalDuration / 1_000_000);
 
   debug(

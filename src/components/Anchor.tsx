@@ -27,7 +27,7 @@ export default function Anchor({
 
   return (
     <a
-      className={`flex items-center gap-1 min-w-0 px-2 py-1 rounded ${
+      className={`flex min-w-0 items-center gap-1 rounded px-2 py-1 ${
         isSelected
           ? "bg-neutral-200 dark:bg-neutral-800"
           : "hover:bg-neutral-300 dark:hover:bg-neutral-700"
@@ -38,4 +38,3 @@ export default function Anchor({
     </a>
   );
 }
-
