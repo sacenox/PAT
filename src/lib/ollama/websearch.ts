@@ -40,7 +40,7 @@ export async function queryWebSearch(query: string): Promise<string> {
   const cx = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
 
   if (!apiKey || !cx) {
-    debug(`[WebSearch] Missing API credentials - API_KEY: ${!!apiKey}, CX: ${!!cx}`);
+    debug(`[WebSearch] Missing API credentials`);
     return `Error: Google Custom Search API credentials not configured. Please set GOOGLE_CUSTOM_SEARCH_API_KEY and GOOGLE_CUSTOM_SEARCH_ENGINE_ID environment variables.`;
   }
 
