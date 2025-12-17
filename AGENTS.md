@@ -170,8 +170,15 @@ Add tests when prompted only.
 
 ### Database Integration (Drizzle ORM)
 
-- **Database**: SQLite using better-sqlite3
-- **Location**: `data/database.db` (created automatically)
+- **Database**: PostgreSQL using postgres driver
+- **Connection**: Requires `DATABASE_URL` environment variable (format: `postgresql://user:password@host:port/database`)
+- **Docker Setup**: PostgreSQL runs in Docker container via `npm run start:docker` script
+  - Container name: `postgres`
+  - Default port: `5432` (configurable via `POSTGRES_PORT` env var)
+  - Default database: `personal_assistant` (configurable via `POSTGRES_DB` env var)
+  - Default user: `postgres` (configurable via `POSTGRES_USER` env var)
+  - Requires `POSTGRES_PASSWORD` environment variable
+  - Data persisted in Docker volume `postgres_data`
 - **Schema**: Defined in `src/lib/db/schema.ts`
 - **Connection**: Exported from `src/lib/db/index.ts` as `db`
 - **Tables**:
@@ -179,7 +186,7 @@ Add tests when prompted only.
   - `messages`: Stores messages with id, threadId, role, content, createdAt, generationTimeMs, toolCalls (JSON string of tool calls made to generate assistant messages)
 - **Relations**: Messages belong to threads (one-to-many)
 - **Types**: Type definitions for `Thread` and `Message` are exported from `src/lib/db/schema` using Drizzle's `$inferSelect` (import directly from schema, e.g., `import type { Thread, Message } from "@/src/lib/db/schema"`)
-- **Configuration**: `drizzle.config.ts` defines schema path and database location
+- **Configuration**: `drizzle.config.ts` defines schema path and database connection
 - **Migrations**: Generated in `drizzle/` directory using `npm run db:generate`
 - **Foreign Keys**: Enabled automatically in database connection
 - **Usage**: Import `db` from `src/lib/db/index.ts` to query the database

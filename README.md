@@ -6,7 +6,7 @@ A minimal web-based personal assistant that connects to local Ollama models for 
 
 - Chat interface with conversation threads
 - Local LLM integration via Ollama
-- Persistent conversation history (SQLite)
+- Persistent conversation history (PostgreSQL)
 - Markdown rendering with syntax highlighting
 - Dark/light mode support
 - Keyboard shortcuts for message history
@@ -14,6 +14,7 @@ A minimal web-based personal assistant that connects to local Ollama models for 
 ## Prerequisites
 
 - Node.js 20+ and npm
+- Docker and Docker Compose (for database)
 - [Ollama](https://ollama.ai/) installed and running locally
 - At least one Ollama model pulled (default: `gpt-oss`)
 
@@ -25,7 +26,27 @@ npm install
 
 ## Setup
 
-Run database migrations:
+1. Create a `.env` file with the following variables:
+
+```bash
+# PostgreSQL Database
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/personal_assistant
+POSTGRES_PASSWORD=your_password
+POSTGRES_USER=postgres
+POSTGRES_DB=personal_assistant
+POSTGRES_PORT=5432
+
+# Valkey (Redis-compatible cache)
+VALKEY_PASSWORD=your_valkey_password
+```
+
+2. Start Docker containers (PostgreSQL and Valkey):
+
+```bash
+npm run start:docker
+```
+
+3. Run database migrations:
 
 ```bash
 npm run db:migrate
@@ -65,12 +86,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - `src/components/` - React components
 - `src/lib/` - Utility functions (Ollama client, database)
 - `src/types.ts` - TypeScript type definitions
-- `data/` - SQLite database (created automatically)
+- `scripts/` - Docker startup scripts
 
 ## Tech Stack
 
 - **Framework**: Next.js 16
 - **Language**: TypeScript
 - **Styling**: TailwindCSS
-- **Database**: SQLite with Drizzle ORM
+- **Database**: PostgreSQL with Drizzle ORM
 - **LLM**: Ollama

@@ -1,26 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1765904176875,
-      "tag": "0000_rich_betty_ross",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1765910805241,
-      "tag": "0001_worthless_wolf_cub",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1765931091454,
-      "tag": "0002_cynical_thunderbolts",
+      "version": "7",
+      "when": 1766005179126,
+      "tag": "0000_burly_pixie",
       "breakpoints": true
     }
   ]

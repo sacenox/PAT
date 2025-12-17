@@ -1,27 +1,24 @@
 /* personal-assistant-thing/src/lib/db/index.ts */
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
-import { existsSync, mkdirSync } from "fs";
-import { join } from "path";
 
-// Ensure data directory exists
-const dataDir = join(process.cwd(), "data");
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true });
+// Get database connection string from environment variable
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not set");
 }
 
-// Initialize SQLite database
-const dbPath = join(dataDir, "database.db");
-const sqlite = new Database(dbPath);
-
-// Enable foreign keys
-sqlite.pragma("foreign_keys = ON");
+// Create postgres client
+const client = postgres(connectionString, {
+  max: 1, // Limit connection pool for serverless environments
+});
 
 // Create drizzle instance
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(client, { schema });
 
 // Close database connection (useful for cleanup)
-export function closeDatabase() {
-  sqlite.close();
+export async function closeDatabase() {
+  await client.end();
 }

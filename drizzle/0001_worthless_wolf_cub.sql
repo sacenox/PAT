@@ -1,1 +1,0 @@
-ALTER TABLE `messages` ADD `generation_time_ms` integer;

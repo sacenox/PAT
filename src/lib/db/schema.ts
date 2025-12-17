@@ -1,28 +1,28 @@
 /* personal-assistant-thing/src/lib/db/schema.ts */
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const threads = sqliteTable("threads", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const threads = pgTable("threads", {
+  id: serial("id").primaryKey(),
   title: text("title"),
-  createdAt: integer("created_at", { mode: "timestamp" })
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
-    .$defaultFn(() => new Date()),
+    .defaultNow(),
 });
 
-export const messages = sqliteTable("messages", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
   threadId: integer("thread_id")
     .notNull()
     .references(() => threads.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "user" or "assistant"
   content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
-    .$defaultFn(() => new Date()),
+    .defaultNow(),
   generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
   toolCalls: text("tool_calls"), // JSON string of tool calls made to generate this message (for assistant messages)
 });

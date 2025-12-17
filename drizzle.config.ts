@@ -1,18 +1,16 @@
 import type { Config } from "drizzle-kit";
-import { existsSync, mkdirSync } from "fs";
-import { join } from "path";
 
-// Ensure data directory exists
-const dataDir = join(process.cwd(), "data");
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true });
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL environment variable is not set");
 }
 
 export default {
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: "./data/database.db",
+    url: connectionString,
   },
 } satisfies Config;

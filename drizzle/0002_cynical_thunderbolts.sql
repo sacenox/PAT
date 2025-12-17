@@ -1,1 +1,0 @@
-ALTER TABLE `messages` ADD `tool_calls` text;
