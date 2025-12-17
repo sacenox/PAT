@@ -38,12 +38,12 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col relative">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 dark:bg-neutral-950"
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 pb-32 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100"
         >
-          <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-end gap-8">
+          <div className={`mx-auto flex min-h-full max-w-5xl flex-col gap-8 ${currentThreadId === null ? "justify-center" : "justify-end"}`}>
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={totalThreadCount} />
             ) : (

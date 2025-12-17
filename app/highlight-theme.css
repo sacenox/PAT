@@ -1,4 +1,4 @@
-/* Custom highlight.js theme using Tailwind colors (neutral, green, orange, indigo) */
+/* Custom highlight.js theme using grayscale colors */
 
 /* Reset code block inheritance */
 .prose pre,
@@ -14,7 +14,7 @@
 
 /* Light mode - code blocks only */
 .prose pre {
-  background: #f5f5f4; /* neutral-100 */
+  background: #e7e5e4; /* neutral-200 */
   padding: 0.5rem;
 }
 
@@ -42,7 +42,7 @@ pre .hljs,
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-subst {
-  color: #166534; /* green-800 */
+  color: #1c1917; /* neutral-900 */
   font-weight: 600;
 }
 
@@ -56,14 +56,14 @@ pre .hljs,
 .hljs-variable,
 .hljs-template-variable,
 .hljs-tag .hljs-attr {
-  color: #ea580c; /* orange-600 */
+  color: #57534e; /* neutral-600 */
 }
 
 .prose .hljs-string,
 .prose .hljs-doctag,
 .hljs-string,
 .hljs-doctag {
-  color: #c2410c; /* orange-700 */
+  color: #44403c; /* neutral-700 */
 }
 
 .prose .hljs-title,
@@ -72,7 +72,7 @@ pre .hljs,
 .hljs-title,
 .hljs-section,
 .hljs-selector-id {
-  color: #4f46e5; /* indigo-600 */
+  color: #292524; /* neutral-800 */
   font-weight: 600;
 }
 
@@ -80,7 +80,8 @@ pre .hljs,
 .prose .hljs-class .hljs-title,
 .hljs-type,
 .hljs-class .hljs-title {
-  color: #6366f1; /* indigo-500 */
+  color: #292524; /* neutral-800 */
+  font-weight: 500;
 }
 
 .prose .hljs-tag,
@@ -89,7 +90,7 @@ pre .hljs,
 .hljs-tag,
 .hljs-name,
 .hljs-attribute {
-  color: #166534; /* green-800 */
+  color: #57534e; /* neutral-600 */
   font-weight: normal;
 }
 
@@ -97,21 +98,22 @@ pre .hljs,
 .prose .hljs-link,
 .hljs-regexp,
 .hljs-link {
-  color: #c2410c; /* orange-700 */
+  color: #44403c; /* neutral-700 */
 }
 
 .prose .hljs-symbol,
 .prose .hljs-bullet,
 .hljs-symbol,
 .hljs-bullet {
-  color: #ea580c; /* orange-600 */
+  color: #57534e; /* neutral-600 */
 }
 
 .prose .hljs-built_in,
 .prose .hljs-builtin-name,
 .hljs-built_in,
 .hljs-builtin-name {
-  color: #4f46e5; /* indigo-600 */
+  color: #292524; /* neutral-800 */
+  font-weight: 500;
 }
 
 .prose .hljs-meta,
@@ -120,11 +122,11 @@ pre .hljs,
 }
 
 .hljs-deletion {
-  background: #fee2e2; /* red-100 */
+  background: #d4d4d4; /* neutral-300 */
 }
 
 .hljs-addition {
-  background: #dcfce7; /* green-100 */
+  background: #a3a3a3; /* neutral-400 */
 }
 
 .hljs-emphasis {
@@ -176,7 +178,7 @@ pre .hljs,
 .dark .hljs-keyword,
 .dark .hljs-selector-tag,
 .dark .hljs-subst {
-  color: #22c55e; /* green-500 */
+  color: #fafaf9; /* neutral-50 */
   font-weight: 600;
 }
 
@@ -190,14 +192,14 @@ pre .hljs,
 .dark .hljs-variable,
 .dark .hljs-template-variable,
 .dark .hljs-tag .hljs-attr {
-  color: #fb923c; /* orange-400 */
+  color: #d4d4d4; /* neutral-300 */
 }
 
 .dark .prose .hljs-string,
 .dark .prose .hljs-doctag,
 .dark .hljs-string,
 .dark .hljs-doctag {
-  color: #fdba74; /* orange-300 */
+  color: #d6d3d1; /* neutral-300 */
 }
 
 .dark .prose .hljs-title,
@@ -206,7 +208,7 @@ pre .hljs,
 .dark .hljs-title,
 .dark .hljs-section,
 .dark .hljs-selector-id {
-  color: #818cf8; /* indigo-400 */
+  color: #e7e5e4; /* neutral-200 */
   font-weight: 600;
 }
 
@@ -214,7 +216,8 @@ pre .hljs,
 .dark .prose .hljs-class .hljs-title,
 .dark .hljs-type,
 .dark .hljs-class .hljs-title {
-  color: #a5b4fc; /* indigo-300 */
+  color: #e7e5e4; /* neutral-200 */
+  font-weight: 500;
 }
 
 .dark .prose .hljs-tag,
@@ -223,7 +226,7 @@ pre .hljs,
 .dark .hljs-tag,
 .dark .hljs-name,
 .dark .hljs-attribute {
-  color: #22c55e; /* green-500 */
+  color: #d4d4d4; /* neutral-300 */
   font-weight: normal;
 }
 
@@ -231,21 +234,22 @@ pre .hljs,
 .dark .prose .hljs-link,
 .dark .hljs-regexp,
 .dark .hljs-link {
-  color: #fdba74; /* orange-300 */
+  color: #d6d3d1; /* neutral-300 */
 }
 
 .dark .prose .hljs-symbol,
 .dark .prose .hljs-bullet,
 .dark .hljs-symbol,
 .dark .hljs-bullet {
-  color: #fb923c; /* orange-400 */
+  color: #d4d4d4; /* neutral-300 */
 }
 
 .dark .prose .hljs-built_in,
 .dark .prose .hljs-builtin-name,
 .dark .hljs-built_in,
 .dark .hljs-builtin-name {
-  color: #818cf8; /* indigo-400 */
+  color: #e7e5e4; /* neutral-200 */
+  font-weight: 500;
 }
 
 .dark .prose .hljs-meta,
@@ -254,9 +258,9 @@ pre .hljs,
 }
 
 .dark .hljs-deletion {
-  background: #7f1d1d; /* red-900 */
+  background: #404040; /* neutral-700 */
 }
 
 .dark .hljs-addition {
-  background: #14532d; /* green-800 */
+  background: #525252; /* neutral-600 */
 }

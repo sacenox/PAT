@@ -2,7 +2,7 @@
 
 import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from "react";
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
-import PrimaryButton from "@/src/components/buttons/PrimaryButton";
+import BasicButton from "@/src/components/buttons/BasicButton";
 import type { Message } from "@/src/lib/db/schema";
 
 type MessageInputProps = {
@@ -103,26 +103,28 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     };
 
     return (
-      <form
-        onSubmit={handleSubmit}
-        className="relative shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-2px_4px_-1px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3),0_-2px_4px_-1px_rgba(0,0,0,0.2)]"
-      >
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={isLoading ? "Loading answer..." : "Type a message..."}
-          disabled={isLoading}
-          rows={3}
-          className="w-full resize-none overflow-y-auto bg-neutral-200 px-2 py-2 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:text-neutral-400"
-        />
-        <div className="absolute bottom-2 right-2">
-          <PrimaryButton type="submit" disabled={isLoading}>
-            <PaperPlaneIcon className={`h-9 w-9 p-1.5 ${isLoading ? "animate-spin" : ""}`} />
-          </PrimaryButton>
-        </div>
-      </form>
+      <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 pointer-events-none">
+        <form
+          onSubmit={handleSubmit}
+          className="relative w-full max-w-5xl bg-neutral-300 dark:bg-neutral-700 rounded-lg shadow-lg m-4 pointer-events-auto"
+        >
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isLoading ? "Loading answer..." : "Type a message..."}
+            disabled={isLoading}
+            rows={3}
+            className="w-full resize-none overflow-y-auto p-4 pr-12 placeholder:italic placeholder:text-neutral-600 dark:placeholder:text-neutral-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 bg-transparent"
+          />
+          <div className="absolute bottom-2 right-2">
+            <BasicButton color="neutral" type="submit" disabled={isLoading}>
+              <PaperPlaneIcon className={`h-8 w-10 p-1.5 ${isLoading ? "animate-spin" : ""}`} />
+            </BasicButton>
+          </div>
+        </form>
+      </div>
     );
   }
 );
