@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -88,7 +88,7 @@ export default function MessageList({ messages }: MessageListProps) {
                 {msg.content}
               </ReactMarkdown>
             ) : (
-              <div>{msg.content}</div>
+              <UserMessageContent content={msg.content} />
             )}
             <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
               sent on {formatTimestamp(msg.createdAt)}
@@ -105,6 +105,47 @@ export default function MessageList({ messages }: MessageListProps) {
         </div>
       ))}
     </>
+  );
+}
+
+function UserMessageContent({ content }: { content: string }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [showGradient, setShowGradient] = useState(false);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (contentRef.current) {
+        const isScrollable =
+          contentRef.current.scrollHeight > contentRef.current.clientHeight;
+        setShowGradient(isScrollable);
+      }
+    };
+
+    checkOverflow();
+    // Check on resize
+    const resizeObserver = new ResizeObserver(checkOverflow);
+    if (contentRef.current) {
+      resizeObserver.observe(contentRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [content]);
+
+  return (
+    <div className="relative">
+      <div
+        ref={contentRef}
+        className="max-h-48 overflow-y-auto pr-2"
+        style={{ scrollbarWidth: "thin" }}
+      >
+        {content}
+      </div>
+      {showGradient && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-neutral-300 to-transparent dark:from-neutral-800 dark:to-transparent" />
+      )}
+    </div>
   );
 }
 
