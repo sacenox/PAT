@@ -99,7 +99,7 @@ export async function fetchOllamaResponse(
     role: msg.role,
     content: msg.content,
   }));
-  const maxIterations = 10; // Prevent infinite loops
+  const maxIterations = 4; // Prevent infinite loops
   let iterations = 0;
   const allToolCalls: any[] = []; // Collect all tool calls across iterations
 
