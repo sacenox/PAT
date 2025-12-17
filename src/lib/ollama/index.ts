@@ -150,9 +150,7 @@ export async function fetchOllamaResponse(
     totalDuration += iterationDuration;
     const iterationDurationMs = Math.round(iterationDuration / 1_000_000);
 
-    debug(
-      `[Ollama] Response received (${iterationDurationMs}ms), tool_calls: ${toolCalls.length}`
-    );
+    debug(`[Ollama] Response received (${iterationDurationMs}ms), tool_calls: ${toolCalls.length}`);
 
     // Append accumulated fields to messages
     if (thinking || content || toolCalls.length) {

@@ -8,10 +8,10 @@ type AnchorProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   isSelected?: boolean;
 };
 
-// Anchor: A reusable anchor component with neutral hover and selection states.
+// SidebarButton: A reusable button component with neutral hover and selection states.
 // When selected (isSelected=true), displays a neutral-800 background (dark) or neutral-200 (light).
 // On hover, displays a neutral-700 background (dark) or neutral-300 (light).
-export default function Anchor({
+export default function SidebarButton({
   children,
   isSelected = false,
   className = "",
@@ -27,7 +27,7 @@ export default function Anchor({
 
   return (
     <a
-      className={`flex min-w-0 items-center gap-1 rounded px-2 py-1 ${
+      className={`flex min-w-0 items-center gap-2 rounded px-2 py-1 ${
         isSelected
           ? "bg-neutral-200 dark:bg-neutral-800"
           : "hover:bg-neutral-300 dark:hover:bg-neutral-700"

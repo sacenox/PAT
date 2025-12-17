@@ -48,27 +48,29 @@ export async function POST(request: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const onChunk = (chunk: {
-            content?: string;
-            thinking?: string;
-            toolCalls?: any[];
-          }) => {
+          const onChunk = (chunk: { content?: string; thinking?: string; toolCalls?: any[] }) => {
             if (chunk.content) {
               accumulatedContent += chunk.content;
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`
+                )
               );
             }
             if (chunk.thinking) {
               accumulatedThinking += chunk.thinking;
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`
+                )
               );
             }
             if (chunk.toolCalls) {
               allToolCalls.push(...chunk.toolCalls);
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`)
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`
+                )
               );
             }
           };

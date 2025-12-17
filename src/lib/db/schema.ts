@@ -5,12 +5,8 @@ import { relations } from "drizzle-orm";
 export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const messages = pgTable("messages", {
@@ -20,9 +16,7 @@ export const messages = pgTable("messages", {
     .references(() => threads.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "user" or "assistant"
   content: text("content").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
   toolCalls: text("tool_calls"), // JSON string of tool calls made to generate this message (for assistant messages)
 });

@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { Thread } from "@/src/lib/db/schema";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
 import BowtieIcon from "@/src/components/icons/BowtieIcon";
-import Anchor from "@/src/components/Anchor";
+import GearIcon from "@/src/components/icons/GearIcon";
+import SidebarButton from "@/src/components/SidebarButton";
+import SettingsModal from "@/src/components/SettingsModal";
 
 type SidebarProps = {
   threads: Thread[];
@@ -27,16 +30,17 @@ export default function Sidebar({
   onLoadMore,
   hasMoreThreads,
 }: SidebarProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
-    <div className="h-full w-64 overflow-y-auto bg-neutral-50 p-1 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
-      <div className="flex flex-col gap-2 p-4">
-        <div className="flex justify-center pb-4">
-          <BowtieIcon className="h-12 w-12" />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-neutral-500">Threads</label>
+    <>
+      <div className="h-full w-64 overflow-y-auto bg-neutral-50 p-1 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
+        <div className="flex flex-col gap-2 p-4">
+          <div className="flex justify-center pb-4">
+            <BowtieIcon className="h-12 w-12" />
+          </div>
           <div className="flex flex-col gap-2">
-            <Anchor
+            <SidebarButton
               href="#"
               onClick={(e) => {
                 e.preventDefault();
@@ -45,61 +49,68 @@ export default function Sidebar({
             >
               <PlusIcon className="h-4 w-4" />
               New Thread
-            </Anchor>
-            <div className="flex flex-col">
-              {threads.length === 0 ? (
-                <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
-                  No threads yet
-                </div>
-              ) : (
-                threads.map((thread) => {
-                  const isSelected = currentThreadId === thread.id;
-                  return (
-                    <Anchor
-                      key={thread.id}
-                      href={`#thread-${thread.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        onThreadSelect(thread.id);
-                      }}
-                      isSelected={isSelected}
-                    >
-                      <span className="min-w-0 truncate">
-                        {thread.title || `Thread ${thread.id}`}
-                      </span>
-                    </Anchor>
-                  );
-                })
-              )}
-            </div>
-          </div>
-          {hasMoreThreads && (
-            <Anchor
+            </SidebarButton>
+            <SidebarButton
               href="#"
-              className="text-xs"
               onClick={(e) => {
                 e.preventDefault();
-                onLoadMore();
+                setIsSettingsOpen(true);
               }}
             >
-              <ChevronDownIcon className="mt-0.5 h-3 w-3" />
-              Load More
-            </Anchor>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-neutral-500">Theme</label>
-          <select
-            value={themeMode}
-            onChange={(e) => onThemeChange(e.target.value as "device" | "dark" | "light")}
-            className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200"
-          >
-            <option value="device">Device</option>
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
+              <GearIcon className="h-4 w-4" />
+              Settings
+            </SidebarButton>
+            <label className="text-neutral-500">Threads</label>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col">
+                {threads.length === 0 ? (
+                  <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
+                    No threads yet
+                  </div>
+                ) : (
+                  threads.map((thread) => {
+                    const isSelected = currentThreadId === thread.id;
+                    return (
+                      <SidebarButton
+                        key={thread.id}
+                        href={`#thread-${thread.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          onThreadSelect(thread.id);
+                        }}
+                        isSelected={isSelected}
+                      >
+                        <span className="min-w-0 truncate">
+                          {thread.title || `Thread ${thread.id}`}
+                        </span>
+                      </SidebarButton>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            {hasMoreThreads && (
+              <SidebarButton
+                href="#"
+                className="text-xs"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onLoadMore();
+                }}
+              >
+                <ChevronDownIcon className="mt-0.5 h-3 w-3" />
+                Load More
+              </SidebarButton>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        themeMode={themeMode}
+        onThemeChange={onThemeChange}
+      />
+    </>
   );
 }

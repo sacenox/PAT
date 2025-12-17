@@ -122,9 +122,7 @@ export function useMessages(threadId: number | null) {
                 accumulatedContent += data.content || "";
                 setMessages((prev) =>
                   prev.map((msg) =>
-                    msg.id === assistantMsgId
-                      ? { ...msg, content: accumulatedContent }
-                      : msg
+                    msg.id === assistantMsgId ? { ...msg, content: accumulatedContent } : msg
                   )
                 );
               } else if (data.type === "done") {
