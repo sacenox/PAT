@@ -3,6 +3,7 @@
 import type { Thread } from "@/src/lib/db/schema";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
+import BowtieIcon from "@/src/components/icons/BowtieIcon";
 import Anchor from "@/src/components/Anchor";
 
 type SidebarProps = {
@@ -29,6 +30,9 @@ export default function Sidebar({
   return (
     <div className="h-full w-64 overflow-y-auto bg-neutral-50 p-1 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
       <div className="flex flex-col gap-2 p-4">
+        <div className="flex justify-center pb-4">
+          <BowtieIcon className="h-12 w-12" />
+        </div>
         <div className="flex flex-col gap-2">
           <label className="text-neutral-500">Threads</label>
           <div className="flex flex-col gap-2">
