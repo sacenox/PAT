@@ -58,10 +58,9 @@ export async function queryWebSearch(query: string): Promise<string> {
 
     const customsearch = google.customsearch("v1");
     const res = await customsearch.cse.list({
-      auth: apiKey,
       cx: cx,
       q: query,
-      num: 10, // Maximum number of results (1-10)
+      auth: apiKey,
     });
 
     if (!res.data.items || res.data.items.length === 0) {

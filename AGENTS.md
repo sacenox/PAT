@@ -200,3 +200,7 @@ Add tests when prompted only.
 - **DO** use existing utility functions from `src/lib/`
 - **DO** follow the App Router conventions for Next.js 16
 - **DO** ALWAYS keep this file up to date as changes are made in the code
+
+# Known issues:
+
+The google based websearch can randomly fail with Request Entity not found.  Generating a new custom search engine ID fixes the issue.  Google has ignored all efforts to report this issue to them.

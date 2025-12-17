@@ -120,7 +120,9 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           />
           <div className="absolute bottom-2 right-2">
             <BasicButton color="neutral" type="submit" disabled={isLoading}>
-              <PaperPlaneIcon className={`h-8 w-10 p-1.5 ${isLoading ? "animate-spin" : ""}`} />
+              <PaperPlaneIcon
+                className={`h-8 w-10 p-1.5 ${isLoading ? "animate-spin-and-color-cycle" : ""}`}
+              />
             </BasicButton>
           </div>
         </form>

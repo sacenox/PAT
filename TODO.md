@@ -2,7 +2,7 @@
 
 ## BUGS:
 
-- FIND MORE
+- Text is being rendered behind the input message box when there is no scroll available. Making it unreadable.
 
 ## New features:
 

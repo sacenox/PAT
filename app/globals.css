@@ -55,3 +55,32 @@
     font-size: 0.9em;
   }
 }
+
+@layer utilities {
+  @keyframes spin-and-color-cycle {
+    0% {
+      transform: rotate(0deg);
+      color: rgb(239 68 68); /* red-500 */
+    }
+    25% {
+      transform: rotate(90deg);
+      color: rgb(249 115 22); /* orange-500 */
+    }
+    50% {
+      transform: rotate(180deg);
+      color: rgb(245 158 11); /* amber-500 */
+    }
+    75% {
+      transform: rotate(270deg);
+      color: rgb(234 179 8); /* yellow-500 */
+    }
+    100% {
+      transform: rotate(360deg);
+      color: rgb(239 68 68); /* red-500 */
+    }
+  }
+
+  .animate-spin-and-color-cycle {
+    animation: spin-and-color-cycle 4s linear infinite;
+  }
+}
