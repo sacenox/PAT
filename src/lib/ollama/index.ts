@@ -18,6 +18,7 @@ export interface OllamaMessageInput {
 export interface OllamaResponse {
   content: string;
   generationTimeMs: number;
+  toolCalls?: any[]; // Array of tool calls made during the conversation
 }
 
 /**
@@ -100,6 +101,7 @@ export async function fetchOllamaResponse(
   }));
   const maxIterations = 10; // Prevent infinite loops
   let iterations = 0;
+  const allToolCalls: any[] = []; // Collect all tool calls across iterations
 
   debug(`[Ollama] Starting chat with model: ${model}, messages: ${messages.length}`);
 
@@ -132,6 +134,9 @@ export async function fetchOllamaResponse(
           id: tc.id,
         }))
       );
+
+      // Collect tool calls for the final response
+      allToolCalls.push(...result.message.tool_calls);
 
       // Add the assistant's message with tool calls (use result.message.tool_calls directly)
       currentMessages.push({
@@ -172,7 +177,11 @@ export async function fetchOllamaResponse(
       `[Ollama] Final response (${generationTimeMs}ms total, ${iterations} iteration${iterations !== 1 ? "s" : ""}), content length: ${content.length} chars`
     );
 
-    return { content, generationTimeMs };
+    return {
+      content,
+      generationTimeMs,
+      toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
+    };
   }
 
   // If we hit max iterations, force a final response without tools
@@ -209,6 +218,10 @@ export async function fetchOllamaResponse(
     `[Ollama] Final response after max iterations (${generationTimeMs}ms total, ${iterations} iterations), content length: ${content.length} chars`
   );
 
-  return { content, generationTimeMs };
+  return {
+    content,
+    generationTimeMs,
+    toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
+  };
 }
 

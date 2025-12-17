@@ -40,15 +40,16 @@ export async function POST(request: Request) {
     });
 
     // 4. Get assistant response
-    const { content: answer, generationTimeMs } = await fetchOllamaResponse(ollamaMessages);
+    const { content: answer, generationTimeMs, toolCalls } = await fetchOllamaResponse(ollamaMessages);
 
-    // 5. Store assistant message with generation time
+    // 5. Store assistant message with generation time and tool calls
     await db.insert(messages).values({
       threadId: parseInt(threadId),
       role: "assistant",
       content: answer,
       createdAt: new Date(),
       generationTimeMs,
+      toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
     });
 
     // 6. Update thread's updatedAt timestamp

@@ -12,4 +12,5 @@ export type Message = {
   content: string;
   createdAt: Date;
   generationTimeMs: number | null;
+  toolCalls: string | null; // JSON string of tool calls
 };

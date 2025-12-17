@@ -24,6 +24,7 @@ export const messages = sqliteTable("messages", {
     .notNull()
     .$defaultFn(() => new Date()),
   generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
+  toolCalls: text("tool_calls"), // JSON string of tool calls made to generate this message (for assistant messages)
 });
 
 // Define relations

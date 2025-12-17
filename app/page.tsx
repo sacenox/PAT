@@ -154,6 +154,7 @@ export default function Home() {
       content: message,
       createdAt: new Date(),
       generationTimeMs: null,
+      toolCalls: null,
     };
     setMessages((prev) => [...prev, userMsg]);
 
@@ -173,6 +174,7 @@ export default function Home() {
         content: data.answer || "",
         createdAt: new Date(),
         generationTimeMs: null,
+        toolCalls: null,
       };
       setMessages((prev) => [...prev, botMsg]);
 
@@ -202,6 +204,18 @@ export default function Home() {
     if (!ms) return "";
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  const formatToolCalls = (toolCallsJson: string | null): string | null => {
+    if (!toolCallsJson) return null;
+    try {
+      const toolCalls = JSON.parse(toolCallsJson);
+      if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
+      const toolNames = toolCalls.map((tc: any) => tc.function?.name || "unknown").join(", ");
+      return toolNames;
+    } catch {
+      return null;
+    }
   };
 
   return (
@@ -247,6 +261,9 @@ export default function Home() {
                         <span className="ml-2">
                           • generated in {formatGenerationTime(msg.generationTimeMs)}
                         </span>
+                      )}
+                      {msg.role === "assistant" && formatToolCalls(msg.toolCalls) && (
+                        <span className="ml-2">• tools: {formatToolCalls(msg.toolCalls)}</span>
                       )}
                     </div>
                   </div>
