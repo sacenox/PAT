@@ -1,234 +1,41 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
+import { useRef } from "react";
 import Sidebar from "@/src/components/Sidebar";
 import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
+import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
-import type { Thread, Message } from "@/src/lib/db/schema";
+import { useThreads } from "@/src/hooks/useThreads";
+import { useMessages } from "@/src/hooks/useMessages";
+import { useThreadSelection } from "@/src/hooks/useThreadSelection";
 import "./highlight-theme.css";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const { themeMode, handleThemeChange } = useTheme();
-  const [currentThreadId, setCurrentThreadId] = useState<number | null>(null);
-  const [threads, setThreads] = useState<Thread[]>([]);
-  const [totalThreadCount, setTotalThreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMoreThreads, setHasMoreThreads] = useState(true);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const prevMessagesLengthRef = useRef<number>(0);
+  const { threads, totalThreadCount, hasMoreThreads, loadThreads, loadMoreThreads, createThread } =
+    useThreads();
+  const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
+    useThreadSelection();
+  const { messages, isLoading, sendMessage, clearMessages } = useMessages(currentThreadId);
   const messageInputRef = useRef<MessageInputRef>(null);
 
-  useEffect(() => {
-    const loadThreads = async () => {
-      try {
-        const res = await fetch("/api/threads?limit=8");
-        const data = await res.json();
-        const threadsList = data.threads || [];
-        setThreads(threadsList);
-        setHasMoreThreads(data.hasMore || false);
-        setTotalThreadCount(data.totalCount || 0);
-      } catch (error) {
-        console.error("Failed to load threads", error);
-      }
-    };
-
-    loadThreads();
-  }, []);
-
-  useEffect(() => {
-    // Scroll to top when a thread is selected
-    if (currentThreadId !== null && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = 0;
-    }
-  }, [currentThreadId]);
-
-  useEffect(() => {
-    // Scroll to the start of the newly added message
-    if (messages.length > prevMessagesLengthRef.current) {
-      const newMessage = messages[messages.length - 1];
-      const messageElement = messageRefs.current.get(newMessage.id);
-      if (messageElement) {
-        messageElement.scrollIntoView({ block: "start", behavior: "instant" });
-      }
-      prevMessagesLengthRef.current = messages.length;
-    }
-  }, [messages]);
-
-  const loadMessages = async (threadId: number) => {
-    try {
-      const res = await fetch(`/api/threads/${threadId}/messages`);
-      const data = await res.json();
-      const loadedMessages = data.messages || [];
-      setMessages(loadedMessages);
-      prevMessagesLengthRef.current = loadedMessages.length;
-    } catch (error) {
-      console.error("Failed to load messages", error);
-    }
-  };
-
-  const createNewThread = async (
-    titleOverride?: string,
-    firstMessage?: string
-  ): Promise<number | null> => {
-    try {
-      const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
-      const res = await fetch("/api/threads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
-      });
-      const data = await res.json();
-      const newThread = data.thread;
-      setCurrentThreadId(newThread.id);
-      setMessages([]);
-      prevMessagesLengthRef.current = 0;
-      // Reload threads to get the full list
-      const threadsRes = await fetch("/api/threads?limit=8");
-      const threadsData = await threadsRes.json();
-      const threadsList = threadsData.threads || [];
-      setThreads(threadsList);
-      setHasMoreThreads(threadsData.hasMore || false);
-      setTotalThreadCount(threadsData.totalCount || 0);
-      return newThread.id;
-    } catch (error) {
-      console.error("Failed to create thread", error);
-      return null;
-    }
-  };
-
   const handleThreadSelect = (threadId: number) => {
-    setCurrentThreadId(threadId);
-    loadMessages(threadId);
+    selectThread(threadId);
   };
 
   const handleCreateNewThread = () => {
-    setCurrentThreadId(null);
-    setMessages([]);
-    prevMessagesLengthRef.current = 0;
+    deselectThread();
+    clearMessages();
     // Focus the input after a short delay to ensure DOM has updated
     setTimeout(() => {
       messageInputRef.current?.focus();
     }, 0);
   };
 
-  const loadMoreThreads = async () => {
-    try {
-      const offset = threads.length;
-      const res = await fetch(`/api/threads?offset=${offset}&limit=8`);
-      const data = await res.json();
-      const newThreads = data.threads || [];
-      if (newThreads.length > 0) {
-        setThreads((prev) => [...prev, ...newThreads]);
-        setHasMoreThreads(data.hasMore || false);
-      } else {
-        setHasMoreThreads(false);
-      }
-    } catch (error) {
-      console.error("Failed to load more threads", error);
-    }
+  const handleSendMessage = async (message: string) => {
+    await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads);
   };
 
-  const sendMessage = async (message: string) => {
-    if (!message.trim() || isLoading) return;
-
-    setIsLoading(true);
-    let threadId = currentThreadId;
-    if (!threadId) {
-      // Create a new thread if none exists
-      threadId = await createNewThread(message.substring(0, 100), message);
-      if (!threadId) {
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    const userMsg: Message = {
-      id: Date.now(),
-      threadId: threadId!,
-      role: "user",
-      content: message,
-      createdAt: new Date(),
-      generationTimeMs: null,
-      toolCalls: null,
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim(), threadId }),
-      });
-
-      const data = await res.json();
-
-      const botMsg: Message = {
-        id: Date.now() + 1,
-        threadId: threadId!,
-        role: "assistant",
-        content: data.answer || "",
-        createdAt: new Date(),
-        generationTimeMs: null,
-        toolCalls: null,
-      };
-      setMessages((prev) => [...prev, botMsg]);
-
-      // Reload messages to get correct IDs from database
-      await loadMessages(threadId!);
-
-      // Reload threads to update the order
-      const threadsRes = await fetch("/api/threads?limit=8");
-      const threadsData = await threadsRes.json();
-      const threadsList = threadsData.threads || [];
-      setThreads(threadsList);
-      setHasMoreThreads(threadsData.hasMore || false);
-      setTotalThreadCount(threadsData.totalCount || 0);
-    } catch (error) {
-      console.error("Failed to send message", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formatTimestamp = (date: Date | string): string => {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleString();
-  };
-
-  const formatGenerationTime = (ms: number | null): string => {
-    if (!ms) return "";
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-  };
-
-  const formatToolCalls = (toolCallsJson: string | null): string | null => {
-    if (!toolCallsJson) return null;
-    try {
-      const toolCalls = JSON.parse(toolCallsJson);
-      if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
-
-      // Count occurrences of each tool name
-      const toolCounts: Record<string, number> = {};
-      toolCalls.forEach((tc: any) => {
-        const toolName = tc.function?.name || "unknown";
-        toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
-      });
-
-      // Format as "toolName x count"
-      const formatted = Object.entries(toolCounts)
-        .map(([name, count]) => `${name} x ${count}`)
-        .join(", ");
-
-      return formatted;
-    } catch {
-      return null;
-    }
-  };
 
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
@@ -241,46 +48,7 @@ export default function Home() {
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  ref={(el) => {
-                    if (el) {
-                      messageRefs.current.set(msg.id, el);
-                    } else {
-                      messageRefs.current.delete(msg.id);
-                    }
-                  }}
-                  className="w-full min-w-0"
-                >
-                  <div
-                    className={`p-2 ${
-                      msg.role === "assistant"
-                        ? "prose prose-neutral max-w-none bg-neutral-200 dark:prose-invert dark:bg-neutral-900"
-                        : "ml-auto w-1/2 min-w-64 bg-neutral-300 text-right dark:bg-neutral-800"
-                    }`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    ) : (
-                      <div>{msg.content}</div>
-                    )}
-                    <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                      sent on {formatTimestamp(msg.createdAt)}
-                      {msg.role === "assistant" && msg.generationTimeMs && (
-                        <span className="ml-1">
-                          • generated in {formatGenerationTime(msg.generationTimeMs)}
-                        </span>
-                      )}
-                      {msg.role === "assistant" && formatToolCalls(msg.toolCalls) && (
-                        <span className="ml-1">• tools: {formatToolCalls(msg.toolCalls)}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
+              <MessageList messages={messages} />
             )}
           </div>
         </div>
@@ -288,7 +56,7 @@ export default function Home() {
           ref={messageInputRef}
           isLoading={isLoading}
           messages={messages}
-          onSubmit={sendMessage}
+          onSubmit={handleSendMessage}
         />
       </div>
       <Sidebar

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useImperativeHandle, forwardRef } from "react";
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
+import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import type { Message } from "@/src/lib/db/schema";
 
 type MessageInputProps = {
@@ -78,13 +79,9 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           disabled={isLoading}
           className="flex-1 bg-neutral-200 px-2 py-2 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-900 dark:placeholder:text-neutral-400"
         />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="bg-green-900 px-3 py-1 text-neutral-100 hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:text-neutral-900 dark:hover:bg-green-600"
-        >
+        <PrimaryButton type="submit" disabled={isLoading}>
           <PaperPlaneIcon className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} />
-        </button>
+        </PrimaryButton>
       </form>
     );
   }

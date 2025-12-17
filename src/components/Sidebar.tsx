@@ -3,6 +3,8 @@
 import type { Thread } from "@/src/lib/db/schema";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
+import AlternateButton from "@/src/components/buttons/AlternateButton";
+import SecondaryButton from "@/src/components/buttons/SecondaryButton";
 
 type SidebarProps = {
   threads: Thread[];
@@ -31,43 +33,33 @@ export default function Sidebar({
         <div className="flex flex-col gap-2">
           <label className="font-semibold">Threads</label>
           <div className="flex flex-col gap-1">
-            <button
-              onClick={() => onCreateNewThread()}
-              className="flex items-center justify-center gap-1 bg-indigo-200 px-1 py-1 text-indigo-900 hover:bg-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-700"
-            >
+            <AlternateButton onClick={() => onCreateNewThread()}>
               <PlusIcon className="h-4 w-4" />
               New Thread
-            </button>
+            </AlternateButton>
             {threads.length === 0 ? (
               <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
                 No threads yet
               </div>
             ) : (
               threads.map((thread) => (
-                <button
+                <SecondaryButton
                   key={thread.id}
                   onClick={() => onThreadSelect(thread.id)}
-                  className={`border-2 px-3 py-2 text-left hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
-                    currentThreadId === thread.id
-                      ? "border-green-900 bg-neutral-300 dark:border-green-500 dark:bg-neutral-800"
-                      : "border-transparent bg-neutral-100 dark:bg-neutral-950"
-                  }`}
+                  isSelected={currentThreadId === thread.id}
                 >
                   <div className="line-clamp-2 break-words">
                     {thread.title || `Thread ${thread.id}`}
                   </div>
-                </button>
+                </SecondaryButton>
               ))
             )}
           </div>
           {hasMoreThreads && (
-            <button
-              onClick={() => onLoadMore()}
-              className="flex items-center justify-center gap-1 bg-indigo-200 px-1 py-1 text-indigo-900 hover:bg-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-700"
-            >
+            <AlternateButton onClick={() => onLoadMore()}>
               <ChevronDownIcon className="h-4 w-4" />
               Load More
-            </button>
+            </AlternateButton>
           )}
         </div>
         <div className="flex flex-col gap-2">
