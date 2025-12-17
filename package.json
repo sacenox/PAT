@@ -15,7 +15,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "start:docker": "./scripts/start-docker.sh"
+    "start:docker": "./scripts/start-docker.sh",
+    "stop:docker": "./scripts/stop-docker.sh"
   },
   "dependencies": {
     "@googleapis/customsearch": "^7.0.1",
