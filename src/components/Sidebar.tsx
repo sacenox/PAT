@@ -29,7 +29,7 @@ export default function Sidebar({
     <div className="h-full w-64 overflow-y-auto bg-neutral-200 p-1 dark:bg-neutral-900">
       <div className="flex flex-col gap-2 p-4">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold">Threads</label>
+          <label className="font-semibold">Threads</label>
           <div className="flex flex-col gap-1">
             <button
               onClick={() => onCreateNewThread()}
@@ -39,7 +39,7 @@ export default function Sidebar({
               New Thread
             </button>
             {threads.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-neutral-600 dark:text-neutral-400">
+              <div className="px-3 py-2 text-neutral-600 dark:text-neutral-400">
                 No threads yet
               </div>
             ) : (
@@ -47,7 +47,7 @@ export default function Sidebar({
                 <button
                   key={thread.id}
                   onClick={() => onThreadSelect(thread.id)}
-                  className={`border-2 px-3 py-2 text-left text-sm hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
+                  className={`border-2 px-3 py-2 text-left hover:bg-neutral-300 dark:hover:bg-neutral-800 ${
                     currentThreadId === thread.id
                       ? "border-green-900 bg-neutral-300 dark:border-green-500 dark:bg-neutral-800"
                       : "border-transparent bg-neutral-100 dark:bg-neutral-950"
@@ -71,7 +71,7 @@ export default function Sidebar({
           )}
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-semibold">Theme</label>
+          <label className="font-semibold">Theme</label>
           <select
             value={themeMode}
             onChange={(e) => onThemeChange(e.target.value as "device" | "dark" | "light")}

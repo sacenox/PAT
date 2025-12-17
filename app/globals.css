@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: var(--font-montserrat), sans-serif;
+  }
+}
+
+@layer components {
+  .prose {
+    font-size: inherit;
+  }
+  
+  .prose p,
+  .prose ul,
+  .prose ol,
+  .prose li,
+  .prose blockquote,
+  .prose code,
+  .prose pre,
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    font-size: inherit;
+  }
+  
+  .prose h1 {
+    font-size: 1.5em;
+  }
+  
+  .prose h2 {
+    font-size: 1.3em;
+  }
+  
+  .prose h3 {
+    font-size: 1.15em;
+  }
+  
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    font-size: 1.05em;
+  }
+  
+  .prose code {
+    font-size: 0.9em;
+  }
+  
+  .prose pre {
+    font-size: 0.9em;
+  }
+}

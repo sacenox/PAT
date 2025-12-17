@@ -235,7 +235,7 @@ export default function Home() {
       <div className="flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 text-sm dark:bg-neutral-950"
+          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 dark:bg-neutral-950"
         >
           <div className="mx-auto flex min-h-full max-w-5xl flex-col justify-end gap-8">
             {currentThreadId === null ? (
