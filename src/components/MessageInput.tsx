@@ -2,7 +2,7 @@
 
 import { useState, useRef, useImperativeHandle, forwardRef } from "react";
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
-import type { Message } from "@/src/types";
+import type { Message } from "@/src/lib/db/schema";
 
 type MessageInputProps = {
   isLoading: boolean;

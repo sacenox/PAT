@@ -1,8 +1,9 @@
 /* personal-assistant-thing/src/lib/ollama/websearch.ts */
 
 import { google } from "googleapis";
-import { debug, loadRateLimitState, saveRateLimitState } from "../debug";
+import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
+import { createRateLimiter } from "../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -10,102 +11,11 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
  * Rate limiter for web search requests.
  * Tracks requests per 24-hour rolling window.
  */
-const WEB_SEARCH_RATE_LIMIT = {
+const webSearchRateLimiter = createRateLimiter({
   maxRequests: 100,
   windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-  windowStart: Date.now(),
-  requestCount: 0,
-};
-
-/**
- * Initializes the rate limit state from disk.
- * Should be called once when the module loads.
- */
-async function initializeRateLimitState(): Promise<void> {
-  const savedState = await loadRateLimitState();
-  if (savedState) {
-    const now = Date.now();
-    const timeSinceWindowStart = now - savedState.windowStart;
-
-    // If 24 hours have passed, reset; otherwise use saved state
-    if (timeSinceWindowStart >= WEB_SEARCH_RATE_LIMIT.windowMs) {
-      WEB_SEARCH_RATE_LIMIT.windowStart = now;
-      WEB_SEARCH_RATE_LIMIT.requestCount = 0;
-      debug(`[WebSearch] Rate limit window reset (loaded from disk)`);
-      // Save the reset state
-      await saveRateLimitState({
-        windowStart: WEB_SEARCH_RATE_LIMIT.windowStart,
-        requestCount: WEB_SEARCH_RATE_LIMIT.requestCount,
-      });
-    } else {
-      WEB_SEARCH_RATE_LIMIT.windowStart = savedState.windowStart;
-      WEB_SEARCH_RATE_LIMIT.requestCount = savedState.requestCount;
-      debug(
-        `[WebSearch] Rate limit state loaded: ${WEB_SEARCH_RATE_LIMIT.requestCount}/${WEB_SEARCH_RATE_LIMIT.maxRequests} requests used`
-      );
-    }
-  }
-}
-
-// Initialize rate limit state on module load
-initializeRateLimitState().catch((error) => {
-  debug(`[WebSearch] Error initializing rate limit state: ${error.message}`);
+  identifier: "websearch",
 });
-
-/**
- * Checks if a web search request can be made within the rate limit.
- * Resets the counter if 24 hours have passed since the window started.
- *
- * @returns true if request is allowed, false if rate limit exceeded
- */
-function checkWebSearchRateLimit(): boolean {
-  const now = Date.now();
-  const timeSinceWindowStart = now - WEB_SEARCH_RATE_LIMIT.windowStart;
-
-  // Reset if 24 hours have passed
-  if (timeSinceWindowStart >= WEB_SEARCH_RATE_LIMIT.windowMs) {
-    WEB_SEARCH_RATE_LIMIT.windowStart = now;
-    WEB_SEARCH_RATE_LIMIT.requestCount = 0;
-    debug(`[WebSearch] Rate limit window reset`);
-    // Save the reset state
-    saveRateLimitState({
-      windowStart: WEB_SEARCH_RATE_LIMIT.windowStart,
-      requestCount: WEB_SEARCH_RATE_LIMIT.requestCount,
-    }).catch(() => {
-      // Error already logged in saveRateLimitState
-    });
-  }
-
-  // Check if we've exceeded the limit
-  if (WEB_SEARCH_RATE_LIMIT.requestCount >= WEB_SEARCH_RATE_LIMIT.maxRequests) {
-    const hoursRemaining = Math.ceil(
-      (WEB_SEARCH_RATE_LIMIT.windowMs - timeSinceWindowStart) / (60 * 60 * 1000)
-    );
-    debug(
-      `[WebSearch] Rate limit exceeded: ${WEB_SEARCH_RATE_LIMIT.requestCount}/${WEB_SEARCH_RATE_LIMIT.maxRequests} requests used, ${hoursRemaining} hours until reset`
-    );
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Increments the web search request counter and saves state to disk.
- */
-function incrementWebSearchRateLimit(): void {
-  WEB_SEARCH_RATE_LIMIT.requestCount++;
-  debug(
-    `[WebSearch] Rate limit: ${WEB_SEARCH_RATE_LIMIT.requestCount}/${WEB_SEARCH_RATE_LIMIT.maxRequests} requests used`
-  );
-  // Save state to disk
-  saveRateLimitState({
-    windowStart: WEB_SEARCH_RATE_LIMIT.windowStart,
-    requestCount: WEB_SEARCH_RATE_LIMIT.requestCount,
-  }).catch(() => {
-    // Error already logged in saveRateLimitState
-  });
-}
 
 /**
  * Performs a web search using Google Custom Search API.
@@ -135,18 +45,16 @@ export async function queryWebSearch(query: string): Promise<string> {
   }
 
   // Check rate limit before making the request
-  if (!checkWebSearchRateLimit()) {
-    const timeSinceWindowStart = Date.now() - WEB_SEARCH_RATE_LIMIT.windowStart;
-    const hoursRemaining = Math.ceil(
-      (WEB_SEARCH_RATE_LIMIT.windowMs - timeSinceWindowStart) / (60 * 60 * 1000)
-    );
-    return `Error: Web search rate limit exceeded. Maximum of ${WEB_SEARCH_RATE_LIMIT.maxRequests} requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
+  const rateLimitCheck = await webSearchRateLimiter.check();
+  if (!rateLimitCheck.allowed) {
+    const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
+    return `Error: Web search rate limit exceeded. Maximum of 100 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
   }
 
   try {
     // Increment rate limit counter before making the request
     // This ensures all API attempts are counted, not just successful ones
-    incrementWebSearchRateLimit();
+    await webSearchRateLimiter.increment();
 
     const customsearch = google.customsearch("v1");
     const res = await customsearch.cse.list({
@@ -212,4 +120,3 @@ export const webSearchTool = {
     },
   },
 };
-

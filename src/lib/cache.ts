@@ -168,4 +168,3 @@ export async function hasCache(key: string): Promise<boolean> {
   const value = await getCache(key);
   return value !== null;
 }
-

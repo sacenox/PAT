@@ -2,8 +2,19 @@
 
 import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
+import { createRateLimiter } from "../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+/**
+ * Rate limiter for DuckDuckGo API requests.
+ * Tracks requests per 24-hour rolling window.
+ */
+const duckDuckGoRateLimiter = createRateLimiter({
+  maxRequests: 500,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  identifier: "duckduckgo",
+});
 
 /**
  * Queries DuckDuckGo's Instant Answer API for information about a given query.
@@ -23,7 +34,17 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
 
   debug(`[DuckDuckGo] Querying: "${query}"`);
 
+  // Check rate limit before making the request
+  const rateLimitCheck = await duckDuckGoRateLimiter.check();
+  if (!rateLimitCheck.allowed) {
+    const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
+    return `Error: DuckDuckGo API rate limit exceeded. Maximum of 500 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
+  }
+
   try {
+    // Increment rate limit counter before making the request
+    // This ensures all API attempts are counted, not just successful ones
+    await duckDuckGoRateLimiter.increment();
     const url = "https://api.duckduckgo.com/";
     const params = new URLSearchParams({
       q: query,
@@ -120,4 +141,3 @@ export const duckDuckGoTool = {
     },
   },
 };
-

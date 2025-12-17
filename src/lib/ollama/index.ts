@@ -224,4 +224,3 @@ export async function fetchOllamaResponse(
     toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
   };
 }
-

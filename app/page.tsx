@@ -7,7 +7,7 @@ import Sidebar from "@/src/components/Sidebar";
 import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
-import type { Thread, Message } from "@/src/types";
+import type { Thread, Message } from "@/src/lib/db/schema";
 import "./highlight-theme.css";
 
 export default function Home() {
@@ -211,8 +211,20 @@ export default function Home() {
     try {
       const toolCalls = JSON.parse(toolCallsJson);
       if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
-      const toolNames = toolCalls.map((tc: any) => tc.function?.name || "unknown").join(", ");
-      return toolNames;
+
+      // Count occurrences of each tool name
+      const toolCounts: Record<string, number> = {};
+      toolCalls.forEach((tc: any) => {
+        const toolName = tc.function?.name || "unknown";
+        toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
+      });
+
+      // Format as "toolName x count"
+      const formatted = Object.entries(toolCounts)
+        .map(([name, count]) => `${name} x ${count}`)
+        .join(", ");
+
+      return formatted;
     } catch {
       return null;
     }
@@ -256,14 +268,14 @@ export default function Home() {
                       <div>{msg.content}</div>
                     )}
                     <div className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                      sent on: {formatTimestamp(msg.createdAt)}
+                      sent on {formatTimestamp(msg.createdAt)}
                       {msg.role === "assistant" && msg.generationTimeMs && (
-                        <span className="ml-2">
+                        <span className="ml-1">
                           • generated in {formatGenerationTime(msg.generationTimeMs)}
                         </span>
                       )}
                       {msg.role === "assistant" && formatToolCalls(msg.toolCalls) && (
-                        <span className="ml-2">• tools: {formatToolCalls(msg.toolCalls)}</span>
+                        <span className="ml-1">• tools: {formatToolCalls(msg.toolCalls)}</span>
                       )}
                     </div>
                   </div>

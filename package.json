@@ -9,6 +9,9 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
@@ -38,9 +41,11 @@
     "@types/node": "^20.11.18",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
+    "@vitest/ui": "^4.0.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "^13.5.6",
     "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.11"
+    "prettier-plugin-tailwindcss": "^0.5.11",
+    "vitest": "^4.0.16"
   }
 }

@@ -2,8 +2,19 @@
 
 import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
+import { createRateLimiter } from "../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+/**
+ * Rate limiter for weather API requests.
+ * Tracks requests per 24-hour rolling window.
+ */
+const weatherRateLimiter = createRateLimiter({
+  maxRequests: 1000,
+  windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+  identifier: "weather",
+});
 
 /**
  * Converts WMO weather code to human-readable description.
@@ -62,7 +73,17 @@ export async function queryWeather(location: string): Promise<string> {
 
   debug(`[Weather] Querying weather for: "${location}"`);
 
+  // Check rate limit before making the request
+  const rateLimitCheck = await weatherRateLimiter.check();
+  if (!rateLimitCheck.allowed) {
+    const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
+    return `Error: Weather API rate limit exceeded. Maximum of 1000 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
+  }
+
   try {
+    // Increment rate limit counter before making the request
+    // This ensures all API attempts are counted, not just successful ones
+    await weatherRateLimiter.increment();
     // First, geocode the location to get coordinates
     const geocodeUrl = "https://geocoding-api.open-meteo.com/v1/search";
     const geocodeParams = new URLSearchParams({
@@ -188,4 +209,3 @@ export const weatherTool = {
     },
   },
 };
-

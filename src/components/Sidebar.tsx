@@ -1,6 +1,6 @@
 "use client";
 
-import type { Thread } from "@/src/types";
+import type { Thread } from "@/src/lib/db/schema";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
 

@@ -40,7 +40,11 @@ export async function POST(request: Request) {
     });
 
     // 4. Get assistant response
-    const { content: answer, generationTimeMs, toolCalls } = await fetchOllamaResponse(ollamaMessages);
+    const {
+      content: answer,
+      generationTimeMs,
+      toolCalls,
+    } = await fetchOllamaResponse(ollamaMessages);
 
     // 5. Store assistant message with generation time and tool calls
     await db.insert(messages).values({
