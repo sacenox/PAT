@@ -103,7 +103,7 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     };
 
     return (
-      <div className="absolute bottom-0 left-0 right-0 flex justify-center p-4 pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center p-1 pointer-events-none">
         <form
           onSubmit={handleSubmit}
           className="relative w-full max-w-5xl bg-neutral-300 dark:bg-neutral-700 rounded-lg shadow-lg m-4 pointer-events-auto"

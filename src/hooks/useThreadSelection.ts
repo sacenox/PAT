@@ -10,7 +10,7 @@ export function useThreadSelection(
   useEffect(() => {
     // Scroll to top when a thread is selected
     if (currentThreadId !== null && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = 0;
+      messagesContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [currentThreadId]);
 

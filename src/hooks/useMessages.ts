@@ -4,8 +4,10 @@ import type { Message } from "@/src/lib/db/schema";
 export function useMessages(threadId: number | null) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
 
   const loadMessages = useCallback(async (id: number) => {
+    setIsLoadingMessages(true);
     try {
       const res = await fetch(`/api/threads/${id}/messages`);
       const data = await res.json();
@@ -13,6 +15,8 @@ export function useMessages(threadId: number | null) {
       setMessages(loadedMessages);
     } catch (error) {
       console.error("Failed to load messages", error);
+    } finally {
+      setIsLoadingMessages(false);
     }
   }, []);
 
@@ -21,6 +25,7 @@ export function useMessages(threadId: number | null) {
       loadMessages(threadId);
     } else {
       setMessages([]);
+      setIsLoadingMessages(false);
     }
   }, [threadId, loadMessages]);
 
@@ -96,6 +101,7 @@ export function useMessages(threadId: number | null) {
   return {
     messages,
     isLoading,
+    isLoadingMessages,
     sendMessage,
     clearMessages,
   };

@@ -19,7 +19,7 @@ export default function MessageList({ messages }: MessageListProps) {
       const newMessage = messages[messages.length - 1];
       const messageElement = messageRefs.current.get(newMessage.id);
       if (messageElement) {
-        messageElement.scrollIntoView({ block: "start", behavior: "instant" });
+        messageElement.scrollIntoView({ block: "start", behavior: "smooth" });
       }
       prevMessagesLengthRef.current = messages.length;
     }
