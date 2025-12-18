@@ -12,11 +12,7 @@ type MessageListProps = {
   onDeleteMessage: (messageId: number, threadId: number) => void;
 };
 
-export default function MessageList({
-  messages,
-  threadId,
-  onDeleteMessage,
-}: MessageListProps) {
+export default function MessageList({ messages, threadId, onDeleteMessage }: MessageListProps) {
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const prevMessagesLengthRef = useRef<number>(0);
 

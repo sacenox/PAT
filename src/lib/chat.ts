@@ -1,10 +1,10 @@
 /* personal-assistant-thing/src/lib/chat.ts */
-import {
-  fetchOllamaResponse,
-  type OllamaMessageInput,
-  type MaxPromptLength,
-  type ToolCall,
-} from "@/src/lib/ollama";
+import { fetchOllamaResponse } from "@/src/lib/ollama";
+import type {
+  OllamaMessageInput,
+  MaxPromptLength,
+  ToolCall,
+} from "@/src/lib/ollama/types";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -63,7 +63,11 @@ export function streamAssistantResponse({
           return;
         }
 
-        const onChunk = (chunk: { content?: string; thinking?: string; toolCalls?: ToolCall[] }) => {
+        const onChunk = (chunk: {
+          content?: string;
+          thinking?: string;
+          toolCalls?: ToolCall[];
+        }) => {
           // Check abort signal before each chunk
           if (signal.aborted || isControllerClosed) {
             return;

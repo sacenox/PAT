@@ -20,6 +20,25 @@ export interface ToolCall {
   };
 }
 
+// Tool call format required by ollama.chat() - arguments must be an object
+export interface OllamaChatToolCall {
+  id?: string;
+  type?: "function";
+  function: {
+    name: string;
+    arguments: { [key: string]: unknown };
+  };
+}
+
+// Message format required by ollama.chat() - content is required and tool_calls use OllamaChatToolCall
+export interface OllamaChatMessage {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  thinking?: string;
+  tool_calls?: OllamaChatToolCall[];
+  tool_name?: string;
+}
+
 export interface OllamaMessageInput {
   role: OllamaMessageRole;
   content: string;

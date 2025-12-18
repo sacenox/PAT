@@ -44,7 +44,6 @@ export default function Home() {
     deleteMessageInternal(messageId, threadId, setError);
   };
 
-
   // Auto-dismiss error after 3 seconds
   useEffect(() => {
     if (error) {
@@ -122,7 +121,6 @@ export default function Home() {
       }
     }
   };
-
 
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">

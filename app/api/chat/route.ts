@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import {
-  type OllamaMessageInput,
-  type OllamaMessageRole,
-  type MaxPromptLength,
-} from "@/src/lib/ollama";
+import type {
+  OllamaMessageInput,
+  OllamaMessageRole,
+  MaxPromptLength,
+} from "@/src/lib/ollama/types";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";

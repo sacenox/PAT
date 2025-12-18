@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCache, setCache } from "@/src/lib/cache";
+import { getFirstAvailableModel } from "@/src/lib/ollama/models";
 
 const SETTINGS_CACHE_KEY = "app_settings";
 
@@ -11,9 +12,18 @@ type Settings = {
 export async function GET() {
   try {
     const settings = await getCache<Settings>(SETTINGS_CACHE_KEY);
-    return NextResponse.json({
-      settings: settings || { maxPromptLength: "none", selectedModel: "gpt-oss" },
-    });
+    if (settings) {
+      return NextResponse.json({ settings });
+    }
+
+    // If no settings exist, get the first available model
+    const firstModel = await getFirstAvailableModel();
+    const defaultSettings: Settings = {
+      maxPromptLength: "none",
+      selectedModel: firstModel || undefined,
+    };
+
+    return NextResponse.json({ settings: defaultSettings });
   } catch {
     return NextResponse.json({ error: "Failed to get settings" }, { status: 500 });
   }
@@ -23,7 +33,7 @@ export async function POST(request: Request) {
   try {
     const { maxPromptLength, selectedModel } = await request.json();
 
-    const settings: Partial<Settings> = {};
+    let settings: Partial<Settings> = {};
 
     // Validate and set maxPromptLength if provided
     if (maxPromptLength !== undefined) {
@@ -41,16 +51,21 @@ export async function POST(request: Request) {
       settings.selectedModel = selectedModel;
     }
 
-    // Get existing settings and merge
+    // Get existing settings and merge, prefering the ones in the request
     const existingSettings = await getCache<Settings>(SETTINGS_CACHE_KEY);
-    const mergedSettings: Settings = {
-      maxPromptLength: settings.maxPromptLength ?? existingSettings?.maxPromptLength ?? "none",
-      selectedModel: settings.selectedModel ?? existingSettings?.selectedModel ?? "gpt-oss",
-    };
+    if (existingSettings) {
+      settings = {...existingSettings, ...settings}
+    }
 
-    await setCache(SETTINGS_CACHE_KEY, mergedSettings);
+    if (!settings.selectedModel) {
+      const firstModel = await getFirstAvailableModel();
+      settings.selectedModel = firstModel
+    }
+    
+    // Update the cache with new settings.
+    await setCache(SETTINGS_CACHE_KEY, settings);
 
-    return NextResponse.json({ settings: mergedSettings });
+    return NextResponse.json({ settings: settings });
   } catch {
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });
   }

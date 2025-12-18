@@ -2,10 +2,10 @@
 // Wrapper using the official Ollama npm package.
 
 import ollama from "ollama";
-import { debug } from "../debug";
-import { duckDuckGoTool, queryDuckDuckGo } from "./duckduckgo";
-import { queryWeather, weatherTool } from "./weather";
-import { queryWebSearch, webSearchTool } from "./websearch";
+import { debug } from "@/src/lib/debug";
+import { duckDuckGoTool, queryDuckDuckGo } from "@/src/lib/ollama/duckduckgo";
+import { queryWeather, weatherTool } from "@/src/lib/ollama/weather";
+import { queryWebSearch, webSearchTool } from "@/src/lib/ollama/websearch";
 import type {
   OllamaMessage,
   OllamaMessageInput,
@@ -13,18 +13,9 @@ import type {
   OllamaResponse,
   MaxPromptLength,
   ToolCall,
-} from "./types";
+  OllamaChatMessage,
+} from "@/src/lib/ollama/types";
 
-// Re-export types for convenience
-export type {
-  OllamaMessage,
-  OllamaMessageRole,
-  OllamaMessageInput,
-  OllamaChunk,
-  OllamaResponse,
-  MaxPromptLength,
-  ToolCall,
-} from "./types";
 
 /**
  * Executes a tool call and returns the result.
@@ -131,9 +122,35 @@ export async function fetchOllamaResponse(
       throw new Error("Request aborted");
     }
 
+    // Ensure all messages have content as a string and tool_calls have proper format (required by ollama.chat)
+    const messagesForOllama: OllamaChatMessage[] = currentMessages.map((msg) => {
+      const { tool_calls, ...msgWithoutToolCalls } = msg;
+      const message: OllamaChatMessage = {
+        ...msgWithoutToolCalls,
+        content: msg.content ?? "",
+      };
+
+      // Transform tool_calls to ensure arguments is always an object
+      if (tool_calls) {
+        message.tool_calls = tool_calls.map((tc) => ({
+          id: tc.id,
+          type: tc.type,
+          function: {
+            name: tc.function.name,
+            arguments:
+              typeof tc.function.arguments === "string"
+                ? JSON.parse(tc.function.arguments)
+                : tc.function.arguments,
+          },
+        }));
+      }
+
+      return message;
+    });
+
     const stream = await ollama.chat({
       model,
-      messages: currentMessages,
+      messages: messagesForOllama,
       tools,
       stream: true,
       options: Object.keys(options).length > 0 ? options : undefined,
@@ -170,7 +187,9 @@ export async function fetchOllamaResponse(
           // If tool call has an ID, check if we already have it
           const toolCallWithId = toolCall as ToolCall & { id?: string };
           if (toolCallWithId.id) {
-            const existingIndex = toolCalls.findIndex((tc: ToolCall) => tc.id === toolCallWithId.id);
+            const existingIndex = toolCalls.findIndex(
+              (tc: ToolCall) => tc.id === toolCallWithId.id
+            );
             if (existingIndex >= 0) {
               toolCalls[existingIndex] = toolCall as ToolCall;
             } else {
