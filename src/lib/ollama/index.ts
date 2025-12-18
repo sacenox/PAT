@@ -6,27 +6,23 @@ import { debug } from "../debug";
 import { duckDuckGoTool, queryDuckDuckGo } from "./duckduckgo";
 import { queryWeather, weatherTool } from "./weather";
 import { queryWebSearch, webSearchTool } from "./websearch";
+import type {
+  OllamaMessage,
+  OllamaMessageInput,
+  OllamaChunk,
+  OllamaResponse,
+  MaxPromptLength,
+} from "./types";
 
-// Use types compatible with ollama package - use any to work around strict typing
-type OllamaMessage = any;
-
-export interface OllamaMessageInput {
-  role: "user" | "assistant" | "system";
-  content: string;
-  toolCalls?: string; // Optional JSON string of tool calls (from database)
-}
-
-export interface OllamaResponse {
-  content: string;
-  generationTimeMs: number;
-  toolCalls?: any[]; // Array of tool calls made during the conversation
-}
-
-export interface OllamaChunk {
-  content?: string;
-  thinking?: string;
-  toolCalls?: any[];
-}
+// Re-export types for convenience
+export type {
+  OllamaMessage,
+  OllamaMessageRole,
+  OllamaMessageInput,
+  OllamaChunk,
+  OllamaResponse,
+  MaxPromptLength,
+} from "./types";
 
 /**
  * Executes a tool call and returns the result.
@@ -102,7 +98,7 @@ export async function fetchOllamaResponse(
   onChunk?: (chunk: OllamaChunk) => void,
   model = "gpt-oss",
   signal?: AbortSignal,
-  maxPromptLength?: "none" | 1024 | 4096 | null
+  maxPromptLength?: MaxPromptLength
 ): Promise<OllamaResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool];
   let totalDuration = 0;

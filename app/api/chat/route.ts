@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
-import { fetchOllamaResponse, type OllamaMessageInput } from "@/src/lib/ollama";
+import {
+  fetchOllamaResponse,
+  type OllamaMessageInput,
+  type OllamaMessageRole,
+  type MaxPromptLength,
+} from "@/src/lib/ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
 
 export async function POST(request: Request) {
-  const { message, threadId } = await request.json();
+  const { message, threadId: threadIdRaw } = await request.json();
   const signal = request.signal;
 
-  if (!threadId) {
+  if (!threadIdRaw) {
     return NextResponse.json({ error: "threadId is required" }, { status: 400 });
+  }
+
+  const threadId: number = Number(threadIdRaw);
+  if (isNaN(threadId)) {
+    return NextResponse.json({ error: "Invalid threadId" }, { status: 400 });
   }
 
   try {
@@ -18,7 +28,7 @@ export async function POST(request: Request) {
     const thread = await db
       .select()
       .from(threads)
-      .where(eq(threads.id, parseInt(threadId)))
+      .where(eq(threads.id, threadId))
       .limit(1);
     if (thread.length === 0) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
@@ -28,19 +38,19 @@ export async function POST(request: Request) {
     // Use thread-specific maxPromptLength (stored in thread table, can be null, 1024, or 4096)
     // Type assertion ensures compatibility with fetchOllamaResponse which expects "none" | 1024 | 4096 | null
     // Note: null from database means "none" (no limit), which fetchOllamaResponse handles correctly
-    const threadMaxPromptLength: "none" | 1024 | 4096 | null =
-      thread[0].maxPromptLength === null ? null : (thread[0].maxPromptLength as 1024 | 4096);
+    const threadMaxPromptLength: MaxPromptLength =
+      thread[0].maxPromptLength === null ? 'none' : thread[0].maxPromptLength as MaxPromptLength;
 
     // 2. Fetch previous messages from thread
     const previousMessages = await db
       .select()
       .from(messages)
-      .where(eq(messages.threadId, parseInt(threadId)))
+      .where(eq(messages.threadId, threadId))
       .orderBy(asc(messages.createdAt));
 
     // 3. Store user message
     await db.insert(messages).values({
-      threadId: parseInt(threadId),
+      threadId: threadId,
       role: "user",
       content: message,
       createdAt: new Date(),
@@ -48,7 +58,7 @@ export async function POST(request: Request) {
 
     // 4. Build messages array for Ollama
     const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
-      role: msg.role as "user" | "assistant" | "system",
+      role: msg.role as OllamaMessageRole,
       content: msg.content,
       toolCalls: msg.toolCalls || undefined,
     }));
@@ -169,11 +179,11 @@ export async function POST(request: Request) {
             // Save partial content if any was generated
             if (accumulatedContent) {
               await db.insert(messages).values({
-                threadId: parseInt(threadId),
+                threadId: threadId,
                 role: "assistant",
                 content: accumulatedContent,
                 model: threadModel,
-                maxPromptLength: threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
+                maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
                 createdAt: new Date(),
                 generationTimeMs: null,
                 toolCalls: allToolCalls.length > 0 ? JSON.stringify(allToolCalls) : null,
@@ -181,7 +191,7 @@ export async function POST(request: Request) {
               await db
                 .update(threads)
                 .set({ updatedAt: new Date() })
-                .where(eq(threads.id, parseInt(threadId)));
+                .where(eq(threads.id, threadId));
 
               // Send done message with metadata for aborted generation
               if (!isControllerClosed) {
@@ -207,11 +217,11 @@ export async function POST(request: Request) {
 
           // 6. Store assistant message with model, maxPromptLength, generation time and tool calls
           await db.insert(messages).values({
-            threadId: parseInt(threadId),
+            threadId: threadId,
             role: "assistant",
             content: accumulatedContent,
             model: threadModel,
-            maxPromptLength: threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
+            maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
             createdAt: new Date(),
             generationTimeMs,
             toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
@@ -221,7 +231,7 @@ export async function POST(request: Request) {
           await db
             .update(threads)
             .set({ updatedAt: new Date() })
-            .where(eq(threads.id, parseInt(threadId)));
+            .where(eq(threads.id, threadId));
 
           // Send final message with metadata
           if (!isControllerClosed) {
