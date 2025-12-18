@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
       role: msg.role as "user" | "assistant" | "system",
       content: msg.content,
+      toolCalls: msg.toolCalls || undefined,
     }));
 
     // Add the new user message
@@ -80,7 +81,6 @@ export async function POST(request: Request) {
         };
 
         try {
-
           // Check if already aborted
           if (signal.aborted) {
             safeClose();
@@ -182,17 +182,17 @@ export async function POST(request: Request) {
                 .update(threads)
                 .set({ updatedAt: new Date() })
                 .where(eq(threads.id, parseInt(threadId)));
-              
+
               // Send done message with metadata for aborted generation
               if (!isControllerClosed) {
                 try {
                   controller.enqueue(
                     encoder.encode(
-                      `data: ${JSON.stringify({ 
-                        type: "done", 
+                      `data: ${JSON.stringify({
+                        type: "done",
                         answer: accumulatedContent,
                         model: threadModel,
-                        maxPromptLength: threadMaxPromptLength
+                        maxPromptLength: threadMaxPromptLength,
                       })}\n\n`
                     )
                   );
@@ -228,11 +228,11 @@ export async function POST(request: Request) {
             try {
               controller.enqueue(
                 encoder.encode(
-                  `data: ${JSON.stringify({ 
-                    type: "done", 
+                  `data: ${JSON.stringify({
+                    type: "done",
                     answer: accumulatedContent,
                     model: threadModel,
-                    maxPromptLength: threadMaxPromptLength
+                    maxPromptLength: threadMaxPromptLength,
                   })}\n\n`
                 )
               );

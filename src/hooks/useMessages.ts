@@ -149,11 +149,14 @@ export function useMessages(threadId: number | null) {
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMsgId
-                      ? { 
-                          ...msg, 
+                      ? {
+                          ...msg,
                           content: data.answer || accumulatedContent,
                           model: data.model || msg.model,
-                          maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : msg.maxPromptLength
+                          maxPromptLength:
+                            data.maxPromptLength !== undefined
+                              ? data.maxPromptLength
+                              : msg.maxPromptLength,
                         }
                       : msg
                   )

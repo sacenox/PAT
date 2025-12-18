@@ -3,7 +3,7 @@
 
 import ollama from "ollama";
 import { debug } from "../debug";
-import { queryDuckDuckGo, duckDuckGoTool } from "./duckduckgo";
+import { duckDuckGoTool, queryDuckDuckGo } from "./duckduckgo";
 import { queryWeather, weatherTool } from "./weather";
 import { queryWebSearch, webSearchTool } from "./websearch";
 
@@ -13,6 +13,7 @@ type OllamaMessage = any;
 export interface OllamaMessageInput {
   role: "user" | "assistant" | "system";
   content: string;
+  toolCalls?: string; // Optional JSON string of tool calls (from database)
 }
 
 export interface OllamaResponse {
@@ -105,10 +106,21 @@ export async function fetchOllamaResponse(
 ): Promise<OllamaResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool];
   let totalDuration = 0;
-  let currentMessages: OllamaMessage[] = messages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-  }));
+  let currentMessages: OllamaMessage[] = messages.map((msg) => {
+    const message: any = {
+      role: msg.role,
+      content: msg.content,
+    };
+    // Include tool_calls if they exist (from database)
+    if (msg.toolCalls) {
+      try {
+        message.tool_calls = JSON.parse(msg.toolCalls);
+      } catch {
+        // If parsing fails, ignore tool_calls
+      }
+    }
+    return message;
+  });
   const allToolCalls: any[] = [];
 
   // Build options object with num_ctx if maxPromptLength is set

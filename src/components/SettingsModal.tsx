@@ -15,7 +15,6 @@ export default function SettingsModal({
   themeMode,
   onThemeChange,
 }: SettingsModalProps) {
-
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <h2 className="mb-4 text-xl font-semibold text-neutral-800 dark:text-neutral-200">
