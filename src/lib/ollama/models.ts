@@ -16,4 +16,3 @@ export async function getFirstAvailableModel(): Promise<string | null> {
     return null;
   }
 }
-

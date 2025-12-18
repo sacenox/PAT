@@ -5,11 +5,6 @@ import { getCache, setCache } from "../cache";
 import { createRateLimiter } from "../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-/**
- * Rate limiter for DuckDuckGo API requests.
- * Tracks requests per 24-hour rolling window.
- */
 const duckDuckGoRateLimiter = createRateLimiter({
   maxRequests: 500,
   windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
@@ -21,13 +16,9 @@ const duckDuckGoRateLimiter = createRateLimiter({
  * Results are cached for 6 hours.
  *
  * @param query - The search query to send to DuckDuckGo.
- * @returns A formatted string containing the instant answer information.
+ * @returns A formatted string containing the instant answer information or an error message.
  */
 export async function queryDuckDuckGo(query: string): Promise<string> {
-  if (!query || typeof query !== "string") {
-    return `Error: Invalid query parameter. Expected a non-empty string, got: ${typeof query}`;
-  }
-
   // Check cache first
   const cacheKey = `duckduckgo:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

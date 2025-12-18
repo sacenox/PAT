@@ -1,21 +1,12 @@
 /* personal-assistant-thing/src/lib/ollama/index.ts */
 // Wrapper using the official Ollama npm package.
 
-import ollama from "ollama";
+import ollama, { type Message, type ToolCall } from "ollama";
 import { debug } from "@/src/lib/debug";
 import { duckDuckGoTool, queryDuckDuckGo } from "@/src/lib/ollama/duckduckgo";
 import { queryWeather, weatherTool } from "@/src/lib/ollama/weather";
 import { queryWebSearch, webSearchTool } from "@/src/lib/ollama/websearch";
-import type {
-  OllamaMessage,
-  OllamaMessageInput,
-  OllamaChunk,
-  OllamaResponse,
-  MaxPromptLength,
-  ToolCall,
-  OllamaChatMessage,
-} from "@/src/lib/ollama/types";
-
+import type { OllamaChunk, OllamaResponse, MaxPromptLength } from "@/src/lib/ollama/types";
 
 /**
  * Executes a tool call and returns the result.
@@ -23,41 +14,25 @@ import type {
  * @param toolCall - The tool call from Ollama.
  * @returns The tool response with the execution result.
  */
-async function executeToolCall(toolCall: ToolCall): Promise<OllamaMessage> {
+async function executeToolCall(toolCall: ToolCall): Promise<Message> {
   const { name, arguments: args } = toolCall.function;
-  const parsedArgs = typeof args === "string" ? JSON.parse(args) : args;
+  const { query } = args as { query: string };
 
-  debug(`[Tool] Executing: ${name}`, parsedArgs);
+  const tools = {
+    query_web_search: queryWebSearch,
+    query_weather: queryWeather,
+    query_duckduckgo: queryDuckDuckGo,
+  };
 
   let result: string;
-  switch (name) {
-    case "query_duckduckgo":
-      if (!parsedArgs.query || typeof parsedArgs.query !== "string") {
-        result = `Error: Missing or invalid "query" parameter for query_duckduckgo`;
-      } else {
-        result = await queryDuckDuckGo(parsedArgs.query);
-      }
-      break;
-    case "query_weather":
-      if (!parsedArgs.location || typeof parsedArgs.location !== "string") {
-        result = `Error: Missing or invalid "location" parameter for query_weather`;
-      } else {
-        result = await queryWeather(parsedArgs.location);
-      }
-      break;
-    case "query_web_search":
-      if (!parsedArgs.query || typeof parsedArgs.query !== "string") {
-        result = `Error: Missing or invalid "query" parameter for query_web_search`;
-      } else {
-        result = await queryWebSearch(parsedArgs.query);
-      }
-      break;
-    default:
-      debug(`[Tool] Unknown tool: ${name}`);
-      result = `Error: Unknown tool "${name}"`;
+  try {
+    result = tools[name](query);
+    debug(`[Tool] ${name} completed, result length: ${result.length} chars`);
+  } catch (error) {
+    debug("[Tool] call failed: " + error.message || "Unknown error")
+    result = `Error executing tool call: ${error.message || "Unknown error"}`;
   }
 
-  debug(`[Tool] ${name} completed, result length: ${result.length} chars`);
   return {
     role: "tool",
     tool_name: name,
@@ -73,36 +48,22 @@ async function executeToolCall(toolCall: ToolCall): Promise<OllamaMessage> {
  *
  * @param messages - Array of messages in the conversation history.
  * @param onChunk - Optional callback function to receive streaming chunks (content, thinking, toolCalls).
- * @param model - The Ollama model to use. Defaults to 'gpt-oss'.
+ * @param model - The Ollama model to use..
  * @param signal - Optional AbortSignal to cancel the request.
  * @param maxPromptLength - Optional maximum prompt length in tokens. Can be "none", 1024, or 4096.
  * @returns Object containing the response content and generation time in milliseconds.
  * @throws If the request fails.
  */
 export async function fetchOllamaResponse(
-  messages: OllamaMessageInput[],
+  messages: Message[],
   onChunk?: (chunk: OllamaChunk) => void,
-  model = "gpt-oss",
+  model = "",
   signal?: AbortSignal,
   maxPromptLength?: MaxPromptLength
 ): Promise<OllamaResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool];
   let totalDuration = 0;
-  const currentMessages: OllamaMessage[] = messages.map((msg) => {
-    const message: OllamaMessage = {
-      role: msg.role,
-      content: msg.content,
-    };
-    // Include tool_calls if they exist (from database)
-    if (msg.toolCalls) {
-      try {
-        message.tool_calls = JSON.parse(msg.toolCalls);
-      } catch {
-        // If parsing fails, ignore tool_calls
-      }
-    }
-    return message;
-  });
+  const currentMessages: Message[] = messages;
   const allToolCalls: ToolCall[] = [];
 
   // Build options object with num_ctx if maxPromptLength is set
@@ -122,31 +83,12 @@ export async function fetchOllamaResponse(
       throw new Error("Request aborted");
     }
 
-    // Ensure all messages have content as a string and tool_calls have proper format (required by ollama.chat)
-    const messagesForOllama: OllamaChatMessage[] = currentMessages.map((msg) => {
-      const { tool_calls, ...msgWithoutToolCalls } = msg;
-      const message: OllamaChatMessage = {
-        ...msgWithoutToolCalls,
-        content: msg.content ?? "",
-      };
-
-      // Transform tool_calls to ensure arguments is always an object
-      if (tool_calls) {
-        message.tool_calls = tool_calls.map((tc) => ({
-          id: tc.id,
-          type: tc.type,
-          function: {
-            name: tc.function.name,
-            arguments:
-              typeof tc.function.arguments === "string"
-                ? JSON.parse(tc.function.arguments)
-                : tc.function.arguments,
-          },
-        }));
-      }
-
-      return message;
-    });
+    // Ensure all messages have content as a string (required by ollama.chat)
+    // currentMessages is already Message[], just ensure content is not empty
+    const messagesForOllama: Message[] = currentMessages.map((msg) => ({
+      ...msg,
+      content: msg.content ?? "",
+    }));
 
     const stream = await ollama.chat({
       model,
@@ -184,22 +126,23 @@ export async function fetchOllamaResponse(
       // Accumulate tool calls from chunks
       if (chunk.message?.tool_calls?.length) {
         for (const toolCall of chunk.message.tool_calls) {
-          // If tool call has an ID, check if we already have it
+          // If tool call has an ID (present in streaming but not in type), check if we already have it
           const toolCallWithId = toolCall as ToolCall & { id?: string };
           if (toolCallWithId.id) {
             const existingIndex = toolCalls.findIndex(
-              (tc: ToolCall) => tc.id === toolCallWithId.id
+              (tc: ToolCall & { id?: string }) =>
+                (tc as ToolCall & { id?: string }).id === toolCallWithId.id
             );
             if (existingIndex >= 0) {
-              toolCalls[existingIndex] = toolCall as ToolCall;
+              toolCalls[existingIndex] = toolCall;
             } else {
-              toolCalls.push(toolCall as ToolCall);
+              toolCalls.push(toolCall);
             }
           } else {
-            toolCalls.push(toolCall as ToolCall);
+            toolCalls.push(toolCall);
           }
         }
-        onChunk?.({ toolCalls: chunk.message.tool_calls as ToolCall[] });
+        onChunk?.({ toolCalls: chunk.message.tool_calls });
       }
     }
 
@@ -241,9 +184,9 @@ export async function fetchOllamaResponse(
     // Execute tool calls and add results to messages
     debug(
       `[Ollama] Tool calls detected:`,
-      toolCalls.map((tc: ToolCall) => ({
+      toolCalls.map((tc: ToolCall & { id?: string }) => ({
         name: tc.function.name,
-        id: tc.id,
+        id: (tc as ToolCall & { id?: string }).id,
       }))
     );
 

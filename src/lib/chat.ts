@@ -1,16 +1,29 @@
 /* personal-assistant-thing/src/lib/chat.ts */
 import { fetchOllamaResponse } from "@/src/lib/ollama";
-import type {
-  OllamaMessageInput,
-  MaxPromptLength,
-  ToolCall,
-} from "@/src/lib/ollama/types";
+import type { MaxPromptLength } from "@/src/lib/ollama/types";
+import type { Message, ToolCall } from "ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+/**
+ * Extracts tool name counts from an array of tool calls.
+ * Returns a JSON string of the format: {"tool_name": count, ...}
+ */
+function extractToolCounts(toolCalls: ToolCall[]): string | null {
+  if (toolCalls.length === 0) return null;
+
+  const toolCounts: Record<string, number> = {};
+  for (const toolCall of toolCalls) {
+    const toolName = toolCall.function.name;
+    toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
+  }
+
+  return JSON.stringify(toolCounts);
+}
+
 export interface StreamAssistantResponseParams {
-  ollamaMessages: OllamaMessageInput[];
+  ollamaMessages: Message[];
   threadId: number;
   threadModel: string | null;
   threadMaxPromptLength: MaxPromptLength;
@@ -46,10 +59,10 @@ export function streamAssistantResponse({
         }
       };
 
-      const safeEnqueue = (data: Uint8Array) => {
+      const safeEnqueue = (data: unknown) => {
         if (!isControllerClosed) {
           try {
-            controller.enqueue(data);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
           } catch {
             // Controller may be closed, ignore
           }
@@ -75,36 +88,18 @@ export function streamAssistantResponse({
 
           if (chunk.content) {
             accumulatedContent += chunk.content;
-            safeEnqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`
-              )
-            );
+            safeEnqueue({ type: "content", content: chunk.content });
           }
-          if (chunk.thinking) {
-            safeEnqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`
-              )
-            );
-          }
+
           if (chunk.toolCalls) {
             allToolCalls.push(...chunk.toolCalls);
-            safeEnqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`
-              )
-            );
+            safeEnqueue({ type: "toolCalls", toolCalls: chunk.toolCalls });
           }
         };
 
         // Set up abort handler
         const abortHandler = () => {
-          safeEnqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "error", error: "Generation stopped" })}\n\n`
-            )
-          );
+          safeEnqueue({ type: "error", error: "Generation stopped" });
           safeClose();
         };
         signal.addEventListener("abort", abortHandler);
@@ -145,21 +140,17 @@ export function streamAssistantResponse({
               maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
               createdAt: new Date(),
               generationTimeMs: null,
-              toolCalls: allToolCalls.length > 0 ? JSON.stringify(allToolCalls) : null,
+              toolCallCounts: extractToolCounts(allToolCalls),
             });
             await db.update(threads).set({ updatedAt: new Date() }).where(eq(threads.id, threadId));
 
             // Send done message with metadata for aborted generation
-            safeEnqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "done",
-                  answer: accumulatedContent,
-                  model: threadModel,
-                  maxPromptLength: threadMaxPromptLength,
-                })}\n\n`
-              )
-            );
+            safeEnqueue({
+              type: "done",
+              answer: accumulatedContent,
+              model: threadModel,
+              maxPromptLength: threadMaxPromptLength,
+            });
           }
           safeClose();
           return;
@@ -174,30 +165,22 @@ export function streamAssistantResponse({
           maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
           createdAt: new Date(),
           generationTimeMs,
-          toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
+          toolCallCounts: toolCalls ? extractToolCounts(toolCalls) : null,
         });
 
         // Update thread's updatedAt timestamp
         await db.update(threads).set({ updatedAt: new Date() }).where(eq(threads.id, threadId));
 
         // Send final message with metadata
-        safeEnqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({
-              type: "done",
-              answer: accumulatedContent,
-              model: threadModel,
-              maxPromptLength: threadMaxPromptLength,
-            })}\n\n`
-          )
-        );
+        safeEnqueue({
+          type: "done",
+          answer: accumulatedContent,
+          model: threadModel,
+          maxPromptLength: threadMaxPromptLength,
+        });
         safeClose();
       } catch {
-        safeEnqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: "error", error: "Sorry, something went wrong." })}\n\n`
-          )
-        );
+        safeEnqueue({ type: "error", error: "Sorry, something went wrong." });
         safeClose();
       }
     },

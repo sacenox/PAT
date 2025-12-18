@@ -22,14 +22,10 @@ const webSearchRateLimiter = createRateLimiter({
  * Enforces a rate limit of 100 requests per 24 hours.
  * Results are cached for 6 hours.
  *
- * @param query - The search query to execute.
- * @returns A formatted string containing search results.
+ * @param query - The search query to execute on the web.
+ * @returns A formatted string containing search results or an error message.
  */
 export async function queryWebSearch(query: string): Promise<string> {
-  if (!query || typeof query !== "string") {
-    return `Error: Invalid query parameter. Expected a non-empty string, got: ${typeof query}`;
-  }
-
   // Check cache first
   const cacheKey = `websearch:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

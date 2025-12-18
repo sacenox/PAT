@@ -54,14 +54,14 @@ export async function POST(request: Request) {
     // Get existing settings and merge, prefering the ones in the request
     const existingSettings = await getCache<Settings>(SETTINGS_CACHE_KEY);
     if (existingSettings) {
-      settings = {...existingSettings, ...settings}
+      settings = { ...existingSettings, ...settings };
     }
 
     if (!settings.selectedModel) {
       const firstModel = await getFirstAvailableModel();
-      settings.selectedModel = firstModel
+      settings.selectedModel = firstModel;
     }
-    
+
     // Update the cache with new settings.
     await setCache(SETTINGS_CACHE_KEY, settings);
 

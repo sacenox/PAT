@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     await db.insert(messages).values({
       threadId,
       role: "system",
-      content: `You are PAT, a helpful assistant. Please follow these guidelines:
+      content: `You are PAT, a helpful personal assistant. Please follow these guidelines:
 - Tool calls should not be used more than once per user request
 - Use simple and concise language
 - Reply with markdown whenever possible

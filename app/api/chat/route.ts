@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import type {
-  OllamaMessageInput,
-  OllamaMessageRole,
-  MaxPromptLength,
-} from "@/src/lib/ollama/types";
+import type { MaxPromptLength } from "@/src/lib/ollama/types";
+import type { Message } from "ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
@@ -55,10 +52,10 @@ export async function POST(request: Request) {
     });
 
     // 4. Build messages array for Ollama
-    const ollamaMessages: OllamaMessageInput[] = previousMessages.map((msg) => ({
-      role: msg.role as OllamaMessageRole,
+    // Note: tool_calls are not needed for conversation history, only stored for display
+    const ollamaMessages: Message[] = previousMessages.map((msg) => ({
+      role: msg.role as Message["role"],
       content: msg.content,
-      toolCalls: msg.toolCalls || undefined,
     }));
 
     // Add the new user message

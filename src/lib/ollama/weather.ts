@@ -59,14 +59,10 @@ function getWeatherDescription(code: number): string {
  * Queries Open-Meteo's weather API for current weather and forecast information.
  * Results are cached for 6 hours.
  *
- * @param location - The location name (e.g., "New York", "London", "Tokyo").
- * @returns A formatted string containing weather information.
+ * @param location - The location name (e.g., 'New York', 'London', 'Tokyo').
+ * @returns A formatted string containing weather information or an error message.
  */
 export async function queryWeather(location: string): Promise<string> {
-  if (!location || typeof location !== "string") {
-    return `Error: Invalid location parameter. Expected a non-empty string, got: ${typeof location}`;
-  }
-
   // Check cache first
   const cacheKey = `weather:${location.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);

@@ -25,22 +25,15 @@ export default function AssistantMessage({ message }: AssistantMessageProps) {
   const formatToolCalls = (toolCallsJson: string | null): string | null => {
     if (!toolCallsJson) return null;
     try {
-      const toolCalls = JSON.parse(toolCallsJson);
-      if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
-
-      // Count occurrences of each tool name
-      const toolCounts: Record<string, number> = {};
-      toolCalls.forEach((tc: { function?: { name?: string } }) => {
-        const toolName = tc.function?.name || "unknown";
-        toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
-      });
+      const toolCounts: Record<string, number> = JSON.parse(toolCallsJson);
+      if (typeof toolCounts !== "object" || toolCounts === null) return null;
 
       // Format as "toolName x count"
       const formatted = Object.entries(toolCounts)
         .map(([name, count]) => `${name} x ${count}`)
         .join(", ");
 
-      return formatted;
+      return formatted || null;
     } catch {
       return null;
     }
@@ -69,8 +62,8 @@ export default function AssistantMessage({ message }: AssistantMessageProps) {
         {message.generationTimeMs && (
           <span className="ml-1">• in {formatGenerationTime(message.generationTimeMs)}</span>
         )}
-        {formatToolCalls(message.toolCalls) && (
-          <span className="ml-1">• tools: {formatToolCalls(message.toolCalls)}</span>
+        {formatToolCalls(message.toolCallCounts) && (
+          <span className="ml-1">• tools: {formatToolCalls(message.toolCallCounts)}</span>
         )}
       </div>
     </div>

@@ -92,7 +92,7 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
       model: null,
       maxPromptLength: null,
       generationTimeMs: null,
-      toolCalls: null,
+      toolCallCounts: null,
     };
     setMessages((prev) => [...prev, userMsg]);
 
@@ -107,7 +107,7 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
       model: null,
       maxPromptLength: null,
       generationTimeMs: null,
-      toolCalls: null,
+      toolCallCounts: null,
     };
     setMessages((prev) => [...prev, botMsg]);
     setStreamingMessageId(assistantMsgId);
