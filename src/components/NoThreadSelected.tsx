@@ -38,27 +38,13 @@ export default function NoThreadSelected({
       .then((data) => {
         const availableModels = data.models || [];
         setModels(availableModels);
-
-        // Validate selected model against available models
-        if (availableModels.length > 0) {
-          const modelExists = availableModels.some(
-            (m: { name: string; model: string }) => m.model === selectedModel
-          );
-
-          if (!modelExists) {
-            // Selected model doesn't exist, fall back to first available
-            const fallbackModel = availableModels[0].model;
-            onModelChange(fallbackModel);
-          }
-        }
-
         setIsLoadingModels(false);
       })
       .catch((error) => {
         console.error("Failed to load models", error);
         setIsLoadingModels(false);
       });
-  }, [selectedModel, onModelChange]);
+  }, []);
 
   const formatTime = (date: Date): string => {
     return date.toLocaleString();
