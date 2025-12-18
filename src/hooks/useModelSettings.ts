@@ -12,7 +12,9 @@ export function useModelSettings(onError?: (error: string) => void) {
         const settingsRes = await fetch("/api/settings");
         if (!settingsRes.ok) {
           const errorData = await settingsRes.json().catch((parseError) => {
-            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+            throw new Error(
+              `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+            );
           });
           throw new Error(errorData.error || settingsRes.statusText);
         }
@@ -25,7 +27,9 @@ export function useModelSettings(onError?: (error: string) => void) {
         const modelsRes = await fetch("/api/models");
         if (!modelsRes.ok) {
           const errorData = await modelsRes.json().catch((parseError) => {
-            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+            throw new Error(
+              `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+            );
           });
           throw new Error(errorData.error || modelsRes.statusText);
         }
@@ -71,7 +75,7 @@ export function useModelSettings(onError?: (error: string) => void) {
     };
 
     loadAndValidateSettings();
-  }, []);
+  }, [onError]);
 
   const handleModelChange = async (model: string) => {
     setSelectedModel(model);
@@ -84,7 +88,9 @@ export function useModelSettings(onError?: (error: string) => void) {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || res.statusText);
       }
@@ -106,7 +112,9 @@ export function useModelSettings(onError?: (error: string) => void) {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || res.statusText);
       }

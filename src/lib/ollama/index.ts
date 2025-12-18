@@ -12,6 +12,7 @@ import type {
   OllamaChunk,
   OllamaResponse,
   MaxPromptLength,
+  ToolCall,
 } from "./types";
 
 // Re-export types for convenience
@@ -22,6 +23,7 @@ export type {
   OllamaChunk,
   OllamaResponse,
   MaxPromptLength,
+  ToolCall,
 } from "./types";
 
 /**
@@ -30,14 +32,7 @@ export type {
  * @param toolCall - The tool call from Ollama.
  * @returns The tool response with the execution result.
  */
-async function executeToolCall(toolCall: {
-  id?: string;
-  type?: "function";
-  function: {
-    name: string;
-    arguments: string | { [key: string]: any };
-  };
-}): Promise<OllamaMessage> {
+async function executeToolCall(toolCall: ToolCall): Promise<OllamaMessage> {
   const { name, arguments: args } = toolCall.function;
   const parsedArgs = typeof args === "string" ? JSON.parse(args) : args;
 
@@ -102,8 +97,8 @@ export async function fetchOllamaResponse(
 ): Promise<OllamaResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool];
   let totalDuration = 0;
-  let currentMessages: OllamaMessage[] = messages.map((msg) => {
-    const message: any = {
+  const currentMessages: OllamaMessage[] = messages.map((msg) => {
+    const message: OllamaMessage = {
       role: msg.role,
       content: msg.content,
     };
@@ -117,10 +112,10 @@ export async function fetchOllamaResponse(
     }
     return message;
   });
-  const allToolCalls: any[] = [];
+  const allToolCalls: ToolCall[] = [];
 
   // Build options object with num_ctx if maxPromptLength is set
-  const options: any = {};
+  const options: { num_ctx?: number } = {};
   if (maxPromptLength && maxPromptLength !== "none") {
     options.num_ctx = maxPromptLength;
   }
@@ -146,7 +141,7 @@ export async function fetchOllamaResponse(
 
     let content = "";
     let thinking = "";
-    const toolCalls: any[] = [];
+    const toolCalls: ToolCall[] = [];
     let iterationDuration = 0;
 
     // Accumulate partial fields from streaming chunks
@@ -173,19 +168,19 @@ export async function fetchOllamaResponse(
       if (chunk.message?.tool_calls?.length) {
         for (const toolCall of chunk.message.tool_calls) {
           // If tool call has an ID, check if we already have it
-          const toolCallAny = toolCall as any;
-          if (toolCallAny.id) {
-            const existingIndex = toolCalls.findIndex((tc: any) => tc.id === toolCallAny.id);
+          const toolCallWithId = toolCall as ToolCall & { id?: string };
+          if (toolCallWithId.id) {
+            const existingIndex = toolCalls.findIndex((tc: ToolCall) => tc.id === toolCallWithId.id);
             if (existingIndex >= 0) {
-              toolCalls[existingIndex] = toolCall;
+              toolCalls[existingIndex] = toolCall as ToolCall;
             } else {
-              toolCalls.push(toolCall);
+              toolCalls.push(toolCall as ToolCall);
             }
           } else {
-            toolCalls.push(toolCall);
+            toolCalls.push(toolCall as ToolCall);
           }
         }
-        onChunk?.({ toolCalls: chunk.message.tool_calls });
+        onChunk?.({ toolCalls: chunk.message.tool_calls as ToolCall[] });
       }
     }
 
@@ -227,7 +222,7 @@ export async function fetchOllamaResponse(
     // Execute tool calls and add results to messages
     debug(
       `[Ollama] Tool calls detected:`,
-      toolCalls.map((tc: any) => ({
+      toolCalls.map((tc: ToolCall) => ({
         name: tc.function.name,
         id: tc.id,
       }))

@@ -14,5 +14,3 @@ export default function ErrorNotification({ message }: ErrorNotificationProps) {
     </div>
   );
 }
-
-

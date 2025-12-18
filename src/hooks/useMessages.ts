@@ -9,27 +9,24 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
   const sendingToThreadIdRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const loadMessages = useCallback(
-    async (id: number, onError?: (error: string) => void) => {
-      setIsLoadingMessages(true);
-      try {
-        const res = await fetch(`/api/threads/${id}/messages`);
-        if (!res.ok) {
-          throw new Error(`Failed to load messages: ${res.status}`);
-        }
-        const data = await res.json();
-        const loadedMessages = data.messages || [];
-        setMessages(loadedMessages);
-      } catch (error) {
-        if (onError && error instanceof Error) {
-          onError(error.message);
-        }
-      } finally {
-        setIsLoadingMessages(false);
+  const loadMessages = useCallback(async (id: number, onError?: (error: string) => void) => {
+    setIsLoadingMessages(true);
+    try {
+      const res = await fetch(`/api/threads/${id}/messages`);
+      if (!res.ok) {
+        throw new Error(`Failed to load messages: ${res.status}`);
       }
-    },
-    []
-  );
+      const data = await res.json();
+      const loadedMessages = data.messages || [];
+      setMessages(loadedMessages);
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (threadId !== null) {
@@ -63,22 +60,22 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
     setIsLoading(true);
     let targetThreadId = currentThreadId;
 
+    if (!targetThreadId) {
+      // Create a new thread if none exists
+      // Use the validated selectedModel instead of reading from localStorage
+      targetThreadId = await onCreateThread(
+        message.substring(0, 100),
+        message,
+        selectedModel,
+        maxPromptLength
+      );
       if (!targetThreadId) {
-        // Create a new thread if none exists
-        // Use the validated selectedModel instead of reading from localStorage
-        targetThreadId = await onCreateThread(
-          message.substring(0, 100),
-          message,
-          selectedModel,
-          maxPromptLength
-        );
-        if (!targetThreadId) {
-          setIsLoading(false);
-          if (onError) {
-            onError("Failed to create thread");
-          }
-          return;
+        setIsLoading(false);
+        if (onError) {
+          onError("Failed to create thread");
         }
+        return;
+      }
       // Mark that we're sending to this thread before selecting it
       sendingToThreadIdRef.current = targetThreadId;
       onThreadSelect(targetThreadId);
@@ -128,7 +125,9 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
 
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
       }
@@ -247,7 +246,9 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || "Failed to delete message");
       }

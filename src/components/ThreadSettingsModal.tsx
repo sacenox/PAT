@@ -42,7 +42,9 @@ export default function ThreadSettingsModal({
         .then(async (res) => {
           if (!res.ok) {
             const errorData = await res.json().catch((parseError) => {
-              throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+              throw new Error(
+                `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+              );
             });
             throw new Error(errorData.error || res.statusText);
           }
@@ -60,7 +62,7 @@ export default function ThreadSettingsModal({
           }
         });
     }
-  }, [isOpen]);
+  }, [isOpen, onError]);
 
   // Load thread settings when thread changes
   useEffect(() => {
@@ -123,10 +125,6 @@ export default function ThreadSettingsModal({
   }
 
   const threadTitle = thread.title || `Thread ${thread.id}`;
-  const hasChanges =
-    selectedModel !== (thread.model || "gpt-oss") ||
-    maxPromptLength !==
-      (thread.maxPromptLength === null ? "none" : (thread.maxPromptLength as 1024 | 4096));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>

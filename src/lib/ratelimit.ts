@@ -93,7 +93,6 @@ export function createRateLimiter(config: RateLimitConfig) {
   async function check(): Promise<RateLimitResult> {
     const state = await loadState();
     const now = Date.now();
-    const timeSinceWindowStart = now - state.windowStart;
 
     // Calculate when the window resets
     const resetAt = state.windowStart + config.windowMs;

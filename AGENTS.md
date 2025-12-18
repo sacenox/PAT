@@ -112,8 +112,8 @@ Add tests when prompted only.
 3. Update existing tests and add more if prompted to.
 4. Format code: `npm run format`
 5. Check for errors in compilation: `npm run typecheck`
-5. Run linter: `npm run lint`
-6. Run tests: `npm run test:run` (verify all tests pass)
+6. Run linter: `npm run lint` **NEVER USE IGNORE COMMENTS**
+7. Run tests: `npm run test:run` (verify all tests pass)
 
 ## Important Constraints
 

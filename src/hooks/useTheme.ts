@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 
 export function useTheme() {
-  const [themeMode, setThemeMode] = useState<"device" | "dark" | "light">("device");
+  const [themeMode, setThemeMode] = useState<"device" | "dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const savedMode = localStorage.getItem("themeMode") as "device" | "dark" | "light" | null;
+      return savedMode || "device";
+    }
+    return "device";
+  });
 
   const applyTheme = (mode: "device" | "dark" | "light") => {
     let shouldBeDark = false;
@@ -19,11 +25,8 @@ export function useTheme() {
   };
 
   useEffect(() => {
-    const savedMode = localStorage.getItem("themeMode") as "device" | "dark" | "light" | null;
-    const mode = savedMode || "device";
-    setThemeMode(mode);
-    applyTheme(mode);
-  }, []);
+    applyTheme(themeMode);
+  }, [themeMode]);
 
   useEffect(() => {
     if (themeMode === "device") {

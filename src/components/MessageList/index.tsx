@@ -8,14 +8,12 @@ import DeleteMessageButton from "./DeleteMessageButton";
 
 type MessageListProps = {
   messages: Message[];
-  streamingMessageId: number | null;
   threadId: number | null;
   onDeleteMessage: (messageId: number, threadId: number) => void;
 };
 
 export default function MessageList({
   messages,
-  streamingMessageId,
   threadId,
   onDeleteMessage,
 }: MessageListProps) {
@@ -50,7 +48,7 @@ export default function MessageList({
         >
           <div className="p-2">
             {msg.role === "assistant" ? (
-              <AssistantMessage message={msg} isStreaming={streamingMessageId === msg.id} />
+              <AssistantMessage message={msg} />
             ) : (
               <UserMessage message={msg} />
             )}

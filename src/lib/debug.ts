@@ -4,7 +4,7 @@
  * Debug logging utility that only logs in development mode.
  * Accepts the same arguments as console.debug().
  */
-export function debug(...args: any[]): void {
+export function debug(...args: Parameters<typeof console.debug>): void {
   if (process.env.NODE_ENV === "development") {
     console.debug(...args);
   }

@@ -44,10 +44,6 @@ export default function Home() {
     deleteMessageInternal(messageId, threadId, setError);
   };
 
-  // Clear error when thread changes
-  useEffect(() => {
-    setError(null);
-  }, [currentThreadId]);
 
   // Auto-dismiss error after 3 seconds
   useEffect(() => {
@@ -60,6 +56,7 @@ export default function Home() {
   }, [error]);
 
   const handleThreadSelect = (threadId: number) => {
+    setError(null);
     selectThread(threadId);
   };
 
@@ -126,11 +123,6 @@ export default function Home() {
     }
   };
 
-  // Get the model name for the current thread, or use selected model if no thread
-  const currentModelName =
-    currentThreadId !== null
-      ? threads.find((t) => t.id === currentThreadId)?.model || selectedModel || "gpt-oss"
-      : selectedModel || "gpt-oss";
 
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
@@ -156,7 +148,6 @@ export default function Home() {
             ) : (
               <MessageList
                 messages={messages}
-                streamingMessageId={streamingMessageId}
                 threadId={currentThreadId}
                 onDeleteMessage={handleDeleteMessage}
               />
@@ -169,7 +160,6 @@ export default function Home() {
           isLoadingMessages={isLoadingMessages}
           messages={messages}
           onSubmit={handleSendMessage}
-          modelName={currentModelName}
           isStreaming={isLoading && streamingMessageId !== null}
           onStop={stopGeneration}
           error={error}
@@ -189,7 +179,9 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
-        onLoadMore={(limit) => loadMoreThreads(limit, setError)}
+        onLoadMore={() => {
+          void loadMoreThreads(8, setError);
+        }}
         hasMoreThreads={hasMoreThreads}
       />
     </div>

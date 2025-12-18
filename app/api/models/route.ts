@@ -11,7 +11,7 @@ export async function GET() {
       model: model.name, // Use name as the model identifier
     }));
     return NextResponse.json({ models });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 });
   }
 }

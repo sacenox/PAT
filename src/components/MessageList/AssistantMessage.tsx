@@ -8,10 +8,9 @@ import "../../../app/highlight-theme.css";
 
 type AssistantMessageProps = {
   message: Message;
-  isStreaming?: boolean;
 };
 
-export default function AssistantMessage({ message, isStreaming = false }: AssistantMessageProps) {
+export default function AssistantMessage({ message }: AssistantMessageProps) {
   const formatTimestamp = (date: Date | string): string => {
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleString();
@@ -31,7 +30,7 @@ export default function AssistantMessage({ message, isStreaming = false }: Assis
 
       // Count occurrences of each tool name
       const toolCounts: Record<string, number> = {};
-      toolCalls.forEach((tc: any) => {
+      toolCalls.forEach((tc: { function?: { name?: string } }) => {
         const toolName = tc.function?.name || "unknown";
         toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
       });

@@ -94,7 +94,7 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
 
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
       const topics = data.RelatedTopics.slice(0, 3)
-        .map((topic: any) => topic.Text || topic.FirstURL)
+        .map((topic: { Text?: string; FirstURL?: string }) => topic.Text || topic.FirstURL)
         .filter(Boolean)
         .join(", ");
       if (topics) {

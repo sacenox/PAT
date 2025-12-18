@@ -16,5 +16,3 @@ export default function ErrorIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-

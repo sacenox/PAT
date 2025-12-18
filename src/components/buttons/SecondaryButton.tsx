@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { Children, isValidElement } from "react";
+import { Children } from "react";
 
 type SecondaryButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;

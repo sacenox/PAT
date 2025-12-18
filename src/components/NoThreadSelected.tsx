@@ -19,13 +19,11 @@ export default function NoThreadSelected({
   onMaxPromptLengthChange,
   onError,
 }: NoThreadSelectedProps) {
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   useEffect(() => {
-    // Set initial time only on client side to avoid hydration mismatch
-    setCurrentTime(new Date());
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -34,28 +32,38 @@ export default function NoThreadSelected({
   }, []);
 
   useEffect(() => {
-    setIsLoadingModels(true);
-    fetch("/api/models")
-      .then(async (res) => {
+    let cancelled = false;
+    const loadModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const res = await fetch("/api/models");
         if (!res.ok) {
           const errorData = await res.json().catch((parseError) => {
-            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+            throw new Error(
+              `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+            );
           });
           throw new Error(errorData.error || res.statusText);
         }
-        return res.json();
-      })
-      .then((data) => {
-        const availableModels = data.models || [];
-        setModels(availableModels);
-        setIsLoadingModels(false);
-      })
-      .catch((error) => {
-        setIsLoadingModels(false);
-        if (onError && error instanceof Error) {
-          onError(error.message);
+        const data = await res.json();
+        if (!cancelled) {
+          const availableModels = data.models || [];
+          setModels(availableModels);
+          setIsLoadingModels(false);
         }
-      });
+      } catch (error) {
+        if (!cancelled) {
+          setIsLoadingModels(false);
+          if (onError && error instanceof Error) {
+            onError(error.message);
+          }
+        }
+      }
+    };
+    loadModels();
+    return () => {
+      cancelled = true;
+    };
   }, [onError]);
 
   const formatTime = (date: Date): string => {
@@ -67,7 +75,7 @@ export default function NoThreadSelected({
   return (
     <div className="mx-auto min-w-0 max-w-5xl">
       <div className="flex flex-col gap-4 bg-neutral-200 p-8 dark:bg-neutral-900">
-        <h1 className="text-4xl font-bold">Hello, I'm PAT 👋</h1>
+        <h1 className="text-4xl font-bold">Hello, I&apos;m PAT 👋</h1>
         <p>
           <strong>PAT</strong> (Personal Assistant Thing) is your personal assistant. Start typing
           below to start new a conversation thread or pick a previous conversation thread from the

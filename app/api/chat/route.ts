@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  fetchOllamaResponse,
   type OllamaMessageInput,
   type OllamaMessageRole,
   type MaxPromptLength,
@@ -8,10 +7,15 @@ import {
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
+import { streamAssistantResponse } from "@/src/lib/chat";
 
 export async function POST(request: Request) {
   const { message, threadId: threadIdRaw } = await request.json();
   const signal = request.signal;
+
+  if (typeof message !== "string" || !message.trim()) {
+    return NextResponse.json({ error: "message is required " }, { status: 400 });
+  }
 
   if (!threadIdRaw) {
     return NextResponse.json({ error: "threadId is required" }, { status: 400 });
@@ -25,21 +29,15 @@ export async function POST(request: Request) {
   try {
     // 1. Fetch thread to get its model and maxPromptLength settings
     // These thread-specific settings override any global settings
-    const thread = await db
-      .select()
-      .from(threads)
-      .where(eq(threads.id, threadId))
-      .limit(1);
+    const thread = await db.select().from(threads).where(eq(threads.id, threadId)).limit(1);
     if (thread.length === 0) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
-    // Use thread-specific model (stored in thread table)
-    const threadModel = thread[0].model || "gpt-oss";
-    // Use thread-specific maxPromptLength (stored in thread table, can be null, 1024, or 4096)
-    // Type assertion ensures compatibility with fetchOllamaResponse which expects "none" | 1024 | 4096 | null
+    // Use thread-specific settings (stored in thread table)
+    const threadModel = thread[0].model;
     // Note: null from database means "none" (no limit), which fetchOllamaResponse handles correctly
     const threadMaxPromptLength: MaxPromptLength =
-      thread[0].maxPromptLength === null ? 'none' : thread[0].maxPromptLength as MaxPromptLength;
+      thread[0].maxPromptLength === null ? null : (thread[0].maxPromptLength as MaxPromptLength);
 
     // 2. Fetch previous messages from thread
     const previousMessages = await db
@@ -70,202 +68,12 @@ export async function POST(request: Request) {
     });
 
     // 5. Stream assistant response
-    let accumulatedContent = "";
-    let accumulatedThinking = "";
-    const allToolCalls: any[] = [];
-
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        // Track if controller is closed to avoid double-close
-        let isControllerClosed = false;
-        const safeClose = () => {
-          if (!isControllerClosed) {
-            isControllerClosed = true;
-            try {
-              controller.close();
-            } catch (e) {
-              // Controller may already be closed, ignore
-            }
-          }
-        };
-
-        try {
-          // Check if already aborted
-          if (signal.aborted) {
-            safeClose();
-            return;
-          }
-
-          const onChunk = (chunk: { content?: string; thinking?: string; toolCalls?: any[] }) => {
-            // Check abort signal before each chunk
-            if (signal.aborted || isControllerClosed) {
-              return;
-            }
-
-            try {
-              if (chunk.content) {
-                accumulatedContent += chunk.content;
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`
-                  )
-                );
-              }
-              if (chunk.thinking) {
-                accumulatedThinking += chunk.thinking;
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`
-                  )
-                );
-              }
-              if (chunk.toolCalls) {
-                allToolCalls.push(...chunk.toolCalls);
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`
-                  )
-                );
-              }
-            } catch (e) {
-              // Controller may be closed, ignore
-            }
-          };
-
-          // Set up abort handler
-          const abortHandler = () => {
-            if (!isControllerClosed) {
-              try {
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "error", error: "Generation stopped" })}\n\n`
-                  )
-                );
-              } catch (e) {
-                // Controller may be closed, ignore
-              }
-              safeClose();
-            }
-          };
-          signal.addEventListener("abort", abortHandler);
-
-          let generationTimeMs: number | undefined;
-          let toolCalls: any[] | undefined;
-
-          try {
-            const result = await fetchOllamaResponse(
-              ollamaMessages,
-              onChunk,
-              threadModel,
-              signal,
-              threadMaxPromptLength
-            );
-            generationTimeMs = result.generationTimeMs;
-            toolCalls = result.toolCalls;
-          } catch (error) {
-            // If aborted, don't throw - just close
-            if (signal.aborted || (error instanceof Error && error.message === "Request aborted")) {
-              safeClose();
-              return;
-            }
-            throw error;
-          } finally {
-            signal.removeEventListener("abort", abortHandler);
-          }
-
-          // Check if aborted before saving
-          if (signal.aborted) {
-            // Save partial content if any was generated
-            if (accumulatedContent) {
-              await db.insert(messages).values({
-                threadId: threadId,
-                role: "assistant",
-                content: accumulatedContent,
-                model: threadModel,
-                maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
-                createdAt: new Date(),
-                generationTimeMs: null,
-                toolCalls: allToolCalls.length > 0 ? JSON.stringify(allToolCalls) : null,
-              });
-              await db
-                .update(threads)
-                .set({ updatedAt: new Date() })
-                .where(eq(threads.id, threadId));
-
-              // Send done message with metadata for aborted generation
-              if (!isControllerClosed) {
-                try {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "done",
-                        answer: accumulatedContent,
-                        model: threadModel,
-                        maxPromptLength: threadMaxPromptLength,
-                      })}\n\n`
-                    )
-                  );
-                } catch (e) {
-                  // Controller may be closed, ignore
-                }
-              }
-            }
-            safeClose();
-            return;
-          }
-
-          // 6. Store assistant message with model, maxPromptLength, generation time and tool calls
-          await db.insert(messages).values({
-            threadId: threadId,
-            role: "assistant",
-            content: accumulatedContent,
-            model: threadModel,
-            maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
-            createdAt: new Date(),
-            generationTimeMs,
-            toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
-          });
-
-          // 7. Update thread's updatedAt timestamp
-          await db
-            .update(threads)
-            .set({ updatedAt: new Date() })
-            .where(eq(threads.id, threadId));
-
-          // Send final message with metadata
-          if (!isControllerClosed) {
-            try {
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    type: "done",
-                    answer: accumulatedContent,
-                    model: threadModel,
-                    maxPromptLength: threadMaxPromptLength,
-                  })}\n\n`
-                )
-              );
-            } catch (e) {
-              // Controller may be closed, ignore
-            }
-            safeClose();
-          }
-        } catch (error) {
-          if (!isControllerClosed) {
-            try {
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "error", error: "Sorry, something went wrong." })}\n\n`
-                )
-              );
-            } catch (e) {
-              // Controller may be closed, ignore
-            }
-            safeClose();
-          }
-        }
-      },
+    const stream = streamAssistantResponse({
+      ollamaMessages,
+      threadId,
+      threadModel,
+      threadMaxPromptLength,
+      signal,
     });
 
     return new Response(stream, {
@@ -275,7 +83,7 @@ export async function POST(request: Request) {
         Connection: "keep-alive",
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }

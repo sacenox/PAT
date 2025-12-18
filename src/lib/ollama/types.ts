@@ -1,10 +1,24 @@
 /* personal-assistant-thing/src/lib/ollama/types.ts */
 // Type definitions for Ollama integration
 
-// Use types compatible with ollama package - use any to work around strict typing
-export type OllamaMessage = any;
+export interface OllamaMessage {
+  role: "user" | "assistant" | "system" | "tool";
+  content?: string;
+  thinking?: string;
+  tool_calls?: ToolCall[];
+  tool_name?: string;
+}
 
 export type OllamaMessageRole = "user" | "assistant" | "system";
+
+export interface ToolCall {
+  id?: string;
+  type?: "function";
+  function: {
+    name: string;
+    arguments: string | { [key: string]: unknown };
+  };
+}
 
 export interface OllamaMessageInput {
   role: OllamaMessageRole;
@@ -15,14 +29,13 @@ export interface OllamaMessageInput {
 export interface OllamaResponse {
   content: string;
   generationTimeMs: number;
-  toolCalls?: any[]; // Array of tool calls made during the conversation
+  toolCalls?: ToolCall[]; // Array of tool calls made during the conversation
 }
 
 export interface OllamaChunk {
   content?: string;
   thinking?: string;
-  toolCalls?: any[];
+  toolCalls?: ToolCall[];
 }
 
 export type MaxPromptLength = "none" | 1024 | 4096 | null;
-

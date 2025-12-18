@@ -17,11 +17,11 @@ export function useThreads() {
       setThreads(threadsList);
       setHasMoreThreads(data.hasMore || false);
       setTotalThreadCount(data.totalCount || 0);
-      } catch (error) {
-        if (onError && error instanceof Error) {
-          onError(error.message);
-        }
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error.message);
       }
+    }
   };
 
   const loadMoreThreads = async (limit: number = 8, onError?: (error: string) => void) => {
@@ -39,11 +39,11 @@ export function useThreads() {
       } else {
         setHasMoreThreads(false);
       }
-      } catch (error) {
-        if (onError && error instanceof Error) {
-          onError(error.message);
-        }
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error.message);
       }
+    }
   };
 
   const createThread = async (
@@ -67,7 +67,7 @@ export function useThreads() {
           const settingsRes = await fetch("/api/settings");
           const settingsData = await settingsRes.json();
           maxPromptLengthToUse = settingsData.settings?.maxPromptLength || "none";
-        } catch (error) {
+        } catch {
           maxPromptLengthToUse = "none";
         }
       }
@@ -112,7 +112,9 @@ export function useThreads() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || "Failed to update thread");
       }
@@ -122,8 +124,7 @@ export function useThreads() {
       // Update the thread in local state
       setThreads((prev) => prev.map((t) => (t.id === threadId ? updatedThread : t)));
     } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Failed to update thread";
+      const errorMsg = error instanceof Error ? error.message : "Failed to update thread";
       if (onError) onError(errorMsg);
       throw error;
     }
@@ -139,7 +140,9 @@ export function useThreads() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
         });
         throw new Error(errorData.error || "Failed to delete thread");
       }
@@ -147,8 +150,7 @@ export function useThreads() {
       setThreads((prev) => prev.filter((t) => t.id !== threadId));
       setTotalThreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Failed to delete thread";
+      const errorMsg = error instanceof Error ? error.message : "Failed to delete thread";
       if (onError) onError(errorMsg);
       throw error;
     }

@@ -26,8 +26,9 @@ export async function setCache<T>(key: string, value: T, ttlMs?: number): Promis
       await valkey.set(key, serialized);
       debug(`[Cache] Set key: ${key}`);
     }
-  } catch (error: any) {
-    debug(`[Cache] Error setting cache: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    debug(`[Cache] Error setting cache: ${message}`);
     // Don't throw - cache operations should continue even if persistence fails
   }
 }
@@ -49,8 +50,9 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
     debug(`[Cache] Cache hit for key: ${key}`);
     return JSON.parse(serialized) as T;
-  } catch (error: any) {
-    debug(`[Cache] Error getting cache: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    debug(`[Cache] Error getting cache: ${message}`);
     return null;
   }
 }

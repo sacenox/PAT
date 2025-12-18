@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json({
       settings: settings || { maxPromptLength: "none", selectedModel: "gpt-oss" },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to get settings" }, { status: 500 });
   }
 }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     const { maxPromptLength, selectedModel } = await request.json();
 
-    const settings: Settings = {};
+    const settings: Partial<Settings> = {};
 
     // Validate and set maxPromptLength if provided
     if (maxPromptLength !== undefined) {
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     await setCache(SETTINGS_CACHE_KEY, mergedSettings);
 
     return NextResponse.json({ settings: mergedSettings });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });
   }
 }

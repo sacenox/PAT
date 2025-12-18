@@ -14,7 +14,6 @@ type MessageInputProps = {
   isLoadingMessages: boolean;
   messages: Message[];
   onSubmit: (message: string) => void;
-  modelName?: string;
   isStreaming?: boolean;
   onStop?: () => void;
   error?: string | null;
@@ -33,24 +32,23 @@ export type MessageInputRef = {
 };
 
 const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
-    (
-      {
-        isLoading,
-        isLoadingMessages,
-        messages,
-        onSubmit,
-        modelName = "gpt-oss",
-        isStreaming = false,
-        onStop,
-        error,
-        currentThreadId,
-        currentThread,
-        onThreadUpdate,
-        onThreadDelete,
-        onError,
-      },
-      ref
-    ) => {
+  (
+    {
+      isLoading,
+      isLoadingMessages,
+      messages,
+      onSubmit,
+      isStreaming = false,
+      onStop,
+      error,
+      currentThreadId,
+      currentThread,
+      onThreadUpdate,
+      onThreadDelete,
+      onError,
+    },
+    ref
+  ) => {
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
