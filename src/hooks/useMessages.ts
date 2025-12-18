@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 
-export function useMessages(threadId: number | null) {
+export function useMessages(threadId: number | null, onError?: (error: string) => void) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
@@ -9,31 +9,39 @@ export function useMessages(threadId: number | null) {
   const sendingToThreadIdRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const loadMessages = useCallback(async (id: number) => {
-    setIsLoadingMessages(true);
-    try {
-      const res = await fetch(`/api/threads/${id}/messages`);
-      const data = await res.json();
-      const loadedMessages = data.messages || [];
-      setMessages(loadedMessages);
-    } catch (error) {
-      console.error("Failed to load messages", error);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, []);
+  const loadMessages = useCallback(
+    async (id: number, onError?: (error: string) => void) => {
+      setIsLoadingMessages(true);
+      try {
+        const res = await fetch(`/api/threads/${id}/messages`);
+        if (!res.ok) {
+          throw new Error(`Failed to load messages: ${res.status}`);
+        }
+        const data = await res.json();
+        const loadedMessages = data.messages || [];
+        setMessages(loadedMessages);
+      } catch (error) {
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (threadId !== null) {
       // Don't reload messages if we're currently sending a message to this thread (to preserve optimistic updates)
       if (sendingToThreadIdRef.current !== threadId) {
-        loadMessages(threadId);
+        loadMessages(threadId, onError);
       }
     } else {
       setMessages([]);
       setIsLoadingMessages(false);
     }
-  }, [threadId, loadMessages]);
+  }, [threadId, loadMessages, onError]);
 
   const sendMessage = async (
     message: string,
@@ -47,26 +55,30 @@ export function useMessages(threadId: number | null) {
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
     selectedModel: string = "gpt-oss",
-    maxPromptLength?: "none" | 1024 | 4096
+    maxPromptLength?: "none" | 1024 | 4096,
+    onError?: (error: string) => void
   ) => {
     if (!message.trim() || isLoading) return;
 
     setIsLoading(true);
     let targetThreadId = currentThreadId;
 
-    if (!targetThreadId) {
-      // Create a new thread if none exists
-      // Use the validated selectedModel instead of reading from localStorage
-      targetThreadId = await onCreateThread(
-        message.substring(0, 100),
-        message,
-        selectedModel,
-        maxPromptLength
-      );
       if (!targetThreadId) {
-        setIsLoading(false);
-        return;
-      }
+        // Create a new thread if none exists
+        // Use the validated selectedModel instead of reading from localStorage
+        targetThreadId = await onCreateThread(
+          message.substring(0, 100),
+          message,
+          selectedModel,
+          maxPromptLength
+        );
+        if (!targetThreadId) {
+          setIsLoading(false);
+          if (onError) {
+            onError("Failed to create thread");
+          }
+          return;
+        }
       // Mark that we're sending to this thread before selecting it
       sendingToThreadIdRef.current = targetThreadId;
       onThreadSelect(targetThreadId);
@@ -80,6 +92,8 @@ export function useMessages(threadId: number | null) {
       role: "user",
       content: message,
       createdAt: new Date(),
+      model: null,
+      maxPromptLength: null,
       generationTimeMs: null,
       toolCalls: null,
     };
@@ -93,6 +107,8 @@ export function useMessages(threadId: number | null) {
       role: "assistant",
       content: "",
       createdAt: new Date(),
+      model: null,
+      maxPromptLength: null,
       generationTimeMs: null,
       toolCalls: null,
     };
@@ -111,7 +127,10 @@ export function useMessages(threadId: number | null) {
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
       }
 
       if (!res.body) {
@@ -172,10 +191,14 @@ export function useMessages(threadId: number | null) {
                   shouldStop = true;
                   break;
                 }
-                throw new Error(data.error || "Unknown error");
+                const errorMsg = data.error || "Unknown error";
+                if (onError) onError(errorMsg);
+                throw new Error(errorMsg);
               }
             } catch (parseError) {
-              console.error("Failed to parse SSE data", parseError);
+              if (onError && parseError instanceof Error) {
+                onError(parseError.message);
+              }
             }
           }
         }
@@ -187,9 +210,11 @@ export function useMessages(threadId: number | null) {
     } catch (error) {
       // Don't log abort errors as they're intentional
       if (error instanceof Error && error.name !== "AbortError") {
-        console.error("Failed to send message", error);
         // Only remove the assistant message on non-abort errors
         setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
       }
       // For abort errors, keep the partial content
       setStreamingMessageId(null);
@@ -211,18 +236,27 @@ export function useMessages(threadId: number | null) {
     setMessages([]);
   };
 
-  const deleteMessage = async (messageId: number, threadId: number) => {
+  const deleteMessage = async (
+    messageId: number,
+    threadId: number,
+    onError?: (error: string) => void
+  ) => {
     try {
       const res = await fetch(`/api/threads/${threadId}/messages/${messageId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
-        throw new Error("Failed to delete message");
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || "Failed to delete message");
       }
       // Remove the message from local state
       setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
     } catch (error) {
-      console.error("Failed to delete message", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     }
   };
 

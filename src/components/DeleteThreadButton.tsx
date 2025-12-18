@@ -8,12 +8,14 @@ type DeleteThreadButtonProps = {
   threadId: number;
   threadTitle: string;
   onDeleteThread: (threadId: number) => void;
+  onError?: (error: string) => void;
 };
 
 export default function DeleteThreadButton({
   threadId,
   threadTitle,
   onDeleteThread,
+  onError,
 }: DeleteThreadButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -24,7 +26,9 @@ export default function DeleteThreadButton({
       await onDeleteThread(threadId);
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Failed to delete thread", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     } finally {
       setIsDeleting(false);
     }

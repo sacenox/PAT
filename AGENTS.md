@@ -73,7 +73,6 @@ Add tests when prompted only.
    - Prettier automatically sorts Tailwind CSS classes via `prettier-plugin-tailwindcss`
 
 8. **Error Handling**:
-   - Use `console.error` for errors
    - Use `lib/debug` for debug information
    - Return user-friendly error messages in API responses
    - Handle API errors gracefully with try/catch blocks

@@ -183,7 +183,6 @@ export async function queryWeather(location: string): Promise<string> {
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;
   } catch (error) {
-    console.error("Weather query error:", error);
     // Don't cache errors
     return `Error querying weather: ${error instanceof Error ? error.message : "Unknown error"}`;
   }

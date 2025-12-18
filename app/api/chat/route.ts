@@ -242,7 +242,6 @@ export async function POST(request: Request) {
             safeClose();
           }
         } catch (error) {
-          console.error("Chat API error", error);
           if (!isControllerClosed) {
             try {
               controller.enqueue(
@@ -267,7 +266,6 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Chat API error", error);
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }

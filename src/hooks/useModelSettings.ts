@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function useModelSettings() {
+export function useModelSettings(onError?: (error: string) => void) {
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
   const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096>("none");
 
@@ -10,6 +10,12 @@ export function useModelSettings() {
       try {
         // Load saved settings from API
         const settingsRes = await fetch("/api/settings");
+        if (!settingsRes.ok) {
+          const errorData = await settingsRes.json().catch((parseError) => {
+            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          });
+          throw new Error(errorData.error || settingsRes.statusText);
+        }
         const settingsData = await settingsRes.json();
         const settings = settingsData.settings || {};
         const savedModel = settings.selectedModel || "gpt-oss";
@@ -17,6 +23,12 @@ export function useModelSettings() {
 
         // Get available models
         const modelsRes = await fetch("/api/models");
+        if (!modelsRes.ok) {
+          const errorData = await modelsRes.json().catch((parseError) => {
+            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          });
+          throw new Error(errorData.error || modelsRes.statusText);
+        }
         const modelsData = await modelsRes.json();
         const availableModels = modelsData.models || [];
 
@@ -49,7 +61,9 @@ export function useModelSettings() {
           });
         }
       } catch (error) {
-        console.error("Failed to load/validate settings", error);
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
         // On error, keep defaults
         setSelectedModel("gpt-oss");
         setMaxPromptLength("none");
@@ -63,13 +77,21 @@ export function useModelSettings() {
     setSelectedModel(model);
     // Save to API
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ selectedModel: model }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || res.statusText);
+      }
     } catch (error) {
-      console.error("Failed to save model", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     }
   };
 
@@ -77,13 +99,21 @@ export function useModelSettings() {
     setMaxPromptLength(value);
     // Save to API
     try {
-      await fetch("/api/settings", {
+      const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ maxPromptLength: value }),
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || res.statusText);
+      }
     } catch (error) {
-      console.error("Failed to save settings", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     }
   };
 

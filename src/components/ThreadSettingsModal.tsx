@@ -16,6 +16,7 @@ type ThreadSettingsModalProps = {
     updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
   ) => Promise<void>;
   onDeleteThread: (threadId: number) => Promise<void>;
+  onError?: (error: string) => void;
 };
 
 export default function ThreadSettingsModal({
@@ -24,6 +25,7 @@ export default function ThreadSettingsModal({
   thread,
   onUpdateThread,
   onDeleteThread,
+  onError,
 }: ThreadSettingsModalProps) {
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -37,15 +39,25 @@ export default function ThreadSettingsModal({
     if (isOpen) {
       setIsLoadingModels(true);
       fetch("/api/models")
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json().catch((parseError) => {
+              throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+            });
+            throw new Error(errorData.error || res.statusText);
+          }
+          return res.json();
+        })
         .then((data) => {
           const availableModels = data.models || [];
           setModels(availableModels);
           setIsLoadingModels(false);
         })
         .catch((error) => {
-          console.error("Failed to load models", error);
           setIsLoadingModels(false);
+          if (onError && error instanceof Error) {
+            onError(error.message);
+          }
         });
     }
   }, [isOpen]);
@@ -82,7 +94,9 @@ export default function ThreadSettingsModal({
       });
       onClose();
     } catch (error) {
-      console.error("Failed to update thread settings", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -96,7 +110,9 @@ export default function ThreadSettingsModal({
       await onDeleteThread(thread.id);
       onClose();
     } catch (error) {
-      console.error("Failed to delete thread", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
     } finally {
       setIsDeleting(false);
     }

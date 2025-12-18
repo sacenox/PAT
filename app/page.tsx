@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Sidebar from "@/src/components/Sidebar";
 import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
 import MessageList from "@/src/components/MessageList";
@@ -12,9 +12,10 @@ import { useThreadSelection } from "@/src/hooks/useThreadSelection";
 import "./highlight-theme.css";
 
 export default function Home() {
+  const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
   const { selectedModel, handleModelChange, maxPromptLength, handleMaxPromptLengthChange } =
-    useModelSettings();
+    useModelSettings(setError);
   const {
     threads,
     totalThreadCount,
@@ -35,9 +36,28 @@ export default function Home() {
     sendMessage,
     clearMessages,
     stopGeneration,
-    deleteMessage,
-  } = useMessages(currentThreadId);
+    deleteMessage: deleteMessageInternal,
+  } = useMessages(currentThreadId, setError);
   const messageInputRef = useRef<MessageInputRef>(null);
+
+  const handleDeleteMessage = (messageId: number, threadId: number) => {
+    deleteMessageInternal(messageId, threadId, setError);
+  };
+
+  // Clear error when thread changes
+  useEffect(() => {
+    setError(null);
+  }, [currentThreadId]);
+
+  // Auto-dismiss error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleThreadSelect = (threadId: number) => {
     selectThread(threadId);
@@ -46,6 +66,7 @@ export default function Home() {
   const handleCreateNewThread = () => {
     deselectThread();
     clearMessages();
+    setError(null);
     // Focus the input after a short delay to ensure DOM has updated
     setTimeout(() => {
       messageInputRef.current?.focus();
@@ -56,40 +77,53 @@ export default function Home() {
     threadId: number,
     updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
   ) => {
+    setError(null);
     try {
-      await updateThread(threadId, updates);
+      await updateThread(threadId, updates, setError);
       // Reload threads to ensure UI is in sync
-      await loadThreads(8);
+      await loadThreads(8, setError);
     } catch (error) {
-      console.error("Failed to update thread", error);
-      throw error;
+      if (error instanceof Error) {
+        setError(error.message);
+      }
     }
   };
 
   const handleThreadDelete = async (threadId: number) => {
+    setError(null);
     try {
-      await deleteThread(threadId);
+      await deleteThread(threadId, setError);
       // If the deleted thread was the current thread, deselect it
       if (currentThreadId === threadId) {
         deselectThread();
         clearMessages();
       }
     } catch (error) {
-      console.error("Failed to delete thread", error);
-      throw error;
+      if (error instanceof Error) {
+        setError(error.message);
+      }
     }
   };
 
   const handleSendMessage = async (message: string) => {
-    await sendMessage(
-      message,
-      currentThreadId,
-      createThread,
-      selectThread,
-      loadThreads,
-      selectedModel,
-      maxPromptLength
-    );
+    setError(null);
+    try {
+      await sendMessage(
+        message,
+        currentThreadId,
+        (title, firstMessage, model, maxPromptLength) =>
+          createThread(title, firstMessage, model, maxPromptLength, setError),
+        selectThread,
+        () => loadThreads(8, setError),
+        selectedModel,
+        maxPromptLength,
+        setError
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
   };
 
   // Get the model name for the current thread, or use selected model if no thread
@@ -117,13 +151,14 @@ export default function Home() {
                 onModelChange={handleModelChange}
                 maxPromptLength={maxPromptLength}
                 onMaxPromptLengthChange={handleMaxPromptLengthChange}
+                onError={setError}
               />
             ) : (
               <MessageList
                 messages={messages}
                 streamingMessageId={streamingMessageId}
                 threadId={currentThreadId}
-                onDeleteMessage={deleteMessage}
+                onDeleteMessage={handleDeleteMessage}
               />
             )}
           </div>
@@ -137,12 +172,14 @@ export default function Home() {
           modelName={currentModelName}
           isStreaming={isLoading && streamingMessageId !== null}
           onStop={stopGeneration}
+          error={error}
           currentThreadId={currentThreadId}
           currentThread={
             currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null
           }
           onThreadUpdate={handleThreadUpdate}
           onThreadDelete={handleThreadDelete}
+          onError={setError}
         />
       </div>
       <Sidebar
@@ -152,7 +189,7 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
-        onLoadMore={loadMoreThreads}
+        onLoadMore={(limit) => loadMoreThreads(limit, setError)}
         hasMoreThreads={hasMoreThreads}
       />
     </div>

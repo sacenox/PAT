@@ -96,7 +96,6 @@ export async function queryWebSearch(query: string): Promise<string> {
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;
   } catch (error) {
-    console.error("Web search error:", error);
     // Don't cache errors
     return `Error performing web search: ${error instanceof Error ? error.message : "Unknown error"}`;
   }

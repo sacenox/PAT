@@ -5,6 +5,7 @@ import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
 import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import ThinkingNotification from "@/src/components/ThinkingNotification";
 import ThreadSettingsButton from "@/src/components/ThreadSettingsButton";
+import ErrorNotification from "@/src/components/ErrorNotification";
 import type { Message } from "@/src/lib/db/schema";
 import type { Thread } from "@/src/lib/db/schema";
 
@@ -16,6 +17,7 @@ type MessageInputProps = {
   modelName?: string;
   isStreaming?: boolean;
   onStop?: () => void;
+  error?: string | null;
   currentThreadId: number | null;
   currentThread: Thread | null;
   onThreadUpdate?: (
@@ -23,6 +25,7 @@ type MessageInputProps = {
     updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
   ) => Promise<void>;
   onThreadDelete?: (threadId: number) => Promise<void>;
+  onError?: (error: string) => void;
 };
 
 export type MessageInputRef = {
@@ -30,22 +33,24 @@ export type MessageInputRef = {
 };
 
 const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
-  (
-    {
-      isLoading,
-      isLoadingMessages,
-      messages,
-      onSubmit,
-      modelName = "gpt-oss",
-      isStreaming = false,
-      onStop,
-      currentThreadId,
-      currentThread,
-      onThreadUpdate,
-      onThreadDelete,
-    },
-    ref
-  ) => {
+    (
+      {
+        isLoading,
+        isLoadingMessages,
+        messages,
+        onSubmit,
+        modelName = "gpt-oss",
+        isStreaming = false,
+        onStop,
+        error,
+        currentThreadId,
+        currentThread,
+        onThreadUpdate,
+        onThreadDelete,
+        onError,
+      },
+      ref
+    ) => {
     const [input, setInput] = useState("");
     const [historyIndex, setHistoryIndex] = useState<number | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -142,19 +147,23 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     return (
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex justify-center p-1">
         <div className="pointer-events-auto m-4 w-full max-w-5xl">
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div className="flex-1">
+          <div className="mb-2 grid grid-cols-3 items-start gap-2">
+            <div className="flex items-center">
               {isStreaming && onStop && <ThinkingNotification onStop={onStop} />}
             </div>
-            {currentThreadId !== null && currentThread && onThreadUpdate && onThreadDelete && (
-              <div className="flex-shrink-0">
+            <div className="flex items-center justify-center">
+              {error && <ErrorNotification message={error} />}
+            </div>
+            <div className="flex items-center justify-end">
+              {currentThreadId !== null && currentThread && onThreadUpdate && onThreadDelete && (
                 <ThreadSettingsButton
                   thread={currentThread}
                   onUpdateThread={onThreadUpdate}
                   onDeleteThread={onThreadDelete}
+                  onError={onError}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
           <form
             onSubmit={handleSubmit}

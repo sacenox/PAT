@@ -15,7 +15,6 @@ export async function GET() {
       settings: settings || { maxPromptLength: "none", selectedModel: "gpt-oss" },
     });
   } catch (error) {
-    console.error("Get settings error", error);
     return NextResponse.json({ error: "Failed to get settings" }, { status: 500 });
   }
 }
@@ -53,7 +52,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ settings: mergedSettings });
   } catch (error) {
-    console.error("Set settings error", error);
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });
   }
 }

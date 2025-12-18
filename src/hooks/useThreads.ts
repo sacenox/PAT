@@ -6,23 +6,31 @@ export function useThreads() {
   const [totalThreadCount, setTotalThreadCount] = useState<number>(0);
   const [hasMoreThreads, setHasMoreThreads] = useState<boolean>(true);
 
-  const loadThreads = async (limit: number = 8) => {
+  const loadThreads = async (limit: number = 8, onError?: (error: string) => void) => {
     try {
       const res = await fetch(`/api/threads?limit=${limit}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load threads: ${res.status}`);
+      }
       const data = await res.json();
       const threadsList = data.threads || [];
       setThreads(threadsList);
       setHasMoreThreads(data.hasMore || false);
       setTotalThreadCount(data.totalCount || 0);
-    } catch (error) {
-      console.error("Failed to load threads", error);
-    }
+      } catch (error) {
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
+      }
   };
 
-  const loadMoreThreads = async (limit: number = 8) => {
+  const loadMoreThreads = async (limit: number = 8, onError?: (error: string) => void) => {
     try {
       const offset = threads.length;
       const res = await fetch(`/api/threads?offset=${offset}&limit=${limit}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load more threads: ${res.status}`);
+      }
       const data = await res.json();
       const newThreads = data.threads || [];
       if (newThreads.length > 0) {
@@ -31,16 +39,19 @@ export function useThreads() {
       } else {
         setHasMoreThreads(false);
       }
-    } catch (error) {
-      console.error("Failed to load more threads", error);
-    }
+      } catch (error) {
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
+      }
   };
 
   const createThread = async (
     titleOverride?: string,
     firstMessage?: string,
     model?: string,
-    maxPromptLength?: "none" | 1024 | 4096
+    maxPromptLength?: "none" | 1024 | 4096,
+    onError?: (error: string) => void
   ): Promise<number | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
@@ -57,7 +68,6 @@ export function useThreads() {
           const settingsData = await settingsRes.json();
           maxPromptLengthToUse = settingsData.settings?.maxPromptLength || "none";
         } catch (error) {
-          console.error("Failed to load settings", error);
           maxPromptLengthToUse = "none";
         }
       }
@@ -71,6 +81,9 @@ export function useThreads() {
           maxPromptLength: maxPromptLengthToUse,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`Failed to create thread: ${res.status}`);
+      }
       const data = await res.json();
       const newThread = data.thread;
 
@@ -79,14 +92,17 @@ export function useThreads() {
 
       return newThread.id;
     } catch (error) {
-      console.error("Failed to create thread", error);
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
       return null;
     }
   };
 
   const updateThread = async (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null },
+    onError?: (error: string) => void
   ): Promise<void> => {
     try {
       const res = await fetch(`/api/threads/${threadId}`, {
@@ -95,7 +111,10 @@ export function useThreads() {
         body: JSON.stringify(updates),
       });
       if (!res.ok) {
-        throw new Error("Failed to update thread");
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || "Failed to update thread");
       }
       const data = await res.json();
       const updatedThread = data.thread;
@@ -103,24 +122,34 @@ export function useThreads() {
       // Update the thread in local state
       setThreads((prev) => prev.map((t) => (t.id === threadId ? updatedThread : t)));
     } catch (error) {
-      console.error("Failed to update thread", error);
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to update thread";
+      if (onError) onError(errorMsg);
       throw error;
     }
   };
 
-  const deleteThread = async (threadId: number): Promise<void> => {
+  const deleteThread = async (
+    threadId: number,
+    onError?: (error: string) => void
+  ): Promise<void> => {
     try {
       const res = await fetch(`/api/threads/${threadId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
-        throw new Error("Failed to delete thread");
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+        });
+        throw new Error(errorData.error || "Failed to delete thread");
       }
       // Remove the thread from the local state
       setThreads((prev) => prev.filter((t) => t.id !== threadId));
       setTotalThreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error("Failed to delete thread", error);
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to delete thread";
+      if (onError) onError(errorMsg);
       throw error;
     }
   };

@@ -34,7 +34,6 @@ export async function GET() {
     }));
     return NextResponse.json({ models });
   } catch (error) {
-    console.error("Failed to fetch models", error);
     return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 });
   }
 }

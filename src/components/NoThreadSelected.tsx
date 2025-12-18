@@ -8,6 +8,7 @@ type NoThreadSelectedProps = {
   onModelChange: (model: string) => void;
   maxPromptLength: "none" | 1024 | 4096;
   onMaxPromptLengthChange: (value: "none" | 1024 | 4096) => void;
+  onError?: (error: string) => void;
 };
 
 export default function NoThreadSelected({
@@ -16,6 +17,7 @@ export default function NoThreadSelected({
   onModelChange,
   maxPromptLength,
   onMaxPromptLengthChange,
+  onError,
 }: NoThreadSelectedProps) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
@@ -34,17 +36,27 @@ export default function NoThreadSelected({
   useEffect(() => {
     setIsLoadingModels(true);
     fetch("/api/models")
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) {
+          const errorData = await res.json().catch((parseError) => {
+            throw new Error(`Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`);
+          });
+          throw new Error(errorData.error || res.statusText);
+        }
+        return res.json();
+      })
       .then((data) => {
         const availableModels = data.models || [];
         setModels(availableModels);
         setIsLoadingModels(false);
       })
       .catch((error) => {
-        console.error("Failed to load models", error);
         setIsLoadingModels(false);
+        if (onError && error instanceof Error) {
+          onError(error.message);
+        }
       });
-  }, []);
+  }, [onError]);
 
   const formatTime = (date: Date): string => {
     return date.toLocaleString();

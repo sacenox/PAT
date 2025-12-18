@@ -12,12 +12,14 @@ type ThreadSettingsButtonProps = {
     updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
   ) => Promise<void>;
   onDeleteThread: (threadId: number) => Promise<void>;
+  onError?: (error: string) => void;
 };
 
 export default function ThreadSettingsButton({
   thread,
   onUpdateThread,
   onDeleteThread,
+  onError,
 }: ThreadSettingsButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -41,6 +43,7 @@ export default function ThreadSettingsButton({
         thread={thread}
         onUpdateThread={onUpdateThread}
         onDeleteThread={onDeleteThread}
+        onError={onError}
       />
     </>
   );
