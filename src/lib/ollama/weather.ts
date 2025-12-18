@@ -1,6 +1,5 @@
 /* personal-assistant-thing/src/lib/ollama/weather.ts */
 
-import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
 import { createRateLimiter } from "../ratelimit";
 
@@ -37,13 +36,8 @@ export async function queryWeather(
   const cacheKey = `weather:${query.toLowerCase().trim()}:${timezone}:${days}`;
   const cached = await getCache<string>(cacheKey);
   if (cached !== null) {
-    debug(`[Weather] Cache hit for: "${query}"`);
     return cached;
   }
-
-  debug(
-    `[Weather] Querying weather for: "${query}" (${days > 0 ? `${days} days` : "current only"}, ${timezone})`
-  );
 
   // Check rate limit before making the request
   const rateLimitCheck = await weatherRateLimiter.check();
@@ -68,7 +62,6 @@ export async function queryWeather(
 
   const geocodeResponse = await fetch(`${geocodeUrl}?${geocodeParams.toString()}`);
   if (!geocodeResponse.ok) {
-    debug(`[Weather] Geocoding error: HTTP ${geocodeResponse.status}`);
     throw new Error(`Failed to geocode location "${query}" (${geocodeResponse.status})`);
   }
 
@@ -82,8 +75,6 @@ export async function queryWeather(
 
   const { latitude, longitude, name, country, admin1 } = geocodeData.results[0];
   const locationName = `${name}${admin1 ? `, ${admin1}` : ""}${country ? `, ${country}` : ""}`;
-
-  debug(`[Weather] Found location: ${locationName} (${latitude}, ${longitude})`);
 
   // Now fetch weather data - focus on temperature and precipitation
   const weatherUrl = "https://api.open-meteo.com/v1/forecast";
@@ -102,7 +93,6 @@ export async function queryWeather(
 
   const weatherResponse = await fetch(`${weatherUrl}?${weatherParams.toString()}`);
   if (!weatherResponse.ok) {
-    debug(`[Weather] Weather API error: HTTP ${weatherResponse.status}`);
     throw new Error(
       `Failed to fetch weather data for "${locationName}" (${weatherResponse.status})`
     );

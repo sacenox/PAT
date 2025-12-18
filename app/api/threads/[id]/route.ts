@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { debug } from "@/src/lib/debug";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -40,7 +39,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return NextResponse.json({ thread: updatedThread[0] });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to update thread" }, { status: 500 });
   }
 }
@@ -62,7 +60,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to delete thread" }, { status: 500 });
   }
 }

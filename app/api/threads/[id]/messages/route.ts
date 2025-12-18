@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
 import { eq, asc, and, notInArray } from "drizzle-orm";
-import { debug } from "@/src/lib/debug";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -20,7 +19,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ messages: messagesList });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to get messages" }, { status: 500 });
   }
 }

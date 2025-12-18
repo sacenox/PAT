@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import ollama from "ollama";
-import { debug } from "@/src/lib/debug";
 
 export async function GET() {
   try {
@@ -11,7 +10,6 @@ export async function GET() {
     }));
     return NextResponse.json({ models });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 });
   }
 }

@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+    debug(`[Chat API] Error:`, err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }

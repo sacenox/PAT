@@ -1,7 +1,6 @@
 /* personal-assistant-thing/src/lib/ollama/websearch.ts */
 
 import { google } from "googleapis";
-import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
 import { createRateLimiter } from "../ratelimit";
 
@@ -21,17 +20,13 @@ export async function queryWebSearch(query: string): Promise<string> {
   const cacheKey = `websearch:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);
   if (cached !== null) {
-    debug(`[WebSearch] Cache hit for: "${query}"`);
     return cached;
   }
-
-  debug(`[WebSearch] Querying: "${query}"`);
 
   const apiKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
   const cx = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
 
   if (!apiKey || !cx) {
-    debug(`[WebSearch] Missing API credentials`);
     throw new Error("Service unavailable");
   }
 
@@ -50,13 +45,10 @@ export async function queryWebSearch(query: string): Promise<string> {
   });
 
   if (!res.data.items || res.data.items.length === 0) {
-    debug(`[WebSearch] No results found for query: "${query}"`);
     const result = `No results for: ${query}`;
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;
   }
-
-  debug(`[WebSearch] Found ${res.data.items.length} results`);
 
   const results = res.data.items
     .slice(0, 5)

@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { debug } from "@/src/lib/debug";
 
 export async function DELETE(
   request: Request,
@@ -32,7 +31,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });
   }
 }

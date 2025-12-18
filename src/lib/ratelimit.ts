@@ -1,6 +1,5 @@
 /* personal-assistant-thing/src/lib/ratelimit.ts */
 
-import { debug } from "./debug";
 import { getCache, setCache } from "./cache";
 
 /**
@@ -69,7 +68,6 @@ export function createRateLimiter(config: RateLimitConfig) {
         requestCount: 0,
       };
       await setCache(cacheKey, newState);
-      debug(`[RateLimit:${config.identifier}] Window reset`);
       return newState;
     }
 
@@ -100,9 +98,6 @@ export function createRateLimiter(config: RateLimitConfig) {
 
     // Check if we've exceeded the limit
     if (state.requestCount >= config.maxRequests) {
-      debug(
-        `[RateLimit:${config.identifier}] Rate limit exceeded: ${state.requestCount}/${config.maxRequests} requests used, ${hoursUntilReset} hours until reset`
-      );
       return {
         allowed: false,
         remaining: 0,
@@ -112,9 +107,6 @@ export function createRateLimiter(config: RateLimitConfig) {
     }
 
     const remaining = config.maxRequests - state.requestCount;
-    debug(
-      `[RateLimit:${config.identifier}] ${state.requestCount}/${config.maxRequests} requests used, ${remaining} remaining`
-    );
 
     return {
       allowed: true,
@@ -132,9 +124,6 @@ export function createRateLimiter(config: RateLimitConfig) {
     const state = await loadState();
     state.requestCount++;
     await saveState(state);
-    debug(
-      `[RateLimit:${config.identifier}] Incremented to ${state.requestCount}/${config.maxRequests} requests`
-    );
   }
 
   /**
@@ -146,7 +135,6 @@ export function createRateLimiter(config: RateLimitConfig) {
       requestCount: 0,
     };
     await saveState(newState);
-    debug(`[RateLimit:${config.identifier}] Manually reset`);
   }
 
   /**

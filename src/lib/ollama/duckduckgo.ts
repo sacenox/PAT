@@ -1,6 +1,5 @@
 /* personal-assistant-thing/src/lib/ollama/duckduckgo.ts */
 
-import { debug } from "../debug";
 import { getCache, setCache } from "../cache";
 import { createRateLimiter } from "../ratelimit";
 
@@ -19,11 +18,8 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
   const cacheKey = `duckduckgo:${query.toLowerCase().trim()}`;
   const cached = await getCache<string>(cacheKey);
   if (cached !== null) {
-    debug(`[DuckDuckGo] Cache hit for: "${query}"`);
     return cached;
   }
-
-  debug(`[DuckDuckGo] Querying: "${query}"`);
 
   const rateLimitCheck = await duckDuckGoRateLimiter.check();
   if (!rateLimitCheck.allowed) {
@@ -41,7 +37,6 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
 
   const response = await fetch(`${url}?${params.toString()}`);
   if (!response.ok) {
-    debug(`[DuckDuckGo] Error: HTTP ${response.status}`);
     throw new Error("Service error");
   }
 
@@ -54,7 +49,6 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
   if (data.Heading && !parts.length) parts.push(data.Heading);
 
   if (parts.length === 0) {
-    debug(`[DuckDuckGo] No instant answer data available for this query type`);
     const result = `No answer found for: ${query}`;
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;

@@ -35,7 +35,7 @@ async function executeToolCall(toolCall: ToolCall): Promise<Message> {
     } else {
       result = await tools[name](query);
     }
-    debug(`[Tool] ${name} completed, result length: ${result.length} chars`);
+    debug(`[Tool] ${name} completed (${result.length} chars)`);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     debug(`[Tool] ${name} failed: ${errorMessage}`);
@@ -158,7 +158,7 @@ export async function fetchOllamaResponse(
     totalDuration += iterationDuration;
     const iterationDurationMs = Math.round(iterationDuration / 1_000_000);
 
-    debug(`[Ollama] Response received (${iterationDurationMs}ms), tool_calls: ${toolCalls.length}`);
+    debug(`[Ollama] Response (${iterationDurationMs}ms), tool_calls: ${toolCalls.length}`);
 
     // Append accumulated fields to messages
     if (thinking || content || toolCalls.length) {
@@ -179,9 +179,7 @@ export async function fetchOllamaResponse(
     if (!toolCalls.length) {
       const generationTimeMs = Math.round(totalDuration / 1_000_000);
 
-      debug(
-        `[Ollama] Final response (${generationTimeMs}ms total), content length: ${content.length} chars`
-      );
+      debug(`[Ollama] Final response (${generationTimeMs}ms, ${content.length} chars)`);
 
       return {
         content,
@@ -217,6 +215,5 @@ export async function fetchOllamaResponse(
       }
     }
 
-    debug(`[Ollama] Tool responses received, continuing conversation...`);
   }
 }
