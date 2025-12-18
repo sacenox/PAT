@@ -1,0 +1,1 @@
+ALTER TABLE "messages" RENAME COLUMN "tool_calls" TO "tool_call_counts";

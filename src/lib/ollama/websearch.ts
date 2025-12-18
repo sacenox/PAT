@@ -7,10 +7,6 @@ import { createRateLimiter } from "../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
-/**
- * Rate limiter for web search requests.
- * Tracks requests per 24-hour rolling window.
- */
 const webSearchRateLimiter = createRateLimiter({
   maxRequests: 100,
   windowMs: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
@@ -18,12 +14,7 @@ const webSearchRateLimiter = createRateLimiter({
 });
 
 /**
- * Performs a web search using Google Custom Search API.
- * Enforces a rate limit of 100 requests per 24 hours.
- * Results are cached for 6 hours.
- *
- * @param query - The search query to execute on the web.
- * @returns A formatted string containing search results or an error message.
+ * Performs web search via Google Custom Search API. Results cached 6h.
  */
 export async function queryWebSearch(query: string): Promise<string> {
   // Check cache first
@@ -41,22 +32,14 @@ export async function queryWebSearch(query: string): Promise<string> {
 
   if (!apiKey || !cx) {
     debug(`[WebSearch] Missing API credentials`);
-    throw new Error(
-      "Google Custom Search API credentials not configured. Please set GOOGLE_CUSTOM_SEARCH_API_KEY and GOOGLE_CUSTOM_SEARCH_ENGINE_ID environment variables."
-    );
+    throw new Error("Service unavailable");
   }
 
-  // Check rate limit before making the request
   const rateLimitCheck = await webSearchRateLimiter.check();
   if (!rateLimitCheck.allowed) {
-    const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
-    throw new Error(
-      `Web search rate limit exceeded. Maximum of 100 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`
-    );
+    throw new Error("Service temporarily unavailable");
   }
 
-  // Increment rate limit counter before making the request
-  // This ensures all API attempts are counted, not just successful ones
   await webSearchRateLimiter.increment();
 
   const customsearch = google.customsearch("v1");
@@ -68,49 +51,39 @@ export async function queryWebSearch(query: string): Promise<string> {
 
   if (!res.data.items || res.data.items.length === 0) {
     debug(`[WebSearch] No results found for query: "${query}"`);
-    const result = `No search results found for query: "${query}"`;
-    // Cache even "no results" responses to avoid repeated API calls
+    const result = `No results for: ${query}`;
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;
   }
 
   debug(`[WebSearch] Found ${res.data.items.length} results`);
 
-  const parts: string[] = [];
-  parts.push(`Web search results for "${query}":\n`);
+  const results = res.data.items
+    .slice(0, 5)
+    .map((item) => {
+      const parts: string[] = [];
+      if (item.title) parts.push(item.title);
+      if (item.snippet) parts.push(item.snippet);
+      if (item.link) parts.push(`(${item.link})`);
+      return parts.join(" | ");
+    })
+    .join("\n");
 
-  res.data.items.forEach((item, index) => {
-    parts.push(`${index + 1}. ${item.title || "Untitled"}`);
-    if (item.link) {
-      parts.push(`   URL: ${item.link}`);
-    }
-    if (item.snippet) {
-      parts.push(`   ${item.snippet}`);
-    }
-    parts.push(""); // Empty line between results
-  });
-
-  const result = parts.join("\n").trim();
-  // Cache successful results
-  await setCache(cacheKey, result, CACHE_TTL_MS);
-  return result;
+  await setCache(cacheKey, results, CACHE_TTL_MS);
+  return results;
 }
 
-/**
- * Defines the web search tool for Ollama.
- */
 export const webSearchTool = {
   type: "function" as const,
   function: {
     name: "query_web_search",
-    description:
-      "Perform a web search using Google Custom Search API to find current information, news, articles, or any content on the internet. Use this when you need to find recent information, verify facts, or search for content that may not be in your training data.",
+    description: "Search the web for current info, news, articles, or any content.",
     parameters: {
       type: "object",
       properties: {
         query: {
           type: "string",
-          description: "The search query to execute on the web",
+          description: "Search query",
         },
       },
       required: ["query"],
