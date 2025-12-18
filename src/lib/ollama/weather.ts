@@ -151,8 +151,8 @@ export const weatherTool = {
   type: "function" as const,
   function: {
     name: "query_weather",
-      description:
-        "Query Open-Meteo's weather API to get current weather conditions and optionally forecast for a location. Returns temperature and precipitation data. By default returns only current weather. Use forecastDays parameter to include forecast. Use this when users ask about weather, temperature, forecast, or current conditions for any location worldwide.",
+    description:
+      "Query Open-Meteo's weather API to get current weather conditions and optionally forecast for a location. Returns temperature and precipitation data. By default returns only current weather. Use forecastDays parameter to include forecast. Use this when users ask about weather, temperature, forecast, or current conditions for any location worldwide.",
     parameters: {
       type: "object",
       properties: {

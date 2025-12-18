@@ -30,7 +30,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });
   }
 }

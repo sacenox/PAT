@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ thread: newThread[0] });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
   }
 }
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     const hasMore = offset + limit < totalCount;
 
     return NextResponse.json({ threads: threadsList, hasMore, totalCount });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });
   }
 }

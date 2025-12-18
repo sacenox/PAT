@@ -4,6 +4,7 @@
 import ollama, { type Message, type ToolCall } from "ollama";
 import { debug } from "@/src/lib/debug";
 import { duckDuckGoTool, queryDuckDuckGo } from "@/src/lib/ollama/duckduckgo";
+import { fetchPage, fetchPageTool } from "@/src/lib/ollama/fetchpage";
 import { queryWeather, weatherTool } from "@/src/lib/ollama/weather";
 import { queryWebSearch, webSearchTool } from "@/src/lib/ollama/websearch";
 import type { OllamaChunk, OllamaResponse, MaxPromptLength } from "@/src/lib/ollama/types";
@@ -16,8 +17,9 @@ import type { OllamaChunk, OllamaResponse, MaxPromptLength } from "@/src/lib/oll
  */
 async function executeToolCall(toolCall: ToolCall): Promise<Message> {
   const { name, arguments: args } = toolCall.function;
-  const { query, timezone, forecastDays } = args as {
-    query: string;
+  const { query, url, timezone, forecastDays } = args as {
+    query?: string;
+    url?: string;
     timezone?: string;
     forecastDays?: number;
   };
@@ -26,14 +28,17 @@ async function executeToolCall(toolCall: ToolCall): Promise<Message> {
     query_web_search: queryWebSearch,
     query_weather: queryWeather,
     query_duckduckgo: queryDuckDuckGo,
+    fetch_page: fetchPage,
   };
 
   let result: string;
   try {
     if (name === "query_weather") {
-      result = await queryWeather(query, timezone, forecastDays);
+      result = await queryWeather(query!, timezone, forecastDays);
+    } else if (name === "fetch_page") {
+      result = await fetchPage(url!);
     } else {
-      result = await tools[name](query);
+      result = await tools[name](query!);
     }
     debug(`[Tool] ${name} completed (${result.length} chars)`);
   } catch (error) {
@@ -70,7 +75,7 @@ export async function fetchOllamaResponse(
   signal?: AbortSignal,
   maxPromptLength?: MaxPromptLength
 ): Promise<OllamaResponse> {
-  const tools = [duckDuckGoTool, weatherTool, webSearchTool];
+  const tools = [duckDuckGoTool, weatherTool, webSearchTool, fetchPageTool];
   let totalDuration = 0;
   const currentMessages: Message[] = messages;
   const allToolCalls: ToolCall[] = [];
@@ -214,6 +219,5 @@ export async function fetchOllamaResponse(
         });
       }
     }
-
   }
 }

@@ -24,7 +24,7 @@ export async function GET() {
     };
 
     return NextResponse.json({ settings: defaultSettings });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to get settings" }, { status: 500 });
   }
 }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     await setCache(SETTINGS_CACHE_KEY, settings);
 
     return NextResponse.json({ settings: settings });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });
   }
 }

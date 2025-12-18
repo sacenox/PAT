@@ -38,7 +38,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json({ thread: updatedThread[0] });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to update thread" }, { status: 500 });
   }
 }
@@ -59,7 +59,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     return NextResponse.json({ success: true });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete thread" }, { status: 500 });
   }
 }

@@ -23,7 +23,7 @@ export async function setCache<T>(key: string, value: T, ttlMs?: number): Promis
     } else {
       await valkey.set(key, serialized);
     }
-  } catch (error: unknown) {
+  } catch {
     // Don't throw - cache operations should continue even if persistence fails
   }
 }
@@ -43,7 +43,7 @@ export async function getCache<T>(key: string): Promise<T | null> {
     }
 
     return JSON.parse(serialized) as T;
-  } catch (error: unknown) {
+  } catch {
     return null;
   }
 }
