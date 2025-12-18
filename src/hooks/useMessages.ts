@@ -202,6 +202,21 @@ export function useMessages(threadId: number | null) {
     setMessages([]);
   };
 
+  const deleteMessage = async (messageId: number, threadId: number) => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}/messages/${messageId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete message");
+      }
+      // Remove the message from local state
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+    } catch (error) {
+      console.error("Failed to delete message", error);
+    }
+  };
+
   return {
     messages,
     isLoading,
@@ -210,5 +225,6 @@ export function useMessages(threadId: number | null) {
     sendMessage,
     clearMessages,
     stopGeneration,
+    deleteMessage,
   };
 }

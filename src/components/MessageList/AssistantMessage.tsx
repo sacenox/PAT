@@ -11,7 +11,10 @@ type AssistantMessageProps = {
   isStreaming?: boolean;
 };
 
-export default function AssistantMessage({ message, isStreaming = false }: AssistantMessageProps) {
+export default function AssistantMessage({
+  message,
+  isStreaming = false,
+}: AssistantMessageProps) {
   const formatTimestamp = (date: Date | string): string => {
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleString();

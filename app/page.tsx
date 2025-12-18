@@ -28,6 +28,7 @@ export default function Home() {
     sendMessage,
     clearMessages,
     stopGeneration,
+    deleteMessage,
   } = useMessages(currentThreadId);
   const messageInputRef = useRef<MessageInputRef>(null);
 
@@ -68,7 +69,7 @@ export default function Home() {
         <div
           ref={messagesContainerRef}
           className={`flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100 ${
-            isLoading && streamingMessageId !== null ? "pb-40" : "pb-32"
+            isLoading && streamingMessageId !== null ? "pb-44" : "pb-40"
           }`}
         >
           <div
@@ -77,7 +78,12 @@ export default function Home() {
             {currentThreadId === null ? (
               <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
-              <MessageList messages={messages} streamingMessageId={streamingMessageId} />
+              <MessageList
+                messages={messages}
+                streamingMessageId={streamingMessageId}
+                threadId={currentThreadId}
+                onDeleteMessage={deleteMessage}
+              />
             )}
           </div>
         </div>

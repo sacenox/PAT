@@ -4,13 +4,21 @@ import { useRef, useEffect } from "react";
 import type { Message } from "@/src/lib/db/schema";
 import AssistantMessage from "./AssistantMessage";
 import UserMessage from "./UserMessage";
+import DeleteMessageButton from "./DeleteMessageButton";
 
 type MessageListProps = {
   messages: Message[];
   streamingMessageId: number | null;
+  threadId: number | null;
+  onDeleteMessage: (messageId: number, threadId: number) => void;
 };
 
-export default function MessageList({ messages, streamingMessageId }: MessageListProps) {
+export default function MessageList({
+  messages,
+  streamingMessageId,
+  threadId,
+  onDeleteMessage,
+}: MessageListProps) {
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const prevMessagesLengthRef = useRef<number>(0);
 
@@ -46,6 +54,12 @@ export default function MessageList({ messages, streamingMessageId }: MessageLis
             ) : (
               <UserMessage message={msg} />
             )}
+            <DeleteMessageButton
+              messageId={msg.id}
+              threadId={threadId}
+              onDeleteMessage={onDeleteMessage}
+              align={msg.role === "user" ? "right" : "left"}
+            />
           </div>
         </div>
       ))}
