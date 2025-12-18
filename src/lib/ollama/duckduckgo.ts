@@ -64,7 +64,6 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
     }
 
     const data = await response.json();
-    debug(`[DuckDuckGo] Raw API response:`, JSON.stringify(data, null, 2));
 
     // Build a comprehensive response from available fields
     const parts: string[] = [];

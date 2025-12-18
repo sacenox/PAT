@@ -56,11 +56,6 @@ export default function AssistantMessage({ message, isStreaming = false }: Assis
           {message.content}
         </ReactMarkdown>
       )}
-      {isStreaming && (
-        <p className={`text-sm text-neutral-600 dark:text-neutral-400 ${hasContent ? "mt-2" : ""}`}>
-          <span className="animate-color-cycle">thinking</span>
-        </p>
-      )}
       <div className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">
         generated on {formatTimestamp(message.createdAt)}
         {message.generationTimeMs && (

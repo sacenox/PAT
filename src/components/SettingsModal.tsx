@@ -10,6 +10,8 @@ type SettingsModalProps = {
   onThemeChange: (mode: "device" | "dark" | "light") => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  maxPromptLength: "none" | 1024 | 4096;
+  onMaxPromptLengthChange: (value: "none" | 1024 | 4096) => void;
 };
 
 export default function SettingsModal({
@@ -19,6 +21,8 @@ export default function SettingsModal({
   onThemeChange,
   selectedModel,
   onModelChange,
+  maxPromptLength,
+  onMaxPromptLengthChange,
 }: SettingsModalProps) {
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
@@ -31,20 +35,20 @@ export default function SettingsModal({
         .then((data) => {
           const availableModels = data.models || [];
           setModels(availableModels);
-          
+
           // Validate selected model against available models
           if (availableModels.length > 0) {
             const modelExists = availableModels.some(
               (m: { name: string; model: string }) => m.model === selectedModel
             );
-            
+
             if (!modelExists) {
               // Selected model doesn't exist, fall back to first available
               const fallbackModel = availableModels[0].model;
               onModelChange(fallbackModel);
             }
           }
-          
+
           setIsLoadingModels(false);
         })
         .catch((error) => {
@@ -91,6 +95,22 @@ export default function SettingsModal({
                 </option>
               ))
             )}
+          </select>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-neutral-600 dark:text-neutral-400">Max Prompt Length</label>
+          <select
+            value={maxPromptLength}
+            onChange={(e) =>
+              onMaxPromptLengthChange(
+                e.target.value === "none" ? "none" : (parseInt(e.target.value, 10) as 1024 | 4096)
+              )
+            }
+            className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200"
+          >
+            <option value="none">None</option>
+            <option value="1024">1024</option>
+            <option value="4096">4096</option>
           </select>
         </div>
       </div>

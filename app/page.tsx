@@ -6,6 +6,7 @@ import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
 import { useModel } from "@/src/hooks/useModel";
+import { useMaxPromptLength } from "@/src/hooks/useMaxPromptLength";
 import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
@@ -14,12 +15,20 @@ import "./highlight-theme.css";
 export default function Home() {
   const { themeMode, handleThemeChange } = useTheme();
   const { selectedModel, handleModelChange } = useModel();
+  const { maxPromptLength, handleMaxPromptLengthChange } = useMaxPromptLength();
   const { threads, totalThreadCount, hasMoreThreads, loadThreads, loadMoreThreads, createThread } =
     useThreads();
   const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
     useThreadSelection();
-  const { messages, isLoading, isLoadingMessages, streamingMessageId, sendMessage, clearMessages } =
-    useMessages(currentThreadId);
+  const {
+    messages,
+    isLoading,
+    isLoadingMessages,
+    streamingMessageId,
+    sendMessage,
+    clearMessages,
+    stopGeneration,
+  } = useMessages(currentThreadId);
   const messageInputRef = useRef<MessageInputRef>(null);
 
   const handleThreadSelect = (threadId: number) => {
@@ -36,7 +45,15 @@ export default function Home() {
   };
 
   const handleSendMessage = async (message: string) => {
-    await sendMessage(message, currentThreadId, createThread, selectThread, loadThreads, selectedModel);
+    await sendMessage(
+      message,
+      currentThreadId,
+      createThread,
+      selectThread,
+      loadThreads,
+      selectedModel,
+      maxPromptLength
+    );
   };
 
   // Get the model name for the current thread, or use selected model if no thread
@@ -50,7 +67,9 @@ export default function Home() {
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 pb-80 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100"
+          className={`flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100 ${
+            isLoading && streamingMessageId !== null ? "pb-40" : "pb-32"
+          }`}
         >
           <div
             className={`mx-auto flex min-h-full max-w-5xl flex-col gap-8 ${currentThreadId === null ? "justify-center" : "justify-end"}`}
@@ -69,6 +88,8 @@ export default function Home() {
           messages={messages}
           onSubmit={handleSendMessage}
           modelName={currentModelName}
+          isStreaming={isLoading && streamingMessageId !== null}
+          onStop={stopGeneration}
         />
       </div>
       <Sidebar
@@ -80,6 +101,8 @@ export default function Home() {
         onThemeChange={handleThemeChange}
         selectedModel={selectedModel}
         onModelChange={handleModelChange}
+        maxPromptLength={maxPromptLength}
+        onMaxPromptLengthChange={handleMaxPromptLengthChange}
         onLoadMore={loadMoreThreads}
         hasMoreThreads={hasMoreThreads}
       />

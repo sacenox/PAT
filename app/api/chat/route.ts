@@ -6,6 +6,7 @@ import { eq, asc } from "drizzle-orm";
 
 export async function POST(request: Request) {
   const { message, threadId } = await request.json();
+  const signal = request.signal;
 
   if (!threadId) {
     return NextResponse.json({ error: "threadId is required" }, { status: 400 });
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
     const threadModel = thread[0].model || "gpt-oss";
+    const threadMaxPromptLength = thread[0].maxPromptLength;
 
     // 2. Fetch previous messages from thread
     const previousMessages = await db
@@ -59,38 +61,122 @@ export async function POST(request: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const onChunk = (chunk: { content?: string; thinking?: string; toolCalls?: any[] }) => {
-            if (chunk.content) {
-              accumulatedContent += chunk.content;
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`
-                )
-              );
-            }
-            if (chunk.thinking) {
-              accumulatedThinking += chunk.thinking;
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`
-                )
-              );
-            }
-            if (chunk.toolCalls) {
-              allToolCalls.push(...chunk.toolCalls);
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`
-                )
-              );
+          // Track if controller is closed to avoid double-close
+          let isControllerClosed = false;
+          const safeClose = () => {
+            if (!isControllerClosed) {
+              isControllerClosed = true;
+              try {
+                controller.close();
+              } catch (e) {
+                // Controller may already be closed, ignore
+              }
             }
           };
 
-          const { generationTimeMs, toolCalls } = await fetchOllamaResponse(
-            ollamaMessages,
-            onChunk,
-            threadModel
-          );
+          // Check if already aborted
+          if (signal.aborted) {
+            safeClose();
+            return;
+          }
+
+          const onChunk = (chunk: { content?: string; thinking?: string; toolCalls?: any[] }) => {
+            // Check abort signal before each chunk
+            if (signal.aborted || isControllerClosed) {
+              return;
+            }
+
+            try {
+              if (chunk.content) {
+                accumulatedContent += chunk.content;
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "content", content: chunk.content })}\n\n`
+                  )
+                );
+              }
+              if (chunk.thinking) {
+                accumulatedThinking += chunk.thinking;
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "thinking", thinking: chunk.thinking })}\n\n`
+                  )
+                );
+              }
+              if (chunk.toolCalls) {
+                allToolCalls.push(...chunk.toolCalls);
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "toolCalls", toolCalls: chunk.toolCalls })}\n\n`
+                  )
+                );
+              }
+            } catch (e) {
+              // Controller may be closed, ignore
+            }
+          };
+
+          // Set up abort handler
+          const abortHandler = () => {
+            if (!isControllerClosed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "error", error: "Generation stopped" })}\n\n`
+                  )
+                );
+              } catch (e) {
+                // Controller may be closed, ignore
+              }
+              safeClose();
+            }
+          };
+          signal.addEventListener("abort", abortHandler);
+
+          let generationTimeMs: number | undefined;
+          let toolCalls: any[] | undefined;
+
+          try {
+            const result = await fetchOllamaResponse(
+              ollamaMessages,
+              onChunk,
+              threadModel,
+              signal,
+              threadMaxPromptLength
+            );
+            generationTimeMs = result.generationTimeMs;
+            toolCalls = result.toolCalls;
+          } catch (error) {
+            // If aborted, don't throw - just close
+            if (signal.aborted || (error instanceof Error && error.message === "Request aborted")) {
+              safeClose();
+              return;
+            }
+            throw error;
+          } finally {
+            signal.removeEventListener("abort", abortHandler);
+          }
+
+          // Check if aborted before saving
+          if (signal.aborted) {
+            // Save partial content if any was generated
+            if (accumulatedContent) {
+              await db.insert(messages).values({
+                threadId: parseInt(threadId),
+                role: "assistant",
+                content: accumulatedContent,
+                createdAt: new Date(),
+                generationTimeMs: null,
+                toolCalls: allToolCalls.length > 0 ? JSON.stringify(allToolCalls) : null,
+              });
+              await db
+                .update(threads)
+                .set({ updatedAt: new Date() })
+                .where(eq(threads.id, parseInt(threadId)));
+            }
+            safeClose();
+            return;
+          }
 
           // 6. Store assistant message with generation time and tool calls
           await db.insert(messages).values({
@@ -109,20 +195,32 @@ export async function POST(request: Request) {
             .where(eq(threads.id, parseInt(threadId)));
 
           // Send final message
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "done", answer: accumulatedContent })}\n\n`
-            )
-          );
-          controller.close();
+          if (!isControllerClosed) {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "done", answer: accumulatedContent })}\n\n`
+                )
+              );
+            } catch (e) {
+              // Controller may be closed, ignore
+            }
+            safeClose();
+          }
         } catch (error) {
           console.error("Chat API error", error);
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ type: "error", error: "Sorry, something went wrong." })}\n\n`
-            )
-          );
-          controller.close();
+          if (!isControllerClosed) {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({ type: "error", error: "Sorry, something went wrong." })}\n\n`
+                )
+              );
+            } catch (e) {
+              // Controller may be closed, ignore
+            }
+            safeClose();
+          }
         }
       },
     });

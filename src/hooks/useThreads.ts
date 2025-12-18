@@ -39,15 +39,34 @@ export function useThreads() {
   const createThread = async (
     titleOverride?: string,
     firstMessage?: string,
-    model?: string
+    model?: string,
+    maxPromptLength?: "none" | 1024 | 4096
   ): Promise<number | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
       const modelToUse = model || localStorage.getItem("selectedModel") || "gpt-oss";
+
+      // Get maxPromptLength from settings if not provided
+      let maxPromptLengthToUse = maxPromptLength;
+      if (maxPromptLengthToUse === undefined) {
+        try {
+          const settingsRes = await fetch("/api/settings");
+          const settingsData = await settingsRes.json();
+          maxPromptLengthToUse = settingsData.settings?.maxPromptLength || "none";
+        } catch (error) {
+          console.error("Failed to load settings", error);
+          maxPromptLengthToUse = "none";
+        }
+      }
+
       const res = await fetch("/api/threads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, model: modelToUse }),
+        body: JSON.stringify({
+          title,
+          model: modelToUse,
+          maxPromptLength: maxPromptLengthToUse,
+        }),
       });
       const data = await res.json();
       const newThread = data.thread;

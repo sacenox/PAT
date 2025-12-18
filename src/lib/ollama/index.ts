@@ -91,13 +91,17 @@ async function executeToolCall(toolCall: {
  * @param messages - Array of messages in the conversation history.
  * @param onChunk - Optional callback function to receive streaming chunks (content, thinking, toolCalls).
  * @param model - The Ollama model to use. Defaults to 'gpt-oss'.
+ * @param signal - Optional AbortSignal to cancel the request.
+ * @param maxPromptLength - Optional maximum prompt length in tokens. Can be "none", 1024, or 4096.
  * @returns Object containing the response content and generation time in milliseconds.
  * @throws If the request fails.
  */
 export async function fetchOllamaResponse(
   messages: OllamaMessageInput[],
   onChunk?: (chunk: OllamaChunk) => void,
-  model = "gpt-oss"
+  model = "gpt-oss",
+  signal?: AbortSignal,
+  maxPromptLength?: "none" | 1024 | 4096 | null
 ): Promise<OllamaResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool];
   let totalDuration = 0;
@@ -107,15 +111,29 @@ export async function fetchOllamaResponse(
   }));
   const allToolCalls: any[] = [];
 
-  debug(`[Ollama] Starting chat with model: ${model}, messages: ${messages.length}`);
+  // Build options object with num_ctx if maxPromptLength is set
+  const options: any = {};
+  if (maxPromptLength && maxPromptLength !== "none") {
+    options.num_ctx = maxPromptLength;
+  }
+
+  debug(
+    `[Ollama] Starting chat with model: ${model}, messages: ${messages.length}, maxPromptLength: ${maxPromptLength || "none"}`
+  );
 
   // Agent loop: Keep iterating until the model stops requesting tools
   while (true) {
+    // Check if aborted before starting new iteration
+    if (signal?.aborted) {
+      throw new Error("Request aborted");
+    }
+
     const stream = await ollama.chat({
       model,
       messages: currentMessages,
       tools,
       stream: true,
+      options: Object.keys(options).length > 0 ? options : undefined,
     });
 
     let content = "";
@@ -125,6 +143,10 @@ export async function fetchOllamaResponse(
 
     // Accumulate partial fields from streaming chunks
     for await (const chunk of stream) {
+      // Check abort signal during streaming
+      if (signal?.aborted) {
+        throw new Error("Request aborted");
+      }
       if (chunk.total_duration) {
         iterationDuration = chunk.total_duration;
       }
@@ -172,6 +194,11 @@ export async function fetchOllamaResponse(
         content: content || "",
         tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
       });
+    }
+
+    // Check if aborted before processing tool calls
+    if (signal?.aborted) {
+      throw new Error("Request aborted");
     }
 
     // If no tool calls, break the loop and return the final response

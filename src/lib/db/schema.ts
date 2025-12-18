@@ -6,6 +6,7 @@ export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title"),
   model: text("model").notNull().default("gpt-oss"),
+  maxPromptLength: integer("max_prompt_length"), // null, 1024, or 4096
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

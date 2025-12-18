@@ -3,20 +3,20 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { Children, isValidElement } from "react";
 
-type AnchorProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
+type SecondaryButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;
   isSelected?: boolean;
 };
 
-// SidebarButton: A reusable button component with neutral hover and selection states.
+// SecondaryButton: A reusable button component with neutral hover and selection states.
 // When selected (isSelected=true), displays a neutral-800 background (dark) or neutral-200 (light).
 // On hover, displays a neutral-700 background (dark) or neutral-300 (light).
-export default function SidebarButton({
+export default function SecondaryButton({
   children,
   isSelected = false,
   className = "",
   ...props
-}: AnchorProps) {
+}: SecondaryButtonProps) {
   // Process children to wrap text nodes in a truncating span
   const processedChildren = Children.map(children, (child) => {
     if (typeof child === "string" || typeof child === "number") {

@@ -6,7 +6,7 @@ import PlusIcon from "@/src/components/icons/PlusIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
 import BowtieIcon from "@/src/components/icons/BowtieIcon";
 import GearIcon from "@/src/components/icons/GearIcon";
-import SidebarButton from "@/src/components/SidebarButton";
+import SecondaryButton from "@/src/components/buttons/SecondaryButton";
 import SettingsModal from "@/src/components/SettingsModal";
 
 type SidebarProps = {
@@ -18,6 +18,8 @@ type SidebarProps = {
   onThemeChange: (mode: "device" | "dark" | "light") => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
+  maxPromptLength: "none" | 1024 | 4096;
+  onMaxPromptLengthChange: (value: "none" | 1024 | 4096) => void;
   onLoadMore: () => void;
   hasMoreThreads: boolean;
 };
@@ -31,6 +33,8 @@ export default function Sidebar({
   onThemeChange,
   selectedModel,
   onModelChange,
+  maxPromptLength,
+  onMaxPromptLengthChange,
   onLoadMore,
   hasMoreThreads,
 }: SidebarProps) {
@@ -44,7 +48,7 @@ export default function Sidebar({
             <BowtieIcon className="h-12 w-12" />
           </div>
           <div className="flex flex-col gap-2">
-            <SidebarButton
+            <SecondaryButton
               href="#"
               onClick={(e) => {
                 e.preventDefault();
@@ -53,8 +57,8 @@ export default function Sidebar({
             >
               <PlusIcon className="h-4 w-4" />
               New Thread
-            </SidebarButton>
-            <SidebarButton
+            </SecondaryButton>
+            <SecondaryButton
               href="#"
               onClick={(e) => {
                 e.preventDefault();
@@ -63,7 +67,7 @@ export default function Sidebar({
             >
               <GearIcon className="h-4 w-4" />
               Settings
-            </SidebarButton>
+            </SecondaryButton>
             <label className="text-neutral-500">Threads</label>
             <div className="flex flex-col gap-2">
               <div className="flex flex-col">
@@ -75,7 +79,7 @@ export default function Sidebar({
                   threads.map((thread) => {
                     const isSelected = currentThreadId === thread.id;
                     return (
-                      <SidebarButton
+                      <SecondaryButton
                         key={thread.id}
                         href={`#thread-${thread.id}`}
                         onClick={(e) => {
@@ -87,14 +91,14 @@ export default function Sidebar({
                         <span className="min-w-0 truncate">
                           {thread.title || `Thread ${thread.id}`}
                         </span>
-                      </SidebarButton>
+                      </SecondaryButton>
                     );
                   })
                 )}
               </div>
             </div>
             {hasMoreThreads && (
-              <SidebarButton
+              <SecondaryButton
                 href="#"
                 className="text-xs"
                 onClick={(e) => {
@@ -104,7 +108,7 @@ export default function Sidebar({
               >
                 <ChevronDownIcon className="mt-0.5 h-3 w-3" />
                 Load More
-              </SidebarButton>
+              </SecondaryButton>
             )}
           </div>
         </div>
@@ -116,6 +120,8 @@ export default function Sidebar({
         onThemeChange={onThemeChange}
         selectedModel={selectedModel}
         onModelChange={onModelChange}
+        maxPromptLength={maxPromptLength}
+        onMaxPromptLengthChange={onMaxPromptLengthChange}
       />
     </>
   );

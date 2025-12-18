@@ -104,7 +104,6 @@ export async function queryWeather(location: string): Promise<string> {
     }
 
     const geocodeData = await geocodeResponse.json();
-    debug(`[Weather] Geocoding response:`, JSON.stringify(geocodeData, null, 2));
 
     if (!geocodeData.results || geocodeData.results.length === 0) {
       return `Error: Could not find location "${location}". Please provide a more specific location name.`;
@@ -134,7 +133,6 @@ export async function queryWeather(location: string): Promise<string> {
     }
 
     const weatherData = await weatherResponse.json();
-    debug(`[Weather] Weather API response:`, JSON.stringify(weatherData, null, 2));
 
     // Format the response
     const parts: string[] = [];

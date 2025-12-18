@@ -5,12 +5,14 @@ import { desc, count } from "drizzle-orm";
 
 export async function POST(request: Request) {
   try {
-    const { title, model } = await request.json();
+    const { title, model, maxPromptLength } = await request.json();
     const newThread = await db
       .insert(threads)
       .values({
         title: title || "New Thread",
         model: model || "gpt-oss",
+        maxPromptLength:
+          maxPromptLength === "none" || maxPromptLength === null ? null : maxPromptLength,
         createdAt: new Date(),
         updatedAt: new Date(),
       })

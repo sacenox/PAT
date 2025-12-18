@@ -7,12 +7,12 @@ export function useModel() {
   useEffect(() => {
     const validateModel = async () => {
       const savedModel = localStorage.getItem("selectedModel") || "gpt-oss";
-      
+
       try {
         const res = await fetch("/api/models");
         const data = await res.json();
         const availableModels = data.models || [];
-        
+
         if (availableModels.length === 0) {
           // No models available, keep default
           setSelectedModel("gpt-oss");

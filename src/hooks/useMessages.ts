@@ -7,6 +7,7 @@ export function useMessages(threadId: number | null) {
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
   const sendingToThreadIdRef = useRef<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadMessages = useCallback(async (id: number) => {
     setIsLoadingMessages(true);
@@ -37,10 +38,16 @@ export function useMessages(threadId: number | null) {
   const sendMessage = async (
     message: string,
     currentThreadId: number | null,
-    onCreateThread: (title?: string, firstMessage?: string, model?: string) => Promise<number | null>,
+    onCreateThread: (
+      title?: string,
+      firstMessage?: string,
+      model?: string,
+      maxPromptLength?: "none" | 1024 | 4096
+    ) => Promise<number | null>,
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
-    selectedModel: string = "gpt-oss"
+    selectedModel: string = "gpt-oss",
+    maxPromptLength?: "none" | 1024 | 4096
   ) => {
     if (!message.trim() || isLoading) return;
 
@@ -50,7 +57,12 @@ export function useMessages(threadId: number | null) {
     if (!targetThreadId) {
       // Create a new thread if none exists
       // Use the validated selectedModel instead of reading from localStorage
-      targetThreadId = await onCreateThread(message.substring(0, 100), message, selectedModel);
+      targetThreadId = await onCreateThread(
+        message.substring(0, 100),
+        message,
+        selectedModel,
+        maxPromptLength
+      );
       if (!targetThreadId) {
         setIsLoading(false);
         return;
@@ -87,11 +99,15 @@ export function useMessages(threadId: number | null) {
     setMessages((prev) => [...prev, botMsg]);
     setStreamingMessageId(assistantMsgId);
 
+    // Create AbortController for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message.trim(), threadId: targetThreadId }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!res.ok) {
@@ -106,6 +122,7 @@ export function useMessages(threadId: number | null) {
       const decoder = new TextDecoder();
       let buffer = "";
       let accumulatedContent = "";
+      let shouldStop = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -137,7 +154,15 @@ export function useMessages(threadId: number | null) {
                   )
                 );
                 setStreamingMessageId(null);
+                shouldStop = true;
+                break;
               } else if (data.type === "error") {
+                // If it's a stop error, keep the partial content
+                if (data.error === "Generation stopped") {
+                  setStreamingMessageId(null);
+                  shouldStop = true;
+                  break;
+                }
                 throw new Error(data.error || "Unknown error");
               }
             } catch (parseError) {
@@ -145,18 +170,31 @@ export function useMessages(threadId: number | null) {
             }
           }
         }
+        if (shouldStop) break;
       }
 
       // Reload threads to update the order
       onThreadsReload();
     } catch (error) {
-      console.error("Failed to send message", error);
-      // Remove the assistant message on error
-      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
+      // Don't log abort errors as they're intentional
+      if (error instanceof Error && error.name !== "AbortError") {
+        console.error("Failed to send message", error);
+        // Only remove the assistant message on non-abort errors
+        setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
+      }
+      // For abort errors, keep the partial content
       setStreamingMessageId(null);
     } finally {
       setIsLoading(false);
       sendingToThreadIdRef.current = null;
+      abortControllerRef.current = null;
+    }
+  };
+
+  const stopGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
   };
 
@@ -171,5 +209,6 @@ export function useMessages(threadId: number | null) {
     streamingMessageId,
     sendMessage,
     clearMessages,
+    stopGeneration,
   };
 }

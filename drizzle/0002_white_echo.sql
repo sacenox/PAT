@@ -1,0 +1,1 @@
+ALTER TABLE "threads" ADD COLUMN "max_prompt_length" integer;

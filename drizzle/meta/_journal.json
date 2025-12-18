@@ -15,6 +15,13 @@
       "when": 1766007076801,
       "tag": "0001_lethal_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766015192850,
+      "tag": "0002_white_echo",
+      "breakpoints": true
     }
   ]
 }

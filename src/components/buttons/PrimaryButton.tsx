@@ -2,20 +2,20 @@
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type BasicButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   color?: string;
 };
 
-// BasicButton: A button with animated border effects and customizable color.
+// PrimaryButton: A button with animated border effects and customizable color.
 // Features a bottom border that moves to top on active state, with rounded corners.
 // Color prop allows customization of the button's color scheme.
-export default function BasicButton({
+export default function PrimaryButton({
   children,
   color = "rose",
   className = "",
   ...props
-}: BasicButtonProps) {
+}: PrimaryButtonProps) {
   // Map color to Tailwind classes (using full class names for JIT compilation)
   const getColorClasses = (colorName: string) => {
     const colorMap: Record<string, string> = {
