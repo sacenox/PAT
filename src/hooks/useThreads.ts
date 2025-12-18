@@ -81,6 +81,23 @@ export function useThreads() {
     }
   };
 
+  const deleteThread = async (threadId: number): Promise<void> => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete thread");
+      }
+      // Remove the thread from the local state
+      setThreads((prev) => prev.filter((t) => t.id !== threadId));
+      setTotalThreadCount((prev) => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Failed to delete thread", error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     loadThreads(8);
   }, []);
@@ -92,5 +109,6 @@ export function useThreads() {
     loadThreads,
     loadMoreThreads,
     createThread,
+    deleteThread,
   };
 }

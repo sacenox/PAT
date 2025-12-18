@@ -16,8 +16,15 @@ export default function Home() {
   const { themeMode, handleThemeChange } = useTheme();
   const { selectedModel, handleModelChange } = useModel();
   const { maxPromptLength, handleMaxPromptLengthChange } = useMaxPromptLength();
-  const { threads, totalThreadCount, hasMoreThreads, loadThreads, loadMoreThreads, createThread } =
-    useThreads();
+  const {
+    threads,
+    totalThreadCount,
+    hasMoreThreads,
+    loadThreads,
+    loadMoreThreads,
+    createThread,
+    deleteThread,
+  } = useThreads();
   const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
     useThreadSelection();
   const {
@@ -43,6 +50,19 @@ export default function Home() {
     setTimeout(() => {
       messageInputRef.current?.focus();
     }, 0);
+  };
+
+  const handleThreadDelete = async (threadId: number) => {
+    try {
+      await deleteThread(threadId);
+      // If the deleted thread was the current thread, deselect it
+      if (currentThreadId === threadId) {
+        deselectThread();
+        clearMessages();
+      }
+    } catch (error) {
+      console.error("Failed to delete thread", error);
+    }
   };
 
   const handleSendMessage = async (message: string) => {
@@ -96,6 +116,9 @@ export default function Home() {
           modelName={currentModelName}
           isStreaming={isLoading && streamingMessageId !== null}
           onStop={stopGeneration}
+          currentThreadId={currentThreadId}
+          currentThread={currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null}
+          onThreadDelete={handleThreadDelete}
         />
       </div>
       <Sidebar

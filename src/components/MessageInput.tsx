@@ -4,7 +4,9 @@ import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from "re
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
 import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import ThinkingNotification from "@/src/components/ThinkingNotification";
+import DeleteThreadButton from "@/src/components/DeleteThreadButton";
 import type { Message } from "@/src/lib/db/schema";
+import type { Thread } from "@/src/lib/db/schema";
 
 type MessageInputProps = {
   isLoading: boolean;
@@ -14,6 +16,9 @@ type MessageInputProps = {
   modelName?: string;
   isStreaming?: boolean;
   onStop?: () => void;
+  currentThreadId: number | null;
+  currentThread: Thread | null;
+  onThreadDelete?: (threadId: number) => void;
 };
 
 export type MessageInputRef = {
@@ -30,6 +35,9 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       modelName = "gpt-oss",
       isStreaming = false,
       onStop,
+      currentThreadId,
+      currentThread,
+      onThreadDelete,
     },
     ref
   ) => {
@@ -129,7 +137,20 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     return (
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 flex justify-center p-1">
         <div className="pointer-events-auto m-4 w-full max-w-5xl">
-          {isStreaming && onStop && <ThinkingNotification onStop={onStop} />}
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="flex-1">
+              {isStreaming && onStop && <ThinkingNotification onStop={onStop} />}
+            </div>
+            {currentThreadId !== null && currentThread && onThreadDelete && (
+              <div className="flex-shrink-0">
+                <DeleteThreadButton
+                  threadId={currentThreadId}
+                  threadTitle={currentThread.title || `Thread ${currentThreadId}`}
+                  onDeleteThread={onThreadDelete}
+                />
+              </div>
+            )}
+          </div>
           <form
             onSubmit={handleSubmit}
             className="relative rounded-lg bg-neutral-300 shadow-lg dark:bg-neutral-700"
