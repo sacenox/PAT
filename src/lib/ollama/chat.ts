@@ -105,7 +105,6 @@ export function streamAssistantResponse({
         signal.addEventListener("abort", abortHandler);
 
         let generationTimeMs: number | undefined;
-        let toolCalls: ToolCall[] | undefined;
 
         try {
           const result = await fetchOllamaResponse(
@@ -116,7 +115,6 @@ export function streamAssistantResponse({
             threadMaxPromptLength
           );
           generationTimeMs = result.generationTimeMs;
-          toolCalls = result.toolCalls;
         } catch (error) {
           // If aborted, don't throw - just close
           if (signal.aborted || (error instanceof Error && error.message === "Request aborted")) {
@@ -150,6 +148,7 @@ export function streamAssistantResponse({
               answer: accumulatedContent,
               model: threadModel,
               maxPromptLength: threadMaxPromptLength,
+              toolCallCounts: extractToolCounts(allToolCalls),
             });
           }
           safeClose();
@@ -165,7 +164,7 @@ export function streamAssistantResponse({
           maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
           createdAt: new Date(),
           generationTimeMs,
-          toolCallCounts: toolCalls ? extractToolCounts(toolCalls) : null,
+          toolCallCounts: extractToolCounts(allToolCalls),
         });
 
         // Update thread's updatedAt timestamp
@@ -177,6 +176,7 @@ export function streamAssistantResponse({
           answer: accumulatedContent,
           model: threadModel,
           maxPromptLength: threadMaxPromptLength,
+          toolCallCounts: extractToolCounts(allToolCalls),
         });
         safeClose();
       } catch {

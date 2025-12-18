@@ -96,20 +96,8 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    // Create assistant message placeholder
+    // Create assistant message placeholder (but don't add it yet - wait for content)
     const assistantMsgId = Date.now() + 1;
-    const botMsg: Message = {
-      id: assistantMsgId,
-      threadId: targetThreadId,
-      role: "assistant",
-      content: "",
-      createdAt: new Date(),
-      model: null,
-      maxPromptLength: null,
-      generationTimeMs: null,
-      toolCallCounts: null,
-    };
-    setMessages((prev) => [...prev, botMsg]);
     setStreamingMessageId(assistantMsgId);
 
     // Create AbortController for this request
@@ -141,6 +129,7 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
       let buffer = "";
       let accumulatedContent = "";
       let shouldStop = false;
+      let messageAdded = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -157,28 +146,62 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
               const data = JSON.parse(line.slice(6));
               if (data.type === "content") {
                 accumulatedContent += data.content || "";
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMsgId ? { ...msg, content: accumulatedContent } : msg
-                  )
-                );
+                // Only add the message when we have content
+                if (!messageAdded && accumulatedContent.trim()) {
+                  const botMsg: Message = {
+                    id: assistantMsgId,
+                    threadId: targetThreadId,
+                    role: "assistant",
+                    content: accumulatedContent,
+                    createdAt: new Date(),
+                    model: null,
+                    maxPromptLength: null,
+                    generationTimeMs: null,
+                    toolCallCounts: null,
+                  };
+                  setMessages((prev) => [...prev, botMsg]);
+                  messageAdded = true;
+                } else if (messageAdded) {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMsgId ? { ...msg, content: accumulatedContent } : msg
+                    )
+                  );
+                }
               } else if (data.type === "done") {
                 // Final update with complete answer and metadata
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMsgId
-                      ? {
-                          ...msg,
-                          content: data.answer || accumulatedContent,
-                          model: data.model || msg.model,
-                          maxPromptLength:
-                            data.maxPromptLength !== undefined
-                              ? data.maxPromptLength
-                              : msg.maxPromptLength,
-                        }
-                      : msg
-                  )
-                );
+                // If message wasn't added yet (no content received), add it now
+                if (!messageAdded) {
+                  const botMsg: Message = {
+                    id: assistantMsgId,
+                    threadId: targetThreadId,
+                    role: "assistant",
+                    content: data.answer || accumulatedContent,
+                    createdAt: new Date(),
+                    model: data.model || null,
+                    maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : null,
+                    generationTimeMs: null,
+                    toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : null,
+                  };
+                  setMessages((prev) => [...prev, botMsg]);
+                } else {
+                  setMessages((prev) =>
+                    prev.map((msg) =>
+                      msg.id === assistantMsgId
+                        ? {
+                            ...msg,
+                            content: data.answer || accumulatedContent,
+                            model: data.model || msg.model,
+                            maxPromptLength:
+                              data.maxPromptLength !== undefined
+                                ? data.maxPromptLength
+                                : msg.maxPromptLength,
+                            toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : msg.toolCallCounts,
+                          }
+                        : msg
+                    )
+                  );
+                }
                 setStreamingMessageId(null);
                 shouldStop = true;
                 break;
@@ -186,6 +209,21 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
                 // If it's a stop error, keep the partial content
                 // Note: metadata will be sent via "done" message after the message is saved
                 if (data.error === "Generation stopped") {
+                  // If we have content but message wasn't added, add it now
+                  if (!messageAdded && accumulatedContent.trim()) {
+                    const botMsg: Message = {
+                      id: assistantMsgId,
+                      threadId: targetThreadId,
+                      role: "assistant",
+                      content: accumulatedContent,
+                      createdAt: new Date(),
+                      model: null,
+                      maxPromptLength: null,
+                      generationTimeMs: null,
+                      toolCallCounts: null,
+                    };
+                    setMessages((prev) => [...prev, botMsg]);
+                  }
                   setStreamingMessageId(null);
                   shouldStop = true;
                   break;
@@ -209,13 +247,13 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
     } catch (error) {
       // Don't log abort errors as they're intentional
       if (error instanceof Error && error.name !== "AbortError") {
-        // Only remove the assistant message on non-abort errors
+        // Only remove the assistant message on non-abort errors (if it was added)
         setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
         if (onError && error instanceof Error) {
           onError(error.message);
         }
       }
-      // For abort errors, keep the partial content
+      // For abort errors, keep the partial content (message will be added if it has content)
       setStreamingMessageId(null);
     } finally {
       setIsLoading(false);
