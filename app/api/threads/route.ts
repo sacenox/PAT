@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads, messages } from "@/src/lib/db/schema";
 import { desc, count } from "drizzle-orm";
+import { debug } from "@/src/lib/debug";
 
 export async function POST(request: Request) {
   try {
@@ -9,8 +10,8 @@ export async function POST(request: Request) {
     const newThread = await db
       .insert(threads)
       .values({
-        title: title || "New Thread",
-        model: model || "gpt-oss",
+        title: title,
+        model: model,
         maxPromptLength:
           maxPromptLength === "none" || maxPromptLength === null ? null : maxPromptLength,
         createdAt: new Date(),
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
       threadId,
       role: "system",
       content: `You are PAT, a helpful personal assistant. Please follow these guidelines:
-- Tool calls should not be used more than once per user request
+- Only repeat tool calls in case of errors
 - Use simple and concise language
 - Reply with markdown whenever possible
 - When asked for code or text return it in a markdown code block`,
@@ -33,7 +34,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ thread: newThread[0] });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
   }
 }
@@ -56,7 +58,8 @@ export async function GET(request: Request) {
     const hasMore = offset + limit < totalCount;
 
     return NextResponse.json({ threads: threadsList, hasMore, totalCount });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });
   }
 }

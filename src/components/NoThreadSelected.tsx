@@ -19,11 +19,13 @@ export default function NoThreadSelected({
   onMaxPromptLengthChange,
   onError,
 }: NoThreadSelectedProps) {
-  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   useEffect(() => {
+    // Set initial time only on client after hydration
+    setCurrentTime(new Date());
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);

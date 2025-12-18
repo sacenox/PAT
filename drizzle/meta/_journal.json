@@ -36,6 +36,13 @@
       "when": 1766021303746,
       "tag": "0004_regular_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1766093474935,
+      "tag": "0005_harsh_wild_pack",
+      "breakpoints": true
     }
   ]
 }

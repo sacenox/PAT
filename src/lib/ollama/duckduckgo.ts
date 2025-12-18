@@ -33,84 +33,81 @@ export async function queryDuckDuckGo(query: string): Promise<string> {
   const rateLimitCheck = await duckDuckGoRateLimiter.check();
   if (!rateLimitCheck.allowed) {
     const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
-    return `Error: DuckDuckGo API rate limit exceeded. Maximum of 500 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
+    throw new Error(
+      `DuckDuckGo API rate limit exceeded. Maximum of 500 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`
+    );
   }
 
-  try {
-    // Increment rate limit counter before making the request
-    // This ensures all API attempts are counted, not just successful ones
-    await duckDuckGoRateLimiter.increment();
-    const url = "https://api.duckduckgo.com/";
-    const params = new URLSearchParams({
-      q: query,
-      format: "json",
-      no_html: "1",
-      skip_disambig: "1",
-    });
+  // Increment rate limit counter before making the request
+  // This ensures all API attempts are counted, not just successful ones
+  await duckDuckGoRateLimiter.increment();
+  const url = "https://api.duckduckgo.com/";
+  const params = new URLSearchParams({
+    q: query,
+    format: "json",
+    no_html: "1",
+    skip_disambig: "1",
+  });
 
-    const response = await fetch(`${url}?${params.toString()}`);
-    if (!response.ok) {
-      debug(`[DuckDuckGo] Error: HTTP ${response.status}`);
-      return `Error: Failed to fetch data from DuckDuckGo (${response.status})`;
+  const response = await fetch(`${url}?${params.toString()}`);
+  if (!response.ok) {
+    debug(`[DuckDuckGo] Error: HTTP ${response.status}`);
+    throw new Error(`Failed to fetch data from DuckDuckGo (${response.status})`);
+  }
+
+  const data = await response.json();
+
+  // Build a comprehensive response from available fields
+  const parts: string[] = [];
+
+  if (data.Heading) {
+    parts.push(`Heading: ${data.Heading}`);
+  }
+
+  if (data.AbstractText) {
+    parts.push(`Abstract: ${data.AbstractText}`);
+  }
+
+  if (data.AbstractURL) {
+    parts.push(`Source: ${data.AbstractURL}`);
+  }
+
+  if (data.Answer) {
+    parts.push(`Answer: ${data.Answer}`);
+  }
+
+  if (data.Definition) {
+    parts.push(`Definition: ${data.Definition}`);
+  }
+
+  if (data.Type) {
+    parts.push(`Type: ${data.Type}`);
+  }
+
+  if (data.RelatedTopics && data.RelatedTopics.length > 0) {
+    const topics = data.RelatedTopics.slice(0, 3)
+      .map((topic: { Text?: string; FirstURL?: string }) => topic.Text || topic.FirstURL)
+      .filter(Boolean)
+      .join(", ");
+    if (topics) {
+      parts.push(`Related Topics: ${topics}`);
     }
+  }
 
-    const data = await response.json();
-
-    // Build a comprehensive response from available fields
-    const parts: string[] = [];
-
-    if (data.Heading) {
-      parts.push(`Heading: ${data.Heading}`);
-    }
-
-    if (data.AbstractText) {
-      parts.push(`Abstract: ${data.AbstractText}`);
-    }
-
-    if (data.AbstractURL) {
-      parts.push(`Source: ${data.AbstractURL}`);
-    }
-
-    if (data.Answer) {
-      parts.push(`Answer: ${data.Answer}`);
-    }
-
-    if (data.Definition) {
-      parts.push(`Definition: ${data.Definition}`);
-    }
-
-    if (data.Type) {
-      parts.push(`Type: ${data.Type}`);
-    }
-
-    if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-      const topics = data.RelatedTopics.slice(0, 3)
-        .map((topic: { Text?: string; FirstURL?: string }) => topic.Text || topic.FirstURL)
-        .filter(Boolean)
-        .join(", ");
-      if (topics) {
-        parts.push(`Related Topics: ${topics}`);
-      }
-    }
-
-    if (parts.length === 0) {
-      // DuckDuckGo Instant Answer API has limitations - it doesn't support all query types
-      // (e.g., weather forecasts, real-time data). This is expected behavior.
-      debug(`[DuckDuckGo] No instant answer data available for this query type`);
-      const result = `No instant answer available for query: "${query}". Note: DuckDuckGo Instant Answer API has limited coverage and may not support weather forecasts, real-time data, or certain query types.`;
-      // Cache even "no answer" responses to avoid repeated API calls
-      await setCache(cacheKey, result, CACHE_TTL_MS);
-      return result;
-    }
-
-    const result = parts.join("\n\n");
-    // Cache successful results
+  if (parts.length === 0) {
+    // DuckDuckGo Instant Answer API has limitations - it doesn't support all query types
+    // (e.g., weather forecasts, real-time data). This is expected behavior.
+    debug(`[DuckDuckGo] No instant answer data available for this query type`);
+    const result = `No instant answer available for query: "${query}". Note: DuckDuckGo Instant Answer API has limited coverage and may not support weather forecasts, real-time data, or certain query types.`;
+    // Cache even "no answer" responses to avoid repeated API calls
     await setCache(cacheKey, result, CACHE_TTL_MS);
     return result;
-  } catch (error) {
-    // Don't cache errors
-    return `Error querying DuckDuckGo: ${error instanceof Error ? error.message : "Unknown error"}`;
   }
+
+  const result = parts.join("\n\n");
+  // Cache successful results
+  await setCache(cacheKey, result, CACHE_TTL_MS);
+  return result;
 }
 
 /**

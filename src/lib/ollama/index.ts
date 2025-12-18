@@ -16,7 +16,11 @@ import type { OllamaChunk, OllamaResponse, MaxPromptLength } from "@/src/lib/oll
  */
 async function executeToolCall(toolCall: ToolCall): Promise<Message> {
   const { name, arguments: args } = toolCall.function;
-  const { query } = args as { query: string };
+  const { query, timezone, forecastDays } = args as {
+    query: string;
+    timezone?: string;
+    forecastDays?: number;
+  };
 
   const tools = {
     query_web_search: queryWebSearch,
@@ -26,11 +30,16 @@ async function executeToolCall(toolCall: ToolCall): Promise<Message> {
 
   let result: string;
   try {
-    result = tools[name](query);
+    if (name === "query_weather") {
+      result = await queryWeather(query, timezone, forecastDays);
+    } else {
+      result = await tools[name](query);
+    }
     debug(`[Tool] ${name} completed, result length: ${result.length} chars`);
   } catch (error) {
-    debug("[Tool] call failed: " + error.message || "Unknown error")
-    result = `Error executing tool call: ${error.message || "Unknown error"}`;
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    debug(`[Tool] ${name} failed: ${errorMessage}`);
+    result = `Error: ${errorMessage}`;
   }
 
   return {
@@ -193,8 +202,19 @@ export async function fetchOllamaResponse(
     allToolCalls.push(...toolCalls);
 
     for (const toolCall of toolCalls) {
-      const toolResponse = await executeToolCall(toolCall);
-      currentMessages.push(toolResponse);
+      try {
+        const toolResponse = await executeToolCall(toolCall);
+        currentMessages.push(toolResponse);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        debug(`[Ollama] Tool execution failed: ${errorMessage}`);
+        // Add error message as tool response so the model can handle it
+        currentMessages.push({
+          role: "tool",
+          tool_name: toolCall.function.name,
+          content: `Error: ${errorMessage}`,
+        });
+      }
     }
 
     debug(`[Ollama] Tool responses received, continuing conversation...`);

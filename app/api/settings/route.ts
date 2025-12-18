@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCache, setCache } from "@/src/lib/cache";
 import { getFirstAvailableModel } from "@/src/lib/ollama/models";
+import { debug } from "@/src/lib/debug";
 
 const SETTINGS_CACHE_KEY = "app_settings";
 
@@ -24,7 +25,8 @@ export async function GET() {
     };
 
     return NextResponse.json({ settings: defaultSettings });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to get settings" }, { status: 500 });
   }
 }
@@ -66,7 +68,8 @@ export async function POST(request: Request) {
     await setCache(SETTINGS_CACHE_KEY, settings);
 
     return NextResponse.json({ settings: settings });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });
   }
 }

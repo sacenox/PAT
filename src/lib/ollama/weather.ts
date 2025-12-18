@@ -17,171 +17,141 @@ const weatherRateLimiter = createRateLimiter({
 });
 
 /**
- * Converts WMO weather code to human-readable description.
- * Based on WMO Weather interpretation codes (WW).
- */
-function getWeatherDescription(code: number): string {
-  const descriptions: { [key: number]: string } = {
-    0: "Clear sky",
-    1: "Mainly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Foggy",
-    48: "Depositing rime fog",
-    51: "Light drizzle",
-    53: "Moderate drizzle",
-    55: "Dense drizzle",
-    56: "Light freezing drizzle",
-    57: "Dense freezing drizzle",
-    61: "Slight rain",
-    63: "Moderate rain",
-    65: "Heavy rain",
-    66: "Light freezing rain",
-    67: "Heavy freezing rain",
-    71: "Slight snow fall",
-    73: "Moderate snow fall",
-    75: "Heavy snow fall",
-    77: "Snow grains",
-    80: "Slight rain showers",
-    81: "Moderate rain showers",
-    82: "Violent rain showers",
-    85: "Slight snow showers",
-    86: "Heavy snow showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm with slight hail",
-    99: "Thunderstorm with heavy hail",
-  };
-
-  return descriptions[code] || `Weather code ${code}`;
-}
-
-/**
  * Queries Open-Meteo's weather API for current weather and forecast information.
  * Results are cached for 6 hours.
  *
- * @param location - The location name (e.g., 'New York', 'London', 'Tokyo').
+ * @param query - The location name (e.g., 'New York', 'London', 'Tokyo').
+ * @param timezone - Timezone (e.g., 'America/New_York', 'Europe/London', 'auto'). Defaults to 'auto'.
+ * @param forecastDays - Number of forecast days (1-16). Defaults to 3.
  * @returns A formatted string containing weather information or an error message.
  */
-export async function queryWeather(location: string): Promise<string> {
+export async function queryWeather(
+  query: string,
+  timezone = "auto",
+  forecastDays = 0
+): Promise<string> {
+  // Validate forecastDays (0 means no forecast, 1-16 for forecast days)
+  const days = Math.max(0, Math.min(16, Math.round(forecastDays)));
+
   // Check cache first
-  const cacheKey = `weather:${location.toLowerCase().trim()}`;
+  const cacheKey = `weather:${query.toLowerCase().trim()}:${timezone}:${days}`;
   const cached = await getCache<string>(cacheKey);
   if (cached !== null) {
-    debug(`[Weather] Cache hit for: "${location}"`);
+    debug(`[Weather] Cache hit for: "${query}"`);
     return cached;
   }
 
-  debug(`[Weather] Querying weather for: "${location}"`);
+  debug(
+    `[Weather] Querying weather for: "${query}" (${days > 0 ? `${days} days` : "current only"}, ${timezone})`
+  );
 
   // Check rate limit before making the request
   const rateLimitCheck = await weatherRateLimiter.check();
   if (!rateLimitCheck.allowed) {
     const hoursRemaining = rateLimitCheck.hoursUntilReset || 0;
-    return `Error: Weather API rate limit exceeded. Maximum of 1000 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`;
+    throw new Error(
+      `Weather API rate limit exceeded. Maximum of 1000 requests per 24 hours has been reached. Please try again in approximately ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""}.`
+    );
   }
 
-  try {
-    // Increment rate limit counter before making the request
-    // This ensures all API attempts are counted, not just successful ones
-    await weatherRateLimiter.increment();
-    // First, geocode the location to get coordinates
-    const geocodeUrl = "https://geocoding-api.open-meteo.com/v1/search";
-    const geocodeParams = new URLSearchParams({
-      name: location,
-      count: "1",
-      language: "en",
-      format: "json",
-    });
+  // Increment rate limit counter before making the request
+  // This ensures all API attempts are counted, not just successful ones
+  await weatherRateLimiter.increment();
+  // First, geocode the location to get coordinates
+  const geocodeUrl = "https://geocoding-api.open-meteo.com/v1/search";
+  const geocodeParams = new URLSearchParams({
+    name: query,
+    count: "1",
+    language: "en",
+    format: "json",
+  });
 
-    const geocodeResponse = await fetch(`${geocodeUrl}?${geocodeParams.toString()}`);
-    if (!geocodeResponse.ok) {
-      debug(`[Weather] Geocoding error: HTTP ${geocodeResponse.status}`);
-      return `Error: Failed to geocode location "${location}" (${geocodeResponse.status})`;
-    }
-
-    const geocodeData = await geocodeResponse.json();
-
-    if (!geocodeData.results || geocodeData.results.length === 0) {
-      return `Error: Could not find location "${location}". Please provide a more specific location name.`;
-    }
-
-    const { latitude, longitude, name, country, admin1 } = geocodeData.results[0];
-    const locationName = `${name}${admin1 ? `, ${admin1}` : ""}${country ? `, ${country}` : ""}`;
-
-    debug(`[Weather] Found location: ${locationName} (${latitude}, ${longitude})`);
-
-    // Now fetch weather data
-    const weatherUrl = "https://api.open-meteo.com/v1/forecast";
-    const weatherParams = new URLSearchParams({
-      latitude: latitude.toString(),
-      longitude: longitude.toString(),
-      current: "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m",
-      hourly: "temperature_2m,weather_code,precipitation_probability",
-      daily: "temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum",
-      forecast_days: "3",
-      timezone: "auto",
-    });
-
-    const weatherResponse = await fetch(`${weatherUrl}?${weatherParams.toString()}`);
-    if (!weatherResponse.ok) {
-      debug(`[Weather] Weather API error: HTTP ${weatherResponse.status}`);
-      return `Error: Failed to fetch weather data for "${locationName}" (${weatherResponse.status})`;
-    }
-
-    const weatherData = await weatherResponse.json();
-
-    // Format the response
-    const parts: string[] = [];
-    parts.push(`Weather for ${locationName}:`);
-
-    // Current conditions
-    if (weatherData.current) {
-      const current = weatherData.current;
-      parts.push(`\nCurrent Conditions:`);
-      parts.push(`  Temperature: ${current.temperature_2m}°C`);
-      parts.push(`  Humidity: ${current.relative_humidity_2m}%`);
-      parts.push(`  Wind Speed: ${current.wind_speed_10m} km/h`);
-      if (current.wind_direction_10m !== undefined) {
-        parts.push(`  Wind Direction: ${current.wind_direction_10m}°`);
-      }
-      if (current.weather_code !== undefined) {
-        const weatherDesc = getWeatherDescription(current.weather_code);
-        parts.push(`  Conditions: ${weatherDesc}`);
-      }
-    }
-
-    // Daily forecast (next 3 days)
-    if (weatherData.daily && weatherData.daily.time) {
-      parts.push(`\n3-Day Forecast:`);
-      for (let i = 0; i < Math.min(3, weatherData.daily.time.length); i++) {
-        const date = new Date(weatherData.daily.time[i]);
-        const dayName = date.toLocaleDateString("en-US", { weekday: "long" });
-        const maxTemp = weatherData.daily.temperature_2m_max?.[i];
-        const minTemp = weatherData.daily.temperature_2m_min?.[i];
-        const weatherCode = weatherData.daily.weather_code?.[i];
-        const precipitation = weatherData.daily.precipitation_sum?.[i];
-
-        parts.push(`\n  ${dayName} (${date.toLocaleDateString()}):`);
-        if (maxTemp !== undefined && minTemp !== undefined) {
-          parts.push(`    High: ${maxTemp}°C, Low: ${minTemp}°C`);
-        }
-        if (weatherCode !== undefined) {
-          parts.push(`    Conditions: ${getWeatherDescription(weatherCode)}`);
-        }
-        if (precipitation !== undefined && precipitation > 0) {
-          parts.push(`    Precipitation: ${precipitation} mm`);
-        }
-      }
-    }
-
-    const result = parts.join("\n");
-    // Cache successful results
-    await setCache(cacheKey, result, CACHE_TTL_MS);
-    return result;
-  } catch (error) {
-    // Don't cache errors
-    return `Error querying weather: ${error instanceof Error ? error.message : "Unknown error"}`;
+  const geocodeResponse = await fetch(`${geocodeUrl}?${geocodeParams.toString()}`);
+  if (!geocodeResponse.ok) {
+    debug(`[Weather] Geocoding error: HTTP ${geocodeResponse.status}`);
+    throw new Error(`Failed to geocode location "${query}" (${geocodeResponse.status})`);
   }
+
+  const geocodeData = await geocodeResponse.json();
+
+  if (!geocodeData.results || geocodeData.results.length === 0) {
+    throw new Error(
+      `Could not find location "${query}". Please provide a more specific location name.`
+    );
+  }
+
+  const { latitude, longitude, name, country, admin1 } = geocodeData.results[0];
+  const locationName = `${name}${admin1 ? `, ${admin1}` : ""}${country ? `, ${country}` : ""}`;
+
+  debug(`[Weather] Found location: ${locationName} (${latitude}, ${longitude})`);
+
+  // Now fetch weather data - focus on temperature and precipitation
+  const weatherUrl = "https://api.open-meteo.com/v1/forecast";
+  const weatherParams = new URLSearchParams({
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
+    current: "temperature_2m,precipitation",
+    timezone: timezone,
+  });
+
+  // Only request daily forecast if forecastDays > 0
+  if (days > 0) {
+    weatherParams.append("daily", "temperature_2m_max,temperature_2m_min,precipitation_sum");
+    weatherParams.append("forecast_days", days.toString());
+  }
+
+  const weatherResponse = await fetch(`${weatherUrl}?${weatherParams.toString()}`);
+  if (!weatherResponse.ok) {
+    debug(`[Weather] Weather API error: HTTP ${weatherResponse.status}`);
+    throw new Error(
+      `Failed to fetch weather data for "${locationName}" (${weatherResponse.status})`
+    );
+  }
+
+  const weatherData = await weatherResponse.json();
+
+  // Format concise response focusing on temperature and precipitation
+  const parts: string[] = [];
+  parts.push(`${locationName}:`);
+
+  // Current conditions
+  if (weatherData.current) {
+    const current = weatherData.current;
+    const temp = current.temperature_2m;
+    const precip = current.precipitation;
+    if (temp !== undefined) {
+      parts.push(`Now: ${temp}°C${precip !== undefined && precip > 0 ? `, ${precip}mm rain` : ""}`);
+    }
+  }
+
+  // Daily forecast (only if forecastDays > 0)
+  if (days > 0 && weatherData.daily && weatherData.daily.time) {
+    for (let i = 0; i < Math.min(days, weatherData.daily.time.length); i++) {
+      const date = new Date(weatherData.daily.time[i]);
+      const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+      const maxTemp = weatherData.daily.temperature_2m_max?.[i];
+      const minTemp = weatherData.daily.temperature_2m_min?.[i];
+      const precipitation = weatherData.daily.precipitation_sum?.[i];
+
+      const tempStr =
+        maxTemp !== undefined && minTemp !== undefined
+          ? `${minTemp}°/${maxTemp}°C`
+          : maxTemp !== undefined
+            ? `${maxTemp}°C`
+            : "";
+      const precipStr =
+        precipitation !== undefined && precipitation > 0 ? `, ${precipitation}mm` : "";
+
+      if (tempStr) {
+        parts.push(`${dayName}: ${tempStr}${precipStr}`);
+      }
+    }
+  }
+
+  const result = parts.join("\n");
+  // Cache successful results
+  await setCache(cacheKey, result, CACHE_TTL_MS);
+  return result;
 }
 
 /**
@@ -191,18 +161,28 @@ export const weatherTool = {
   type: "function" as const,
   function: {
     name: "query_weather",
-    description:
-      "Query Open-Meteo's weather API to get current weather conditions and 3-day forecast for a location. Use this when users ask about weather, temperature, forecast, or current conditions for any location worldwide.",
+      description:
+        "Query Open-Meteo's weather API to get current weather conditions and optionally forecast for a location. Returns temperature and precipitation data. By default returns only current weather. Use forecastDays parameter to include forecast. Use this when users ask about weather, temperature, forecast, or current conditions for any location worldwide.",
     parameters: {
       type: "object",
       properties: {
-        location: {
+        query: {
           type: "string",
           description:
-            "The location name (e.g., 'New York', 'London', 'Tokyo', 'Paris'). Can be a city name, city with country, or more specific location.",
+            "Location name (e.g., 'New York', 'London', 'Tokyo', 'Paris'). Can be a city name, city with country, or more specific location.",
+        },
+        timezone: {
+          type: "string",
+          description:
+            "Timezone (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo'). Use 'auto' to automatically detect. Defaults to 'auto'.",
+        },
+        forecastDays: {
+          type: "number",
+          description:
+            "Number of forecast days (0-16). Use 0 for current weather only (default), or 1-16 for forecast days.",
         },
       },
-      required: ["location"],
+      required: ["query"],
     },
   },
 };

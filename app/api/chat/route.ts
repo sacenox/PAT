@@ -4,7 +4,8 @@ import type { Message } from "ollama";
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { streamAssistantResponse } from "@/src/lib/chat";
+import { streamAssistantResponse } from "@/src/lib/ollama/chat";
+import { debug } from "@/src/lib/debug";
 
 export async function POST(request: Request) {
   const { message, threadId: threadIdRaw } = await request.json();
@@ -80,7 +81,8 @@ export async function POST(request: Request) {
         Connection: "keep-alive",
       },
     });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
-import { eq, asc, ne, and } from "drizzle-orm";
+import { eq, asc, and, notInArray } from "drizzle-orm";
+import { debug } from "@/src/lib/debug";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -14,11 +15,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const messagesList = await db
       .select()
       .from(messages)
-      .where(and(eq(messages.threadId, threadId), ne(messages.role, "system")))
+      .where(and(eq(messages.threadId, threadId), notInArray(messages.role, ["system", "tool"])))
       .orderBy(asc(messages.createdAt));
 
     return NextResponse.json({ messages: messagesList });
-  } catch {
+  } catch (err) {
+    debug(`[API] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     return NextResponse.json({ error: "Failed to get messages" }, { status: 500 });
   }
 }
