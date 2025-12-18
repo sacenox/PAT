@@ -5,8 +5,7 @@ import MessageInput, { type MessageInputRef } from "@/src/components/MessageInpu
 import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
-import { useModel } from "@/src/hooks/useModel";
-import { useMaxPromptLength } from "@/src/hooks/useMaxPromptLength";
+import { useModelSettings } from "@/src/hooks/useModelSettings";
 import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
@@ -14,8 +13,8 @@ import "./highlight-theme.css";
 
 export default function Home() {
   const { themeMode, handleThemeChange } = useTheme();
-  const { selectedModel, handleModelChange } = useModel();
-  const { maxPromptLength, handleMaxPromptLengthChange } = useMaxPromptLength();
+  const { selectedModel, handleModelChange, maxPromptLength, handleMaxPromptLengthChange } =
+    useModelSettings();
   const {
     threads,
     totalThreadCount,
@@ -23,6 +22,7 @@ export default function Home() {
     loadThreads,
     loadMoreThreads,
     createThread,
+    updateThread,
     deleteThread,
   } = useThreads();
   const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
@@ -52,6 +52,20 @@ export default function Home() {
     }, 0);
   };
 
+  const handleThreadUpdate = async (
+    threadId: number,
+    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+  ) => {
+    try {
+      await updateThread(threadId, updates);
+      // Reload threads to ensure UI is in sync
+      await loadThreads(8);
+    } catch (error) {
+      console.error("Failed to update thread", error);
+      throw error;
+    }
+  };
+
   const handleThreadDelete = async (threadId: number) => {
     try {
       await deleteThread(threadId);
@@ -62,6 +76,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to delete thread", error);
+      throw error;
     }
   };
 
@@ -89,14 +104,20 @@ export default function Home() {
         <div
           ref={messagesContainerRef}
           className={`flex-1 overflow-y-auto overflow-x-hidden bg-neutral-100 p-4 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-100 ${
-            isLoading && streamingMessageId !== null ? "pb-44" : "pb-40"
+            isLoading && streamingMessageId !== null ? "pb-52" : "pb-48"
           }`}
         >
           <div
             className={`mx-auto flex min-h-full max-w-5xl flex-col gap-8 ${currentThreadId === null ? "justify-center" : "justify-end"}`}
           >
             {currentThreadId === null ? (
-              <NoThreadSelected threadCount={totalThreadCount} />
+              <NoThreadSelected
+                threadCount={totalThreadCount}
+                selectedModel={selectedModel}
+                onModelChange={handleModelChange}
+                maxPromptLength={maxPromptLength}
+                onMaxPromptLengthChange={handleMaxPromptLengthChange}
+              />
             ) : (
               <MessageList
                 messages={messages}
@@ -117,7 +138,10 @@ export default function Home() {
           isStreaming={isLoading && streamingMessageId !== null}
           onStop={stopGeneration}
           currentThreadId={currentThreadId}
-          currentThread={currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null}
+          currentThread={
+            currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null
+          }
+          onThreadUpdate={handleThreadUpdate}
           onThreadDelete={handleThreadDelete}
         />
       </div>
@@ -128,10 +152,6 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
-        selectedModel={selectedModel}
-        onModelChange={handleModelChange}
-        maxPromptLength={maxPromptLength}
-        onMaxPromptLengthChange={handleMaxPromptLengthChange}
         onLoadMore={loadMoreThreads}
         hasMoreThreads={hasMoreThreads}
       />

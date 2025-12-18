@@ -1,0 +1,1 @@
+ALTER TABLE "messages" ADD COLUMN "max_prompt_length" integer;

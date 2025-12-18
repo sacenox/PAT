@@ -6,6 +6,7 @@ import { Children, isValidElement } from "react";
 type SecondaryButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   children: ReactNode;
   isSelected?: boolean;
+  disabled?: boolean;
 };
 
 // SecondaryButton: A reusable button component with neutral hover and selection states.
@@ -14,7 +15,9 @@ type SecondaryButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
 export default function SecondaryButton({
   children,
   isSelected = false,
+  disabled = false,
   className = "",
+  onClick,
   ...props
 }: SecondaryButtonProps) {
   // Process children to wrap text nodes in a truncating span
@@ -25,13 +28,22 @@ export default function SecondaryButton({
     return child;
   });
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    onClick?.(e);
+  };
+
   return (
     <a
       className={`flex min-w-0 items-center gap-2 rounded px-2 py-1 ${
         isSelected
           ? "bg-neutral-200 dark:bg-neutral-800"
           : "hover:bg-neutral-300 dark:hover:bg-neutral-700"
-      } ${className}`}
+      } ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
+      onClick={handleClick}
       {...props}
     >
       {processedChildren}

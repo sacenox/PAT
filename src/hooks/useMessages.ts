@@ -145,11 +145,16 @@ export function useMessages(threadId: number | null) {
                   )
                 );
               } else if (data.type === "done") {
-                // Final update with complete answer
+                // Final update with complete answer and metadata
                 setMessages((prev) =>
                   prev.map((msg) =>
                     msg.id === assistantMsgId
-                      ? { ...msg, content: data.answer || accumulatedContent }
+                      ? { 
+                          ...msg, 
+                          content: data.answer || accumulatedContent,
+                          model: data.model || msg.model,
+                          maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : msg.maxPromptLength
+                        }
                       : msg
                   )
                 );
@@ -158,6 +163,7 @@ export function useMessages(threadId: number | null) {
                 break;
               } else if (data.type === "error") {
                 // If it's a stop error, keep the partial content
+                // Note: metadata will be sent via "done" message after the message is saved
                 if (data.error === "Generation stopped") {
                   setStreamingMessageId(null);
                   shouldStop = true;

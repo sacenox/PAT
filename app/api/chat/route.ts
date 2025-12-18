@@ -13,7 +13,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 1. Fetch thread to get its model
+    // 1. Fetch thread to get its model and maxPromptLength settings
+    // These thread-specific settings override any global settings
     const thread = await db
       .select()
       .from(threads)
@@ -22,8 +23,13 @@ export async function POST(request: Request) {
     if (thread.length === 0) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
+    // Use thread-specific model (stored in thread table)
     const threadModel = thread[0].model || "gpt-oss";
-    const threadMaxPromptLength = thread[0].maxPromptLength;
+    // Use thread-specific maxPromptLength (stored in thread table, can be null, 1024, or 4096)
+    // Type assertion ensures compatibility with fetchOllamaResponse which expects "none" | 1024 | 4096 | null
+    // Note: null from database means "none" (no limit), which fetchOllamaResponse handles correctly
+    const threadMaxPromptLength: "none" | 1024 | 4096 | null =
+      thread[0].maxPromptLength === null ? null : (thread[0].maxPromptLength as 1024 | 4096);
 
     // 2. Fetch previous messages from thread
     const previousMessages = await db
@@ -60,19 +66,20 @@ export async function POST(request: Request) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        try {
-          // Track if controller is closed to avoid double-close
-          let isControllerClosed = false;
-          const safeClose = () => {
-            if (!isControllerClosed) {
-              isControllerClosed = true;
-              try {
-                controller.close();
-              } catch (e) {
-                // Controller may already be closed, ignore
-              }
+        // Track if controller is closed to avoid double-close
+        let isControllerClosed = false;
+        const safeClose = () => {
+          if (!isControllerClosed) {
+            isControllerClosed = true;
+            try {
+              controller.close();
+            } catch (e) {
+              // Controller may already be closed, ignore
             }
-          };
+          }
+        };
+
+        try {
 
           // Check if already aborted
           if (signal.aborted) {
@@ -165,6 +172,8 @@ export async function POST(request: Request) {
                 threadId: parseInt(threadId),
                 role: "assistant",
                 content: accumulatedContent,
+                model: threadModel,
+                maxPromptLength: threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
                 createdAt: new Date(),
                 generationTimeMs: null,
                 toolCalls: allToolCalls.length > 0 ? JSON.stringify(allToolCalls) : null,
@@ -173,16 +182,36 @@ export async function POST(request: Request) {
                 .update(threads)
                 .set({ updatedAt: new Date() })
                 .where(eq(threads.id, parseInt(threadId)));
+              
+              // Send done message with metadata for aborted generation
+              if (!isControllerClosed) {
+                try {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ 
+                        type: "done", 
+                        answer: accumulatedContent,
+                        model: threadModel,
+                        maxPromptLength: threadMaxPromptLength
+                      })}\n\n`
+                    )
+                  );
+                } catch (e) {
+                  // Controller may be closed, ignore
+                }
+              }
             }
             safeClose();
             return;
           }
 
-          // 6. Store assistant message with generation time and tool calls
+          // 6. Store assistant message with model, maxPromptLength, generation time and tool calls
           await db.insert(messages).values({
             threadId: parseInt(threadId),
             role: "assistant",
             content: accumulatedContent,
+            model: threadModel,
+            maxPromptLength: threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
             createdAt: new Date(),
             generationTimeMs,
             toolCalls: toolCalls ? JSON.stringify(toolCalls) : null,
@@ -194,12 +223,17 @@ export async function POST(request: Request) {
             .set({ updatedAt: new Date() })
             .where(eq(threads.id, parseInt(threadId)));
 
-          // Send final message
+          // Send final message with metadata
           if (!isControllerClosed) {
             try {
               controller.enqueue(
                 encoder.encode(
-                  `data: ${JSON.stringify({ type: "done", answer: accumulatedContent })}\n\n`
+                  `data: ${JSON.stringify({ 
+                    type: "done", 
+                    answer: accumulatedContent,
+                    model: threadModel,
+                    maxPromptLength: threadMaxPromptLength
+                  })}\n\n`
                 )
               );
             } catch (e) {

@@ -47,6 +47,11 @@ export default function AssistantMessage({ message, isStreaming = false }: Assis
     }
   };
 
+  const formatPromptSize = (maxPromptLength: number | null): string => {
+    if (maxPromptLength === null) return "none";
+    return `${maxPromptLength}`;
+  };
+
   const hasContent = message.content && message.content.trim() !== "";
 
   return (
@@ -58,8 +63,12 @@ export default function AssistantMessage({ message, isStreaming = false }: Assis
       )}
       <div className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">
         generated on {formatTimestamp(message.createdAt)}
+        {message.model && <span className="ml-1">• model: {message.model}</span>}
+        {message.maxPromptLength !== undefined && (
+          <span className="ml-1">• prompt size: {formatPromptSize(message.maxPromptLength)}</span>
+        )}
         {message.generationTimeMs && (
-          <span className="ml-1"> in {formatGenerationTime(message.generationTimeMs)}</span>
+          <span className="ml-1">• in {formatGenerationTime(message.generationTimeMs)}</span>
         )}
         {formatToolCalls(message.toolCalls) && (
           <span className="ml-1">• tools: {formatToolCalls(message.toolCalls)}</span>

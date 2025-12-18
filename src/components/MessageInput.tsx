@@ -4,7 +4,7 @@ import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from "re
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
 import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import ThinkingNotification from "@/src/components/ThinkingNotification";
-import DeleteThreadButton from "@/src/components/DeleteThreadButton";
+import ThreadSettingsButton from "@/src/components/ThreadSettingsButton";
 import type { Message } from "@/src/lib/db/schema";
 import type { Thread } from "@/src/lib/db/schema";
 
@@ -18,7 +18,11 @@ type MessageInputProps = {
   onStop?: () => void;
   currentThreadId: number | null;
   currentThread: Thread | null;
-  onThreadDelete?: (threadId: number) => void;
+  onThreadUpdate?: (
+    threadId: number,
+    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+  ) => Promise<void>;
+  onThreadDelete?: (threadId: number) => Promise<void>;
 };
 
 export type MessageInputRef = {
@@ -37,6 +41,7 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onStop,
       currentThreadId,
       currentThread,
+      onThreadUpdate,
       onThreadDelete,
     },
     ref
@@ -141,11 +146,11 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             <div className="flex-1">
               {isStreaming && onStop && <ThinkingNotification onStop={onStop} />}
             </div>
-            {currentThreadId !== null && currentThread && onThreadDelete && (
+            {currentThreadId !== null && currentThread && onThreadUpdate && onThreadDelete && (
               <div className="flex-shrink-0">
-                <DeleteThreadButton
-                  threadId={currentThreadId}
-                  threadTitle={currentThread.title || `Thread ${currentThreadId}`}
+                <ThreadSettingsButton
+                  thread={currentThread}
+                  onUpdateThread={onThreadUpdate}
                   onDeleteThread={onThreadDelete}
                 />
               </div>
@@ -166,7 +171,6 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               className="w-full resize-none overflow-y-auto bg-transparent p-4 pr-12 placeholder:italic placeholder:text-neutral-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:placeholder:text-neutral-400"
             />
             <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
-              <div className="text-xs text-neutral-600 dark:text-neutral-400">{modelName}</div>
               <PrimaryButton color="neutral" type="submit" disabled={isAnyLoading}>
                 <PaperPlaneIcon
                   className={`h-8 w-10 p-1.5 ${isAnyLoading ? "animate-spin-and-color-cycle" : ""}`}

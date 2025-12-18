@@ -16,10 +16,6 @@ type SidebarProps = {
   onCreateNewThread: () => void;
   onThreadSelect: (threadId: number) => void;
   onThemeChange: (mode: "device" | "dark" | "light") => void;
-  selectedModel: string;
-  onModelChange: (model: string) => void;
-  maxPromptLength: "none" | 1024 | 4096;
-  onMaxPromptLengthChange: (value: "none" | 1024 | 4096) => void;
   onLoadMore: () => void;
   hasMoreThreads: boolean;
 };
@@ -31,10 +27,6 @@ export default function Sidebar({
   onCreateNewThread,
   onThreadSelect,
   onThemeChange,
-  selectedModel,
-  onModelChange,
-  maxPromptLength,
-  onMaxPromptLengthChange,
   onLoadMore,
   hasMoreThreads,
 }: SidebarProps) {
@@ -118,10 +110,6 @@ export default function Sidebar({
         onClose={() => setIsSettingsOpen(false)}
         themeMode={themeMode}
         onThemeChange={onThemeChange}
-        selectedModel={selectedModel}
-        onModelChange={onModelChange}
-        maxPromptLength={maxPromptLength}
-        onMaxPromptLengthChange={onMaxPromptLengthChange}
       />
     </>
   );

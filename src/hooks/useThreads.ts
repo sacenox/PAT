@@ -44,9 +44,12 @@ export function useThreads() {
   ): Promise<number | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
+      // Use global model setting (from localStorage) when creating a new thread
+      // This will be stored in the thread table and used for all messages in this thread
       const modelToUse = model || localStorage.getItem("selectedModel") || "gpt-oss";
 
-      // Get maxPromptLength from settings if not provided
+      // Get maxPromptLength from global settings if not provided
+      // This will be stored in the thread table and used for all messages in this thread
       let maxPromptLengthToUse = maxPromptLength;
       if (maxPromptLengthToUse === undefined) {
         try {
@@ -81,6 +84,30 @@ export function useThreads() {
     }
   };
 
+  const updateThread = async (
+    threadId: number,
+    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+  ): Promise<void> => {
+    try {
+      const res = await fetch(`/api/threads/${threadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update thread");
+      }
+      const data = await res.json();
+      const updatedThread = data.thread;
+
+      // Update the thread in local state
+      setThreads((prev) => prev.map((t) => (t.id === threadId ? updatedThread : t)));
+    } catch (error) {
+      console.error("Failed to update thread", error);
+      throw error;
+    }
+  };
+
   const deleteThread = async (threadId: number): Promise<void> => {
     try {
       const res = await fetch(`/api/threads/${threadId}`, {
@@ -109,6 +136,7 @@ export function useThreads() {
     loadThreads,
     loadMoreThreads,
     createThread,
+    updateThread,
     deleteThread,
   };
 }

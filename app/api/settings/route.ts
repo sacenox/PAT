@@ -5,13 +5,14 @@ const SETTINGS_CACHE_KEY = "app_settings";
 
 type Settings = {
   maxPromptLength: "none" | 1024 | 4096;
+  selectedModel?: string;
 };
 
 export async function GET() {
   try {
     const settings = await getCache<Settings>(SETTINGS_CACHE_KEY);
     return NextResponse.json({
-      settings: settings || { maxPromptLength: "none" },
+      settings: settings || { maxPromptLength: "none", selectedModel: "gpt-oss" },
     });
   } catch (error) {
     console.error("Get settings error", error);
@@ -21,17 +22,36 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { maxPromptLength } = await request.json();
+    const { maxPromptLength, selectedModel } = await request.json();
 
-    // Validate maxPromptLength
-    if (maxPromptLength !== "none" && maxPromptLength !== 1024 && maxPromptLength !== 4096) {
-      return NextResponse.json({ error: "Invalid maxPromptLength value" }, { status: 400 });
+    const settings: Settings = {};
+
+    // Validate and set maxPromptLength if provided
+    if (maxPromptLength !== undefined) {
+      if (maxPromptLength !== "none" && maxPromptLength !== 1024 && maxPromptLength !== 4096) {
+        return NextResponse.json({ error: "Invalid maxPromptLength value" }, { status: 400 });
+      }
+      settings.maxPromptLength = maxPromptLength;
     }
 
-    const settings: Settings = { maxPromptLength };
-    await setCache(SETTINGS_CACHE_KEY, settings);
+    // Validate and set selectedModel if provided
+    if (selectedModel !== undefined) {
+      if (typeof selectedModel !== "string") {
+        return NextResponse.json({ error: "Invalid selectedModel value" }, { status: 400 });
+      }
+      settings.selectedModel = selectedModel;
+    }
 
-    return NextResponse.json({ settings });
+    // Get existing settings and merge
+    const existingSettings = await getCache<Settings>(SETTINGS_CACHE_KEY);
+    const mergedSettings: Settings = {
+      maxPromptLength: settings.maxPromptLength ?? existingSettings?.maxPromptLength ?? "none",
+      selectedModel: settings.selectedModel ?? existingSettings?.selectedModel ?? "gpt-oss",
+    };
+
+    await setCache(SETTINGS_CACHE_KEY, mergedSettings);
+
+    return NextResponse.json({ settings: mergedSettings });
   } catch (error) {
     console.error("Set settings error", error);
     return NextResponse.json({ error: "Failed to set settings" }, { status: 500 });

@@ -22,7 +22,7 @@ export default function DeleteMessageButton({
 
   return (
     <div className={`mt-2 ${align === "right" ? "flex justify-end" : ""}`}>
-      <div className="w-fit rounded-lg bg-neutral-300/80 px-3 py-1 dark:bg-neutral-800/80">
+      <div className="w-fit">
         <SecondaryButton
           onClick={(e) => {
             e.preventDefault();

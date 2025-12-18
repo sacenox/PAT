@@ -18,6 +18,8 @@ export const messages = pgTable("messages", {
     .references(() => threads.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "user" or "assistant"
   content: text("content").notNull(),
+  model: text("model"), // Model used to generate this message (for assistant messages)
+  maxPromptLength: integer("max_prompt_length"), // Prompt size used to generate this message (for assistant messages) - null, 1024, or 4096
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
   toolCalls: text("tool_calls"), // JSON string of tool calls made to generate this message (for assistant messages)
