@@ -79,6 +79,7 @@ export default function Sidebar({
                           onThreadSelect(thread.id);
                         }}
                         isSelected={isSelected}
+                        className="text-sm"
                       >
                         <span className="min-w-0 truncate">
                           {thread.title || `Thread ${thread.id}`}

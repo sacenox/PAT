@@ -101,14 +101,22 @@ export function useThreads() {
 
   const updateThread = async (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null },
+    updates: {
+      model?: string;
+      maxPromptLength?: "none" | 1024 | 4096 | null;
+      title?: string;
+    },
     onError?: (error: string) => void
   ): Promise<void> => {
     try {
       const res = await fetch(`/api/threads/${threadId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
+        body: JSON.stringify({
+          ...updates,
+          // Only send title if it's provided
+          ...(updates.title !== undefined ? { title: updates.title } : {}),
+        }),
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {

@@ -37,7 +37,10 @@ export default function Home() {
     clearMessages,
     stopGeneration,
     deleteMessage: deleteMessageInternal,
-  } = useMessages(currentThreadId, setError);
+  } = useMessages(currentThreadId, setError, async (threadId: number, title: string) => {
+    await updateThread(threadId, { title }, setError);
+    await loadThreads(8, setError);
+  });
   const messageInputRef = useRef<MessageInputRef>(null);
 
   const handleDeleteMessage = (messageId: number, threadId: number) => {

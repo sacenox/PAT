@@ -84,50 +84,38 @@ export function streamAssistantResponse({
           cleanupAbortHandler();
         }
 
+        // Helper function to save message and send done event
+        const saveAndSendDone = async (genTimeMs: number | null) => {
+          await saveAssistantMessage({
+            threadId,
+            content: accumulatedContent,
+            model: threadModel,
+            maxPromptLength: threadMaxPromptLength,
+            generationTimeMs: genTimeMs,
+            toolCallCounts: extractToolCounts(allToolCalls),
+          });
+
+          safeEnqueue({
+            type: "done",
+            answer: accumulatedContent,
+            model: threadModel,
+            maxPromptLength: threadMaxPromptLength,
+            toolCallCounts: extractToolCounts(allToolCalls),
+          });
+        };
+
         // Check if aborted before saving
         if (signal.aborted) {
           // Save partial content if any was generated
           if (accumulatedContent) {
-            await saveAssistantMessage({
-              threadId,
-              content: accumulatedContent,
-              model: threadModel,
-              maxPromptLength: threadMaxPromptLength,
-              generationTimeMs: null,
-              toolCallCounts: extractToolCounts(allToolCalls),
-            });
-
-            // Send done message with metadata for aborted generation
-            safeEnqueue({
-              type: "done",
-              answer: accumulatedContent,
-              model: threadModel,
-              maxPromptLength: threadMaxPromptLength,
-              toolCallCounts: extractToolCounts(allToolCalls),
-            });
+            await saveAndSendDone(null);
           }
           safeClose();
           return;
         }
 
         // Store assistant message with model, maxPromptLength, generation time and tool calls
-        await saveAssistantMessage({
-          threadId,
-          content: accumulatedContent,
-          model: threadModel,
-          maxPromptLength: threadMaxPromptLength,
-          generationTimeMs: generationTimeMs ?? null,
-          toolCallCounts: extractToolCounts(allToolCalls),
-        });
-
-        // Send final message with metadata
-        safeEnqueue({
-          type: "done",
-          answer: accumulatedContent,
-          model: threadModel,
-          maxPromptLength: threadMaxPromptLength,
-          toolCallCounts: extractToolCounts(allToolCalls),
-        });
+        await saveAndSendDone(generationTimeMs ?? null);
         safeClose();
       } catch {
         safeEnqueue({ type: "error", error: "Sorry, something went wrong." });

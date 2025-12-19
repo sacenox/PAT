@@ -4,4 +4,5 @@
 export { OllamaChat, streamAssistantResponse } from "./chat";
 export type { StreamAssistantResponseParams } from "./chat";
 export { getFirstAvailableModel } from "./models";
+export { generateTitle } from "./title";
 export type { OllamaChunk, OllamaChatResponse, MaxPromptLength } from "./types";

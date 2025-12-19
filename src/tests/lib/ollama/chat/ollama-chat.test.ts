@@ -89,7 +89,9 @@ describe("OllamaChat", () => {
         { message: { content: " there" }, total_duration: 2000000 },
       ];
 
-      mockOllamaChatPackage.mockResolvedValue(createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
 
       const result = await OllamaChat(messages, undefined, "test-model");
 
@@ -102,7 +104,9 @@ describe("OllamaChat", () => {
       const messages: Message[] = [{ role: "user", content: "Test" }];
       const mockChunks = [{ message: {}, total_duration: 0 }];
 
-      mockOllamaChatPackage.mockResolvedValue(createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
 
       const result = await OllamaChat(messages, undefined, "test-model");
 
@@ -114,13 +118,12 @@ describe("OllamaChat", () => {
   describe("Streaming chunks", () => {
     it("should call onChunk callback with content chunks", async () => {
       const messages: Message[] = [{ role: "user", content: "Hello" }];
-      const mockChunks = [
-        { message: { content: "Hello" } },
-        { message: { content: " there" } },
-      ];
+      const mockChunks = [{ message: { content: "Hello" } }, { message: { content: " there" } }];
       const onChunk = vi.fn();
 
-      mockOllamaChatPackage.mockResolvedValue(createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
 
       await OllamaChat(messages, onChunk, "test-model");
 
@@ -141,9 +144,7 @@ describe("OllamaChat", () => {
       };
 
       // First iteration: tool call
-      const firstChunks = [
-        { message: { tool_calls: [toolCall] }, total_duration: 1000000 },
-      ];
+      const firstChunks = [{ message: { tool_calls: [toolCall] }, total_duration: 1000000 }];
 
       // Second iteration: final response
       const secondChunks = [
@@ -151,8 +152,12 @@ describe("OllamaChat", () => {
       ];
 
       mockOllamaChatPackage
-        .mockResolvedValueOnce(createMockStream(firstChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>)
-        .mockResolvedValueOnce(createMockStream(secondChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+        .mockResolvedValueOnce(
+          createMockStream(firstChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+        )
+        .mockResolvedValueOnce(
+          createMockStream(secondChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+        );
 
       mockExecuteToolCall.mockResolvedValue({
         role: "tool",
@@ -175,9 +180,9 @@ describe("OllamaChat", () => {
       const controller = new AbortController();
       controller.abort();
 
-      await expect(OllamaChat(messages, undefined, "test-model", controller.signal)).rejects.toThrow(
-        "Request aborted"
-      );
+      await expect(
+        OllamaChat(messages, undefined, "test-model", controller.signal)
+      ).rejects.toThrow("Request aborted");
 
       expect(mockOllamaChatPackage).not.toHaveBeenCalled();
     });
@@ -190,7 +195,9 @@ describe("OllamaChat", () => {
       ]);
       const cleanup = vi.fn();
 
-      mockOllamaChatPackage.mockResolvedValue(mockStream as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        mockStream as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
       mockSetupAbortHandler.mockReturnValue(cleanup);
 
       await OllamaChat(messages, undefined, "test-model", signal);
@@ -205,7 +212,9 @@ describe("OllamaChat", () => {
       const messages: Message[] = [{ role: "user", content: "Test" }];
       const mockChunks = [{ message: { content: "Response" }, total_duration: 1000000 }];
 
-      mockOllamaChatPackage.mockResolvedValue(createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
 
       await OllamaChat(messages, undefined, "test-model", undefined, 1024);
 
@@ -220,7 +229,9 @@ describe("OllamaChat", () => {
       const messages: Message[] = [{ role: "user", content: "Test" }];
       const mockChunks = [{ message: { content: "Response" }, total_duration: 1000000 }];
 
-      mockOllamaChatPackage.mockResolvedValue(createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>);
+      mockOllamaChatPackage.mockResolvedValue(
+        createMockStream(mockChunks) as unknown as Awaited<ReturnType<typeof ollama.chat>>
+      );
 
       await OllamaChat(messages, undefined, "test-model", undefined, "none");
 
@@ -232,4 +243,3 @@ describe("OllamaChat", () => {
     });
   });
 });
-

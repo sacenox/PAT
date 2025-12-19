@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 
-export function useMessages(threadId: number | null, onError?: (error: string) => void) {
+export function useMessages(
+  threadId: number | null,
+  onError?: (error: string) => void,
+  onUpdateThreadTitle?: (threadId: number, title: string) => Promise<void>
+) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState<boolean>(false);
@@ -207,6 +211,46 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
                   );
                 }
                 setStreamingMessageId(null);
+
+                // Generate title after first assistant response
+                // Check if this is the first response (exactly 1 user message and 1 assistant message, excluding system messages)
+                const previousUserMessages = messages.filter(
+                  (m) => m.role === "user" && m.threadId === targetThreadId
+                );
+                const previousAssistantMessages = messages.filter(
+                  (m) => m.role === "assistant" && m.threadId === targetThreadId
+                );
+
+                // After this response, we'll have: previous user messages + this user message, and previous assistant messages + this assistant message
+                const totalUserMessages = previousUserMessages.length + 1;
+                const totalAssistantMessages = previousAssistantMessages.length + 1;
+
+                if (
+                  totalUserMessages === 1 &&
+                  totalAssistantMessages === 1 &&
+                  onUpdateThreadTitle &&
+                  data.model
+                ) {
+                  // This is the first response, generate a title
+                  const threadModel = data.model;
+
+                  if (threadModel) {
+                    try {
+                      const titleRes = await fetch(`/api/threads/${targetThreadId}/title`, {
+                        method: "POST",
+                      });
+                      if (titleRes.ok) {
+                        const titleData = await titleRes.json();
+                        if (titleData.title) {
+                          await onUpdateThreadTitle(targetThreadId, titleData.title);
+                        }
+                      }
+                    } catch {
+                      // Silently fail title generation - don't interrupt the flow
+                    }
+                  }
+                }
+
                 shouldStop = true;
                 break;
               } else if (data.type === "error") {

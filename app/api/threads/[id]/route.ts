@@ -12,9 +12,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     const body = await request.json();
-    const { model, maxPromptLength } = body;
+    const { model, maxPromptLength, title } = body;
 
-    const updateData: { model?: string; maxPromptLength?: number | null; updatedAt?: Date } = {
+    const updateData: {
+      model?: string;
+      maxPromptLength?: number | null;
+      title?: string;
+      updatedAt?: Date;
+    } = {
       updatedAt: new Date(),
     };
 
@@ -25,6 +30,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (maxPromptLength !== undefined) {
       updateData.maxPromptLength =
         maxPromptLength === "none" || maxPromptLength === null ? null : maxPromptLength;
+    }
+
+    if (title !== undefined) {
+      updateData.title = title;
     }
 
     const updatedThread = await db
