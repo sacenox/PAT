@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 
-export function useModelSettings(onError?: (error: string) => void) {
+export function useSettings(onError?: (error: string) => void) {
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
   const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096>("none");
+  const [location, setLocation] = useState<string | undefined>(undefined);
+  const [currentTime, setCurrentTime] = useState<string | undefined>(undefined);
 
   // Load settings from API and validate model against available models
   useEffect(() => {
@@ -20,8 +22,10 @@ export function useModelSettings(onError?: (error: string) => void) {
         }
         const settingsData = await settingsRes.json();
         const settings = settingsData.settings || {};
-        const savedModel = settings.selectedModel || "gpt-oss";
+        const savedModel = settings.selectedModel || "";
         const savedMaxPromptLength = settings.maxPromptLength || "none";
+        const savedLocation = settings.location;
+        const savedCurrentTime = settings.currentTime;
 
         // Get available models
         const modelsRes = await fetch("/api/models");
@@ -38,6 +42,25 @@ export function useModelSettings(onError?: (error: string) => void) {
 
         // Set maxPromptLength
         setMaxPromptLength(savedMaxPromptLength);
+        // Set location and currentTime
+        setLocation(savedLocation);
+        setCurrentTime(savedCurrentTime);
+
+        // Post current time in ISO format to settings on app start
+        const currentTimeISO = new Date().toISOString();
+        try {
+          await fetch("/api/settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ currentTime: currentTimeISO }),
+          });
+          setCurrentTime(currentTimeISO);
+        } catch (error) {
+          // Silently fail - don't block app startup if time update fails
+          if (onError && error instanceof Error) {
+            onError(error.message);
+          }
+        }
 
         if (availableModels.length === 0) {
           // No models available, keep default
@@ -69,8 +92,10 @@ export function useModelSettings(onError?: (error: string) => void) {
           onError(error.message);
         }
         // On error, keep defaults
-        setSelectedModel("gpt-oss");
+        setSelectedModel("");
         setMaxPromptLength("none");
+        setLocation(undefined);
+        setCurrentTime(undefined);
       }
     };
 
@@ -132,3 +157,4 @@ export function useModelSettings(onError?: (error: string) => void) {
     handleMaxPromptLengthChange,
   };
 }
+

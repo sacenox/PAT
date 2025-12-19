@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads, messages } from "@/src/lib/db/schema";
 import { desc, count } from "drizzle-orm";
+import { getCache } from "@/src/lib/cache";
+
+const SETTINGS_CACHE_KEY = "app_settings";
+
+type Settings = {
+  maxPromptLength: "none" | 1024 | 4096;
+  selectedModel?: string;
+  location?: string;
+  currentTime?: string;
+};
 
 export async function POST(request: Request) {
   try {
@@ -20,15 +30,33 @@ export async function POST(request: Request) {
 
     const threadId = newThread[0].id;
 
+    // Get location and currentTime from settings
+    const settings = await getCache<Settings>(SETTINGS_CACHE_KEY);
+    const location = settings?.location;
+    const currentTime = settings?.currentTime;
+
+    // Build system prompt with location and time if available
+    let systemPrompt = `You are PAT, a helpful personal assistant. You must follow these guidelines:
+- Only repeat tool calls in case of errors
+- Use simple and concise language
+- Reply with markdown whenever possible
+- When asked for code or text return it in a markdown code block`;
+
+    if (location || currentTime) {
+      systemPrompt += "\n\n";
+      if (currentTime) {
+        systemPrompt += `Current time: ${currentTime}\n`;
+      }
+      if (location) {
+        systemPrompt += `Location: ${location}`;
+      }
+    }
+
     // Insert system message with guidelines
     await db.insert(messages).values({
       threadId,
       role: "system",
-      content: `You are PAT, a helpful personal assistant. Please follow these guidelines:
-- Only repeat tool calls in case of errors
-- Use simple and concise language
-- Reply with markdown whenever possible
-- When asked for code or text return it in a markdown code block`,
+      content: systemPrompt,
       createdAt: new Date(),
     });
 

@@ -7,6 +7,8 @@ const SETTINGS_CACHE_KEY = "app_settings";
 type Settings = {
   maxPromptLength: "none" | 1024 | 4096;
   selectedModel?: string;
+  location?: string;
+  currentTime?: string;
 };
 
 export async function GET() {
@@ -31,7 +33,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { maxPromptLength, selectedModel } = await request.json();
+    const { maxPromptLength, selectedModel, location, currentTime } = await request.json();
 
     let settings: Partial<Settings> = {};
 
@@ -49,6 +51,22 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid selectedModel value" }, { status: 400 });
       }
       settings.selectedModel = selectedModel;
+    }
+
+    // Validate and set location if provided
+    if (location !== undefined) {
+      if (typeof location !== "string") {
+        return NextResponse.json({ error: "Invalid location value" }, { status: 400 });
+      }
+      settings.location = location;
+    }
+
+    // Validate and set currentTime if provided
+    if (currentTime !== undefined) {
+      if (typeof currentTime !== "string") {
+        return NextResponse.json({ error: "Invalid currentTime value" }, { status: 400 });
+      }
+      settings.currentTime = currentTime;
     }
 
     // Get existing settings and merge, prefering the ones in the request

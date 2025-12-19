@@ -5,7 +5,7 @@ import MessageInput, { type MessageInputRef } from "@/src/components/MessageInpu
 import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
-import { useModelSettings } from "@/src/hooks/useModelSettings";
+import { useSettings } from "@/src/hooks/useSettings";
 import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
@@ -15,7 +15,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
   const { selectedModel, handleModelChange, maxPromptLength, handleMaxPromptLengthChange } =
-    useModelSettings(setError);
+    useSettings(setError);
   const {
     threads,
     totalThreadCount,
