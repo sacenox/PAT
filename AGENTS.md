@@ -14,41 +14,55 @@
 ## Coding Guidelines
 
 ### TypeScript
+
 - Use strict typing - avoid `any`, prefer type inference where appropriate.
 - Export types/interfaces alongside implementations.
 - Use the types provided by dependencies when possible, avoid creating types for 3rd party code.
 - Use Drizzle ORM type inference: `typeof table.$inferSelect` and `typeof table.$inferInsert`.
 
 ### Code Organization
+
 - Use path aliases: `@/` for root imports (e.g., `@/src/components/...`).
 - Follow modular structure: `src/components/`, `src/hooks/`, `src/lib/`, `app/api/`.
 - Keep files focused - one main export per file when possible.
 
 ### Documentation
+
 - Add JSDoc comments for exported functions with `@param` and `@returns`.
 - Keep commenting to a minimum. We should only add comments when the code is not self-explanatory
 
 ### Naming Conventions
+
 - `camelCase` for functions, variables, and hooks (e.g., `useLocalStorage`, `handleSubmit`).
 - `PascalCase` for components, types, and interfaces (e.g., `MessageInput`, `MessageInputRef`).
 - `kebab-case` for file names (except React components which use PascalCase).
 
 ### React Patterns
+
 - Use functional components with hooks.
 - Use `forwardRef` when ref forwarding is needed.
 - Properly type component props and refs.
 - Handle loading and error states explicitly.
 
 ### Error Handling
+
 - Use try-catch blocks for async operations.
 - Return proper HTTP status codes in API routes (400, 404, 500).
 - Log errors using the `debug` utility from `@/src/lib/debug`.
 
 ### Database
+
 - Use Drizzle ORM query builder patterns.
 - Use `eq()`, `asc()`, `desc()` from `drizzle-orm` for queries.
 
 ### Testing
+
 - Write tests using Vitest for complex logic.
 - Keep tests in `src/tests/` mirroring the source structure.
 
+### Git Commit Messages
+
+- Use conventional commit format: `<type>: <description>`
+- Types: `feat:` (new features), `fix:` (bug fixes), `refactor:` (code refactoring), `docs:` (documentation), `chore:` (maintenance/tooling)
+- Example: `feat: add system and tool message display with visibility controls`
+- Always use lowercase for the type and description
