@@ -16,8 +16,9 @@ const DEFAULT_SETTINGS: MessageDisplaySettings = {
  */
 export function useMessageDisplaySettings(): [
   MessageDisplaySettings,
-  (value: MessageDisplaySettings | ((prev: MessageDisplaySettings) => MessageDisplaySettings)) => void
+  (
+    value: MessageDisplaySettings | ((prev: MessageDisplaySettings) => MessageDisplaySettings)
+  ) => void,
 ] {
   return useLocalStorage<MessageDisplaySettings>("messageDisplaySettings", DEFAULT_SETTINGS);
 }
-

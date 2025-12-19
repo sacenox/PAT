@@ -50,7 +50,9 @@ export interface SaveToolMessageParams {
  * @param params.toolName - Name of the tool that was called
  * @returns Promise that resolves with the saved message ID and content
  */
-export async function saveToolMessage(params: SaveToolMessageParams): Promise<{ id: number; content: string; createdAt: Date }> {
+export async function saveToolMessage(
+  params: SaveToolMessageParams
+): Promise<{ id: number; content: string; createdAt: Date }> {
   const { threadId, content, toolName } = params;
 
   const savedMessage = await db

@@ -55,7 +55,10 @@ export async function POST(request: Request) {
       systemMessage: systemMessage[0],
     });
   } catch (err) {
-    debug(`[Threads API] Error creating thread:`, err instanceof Error ? err.message : "Unknown error");
+    debug(
+      `[Threads API] Error creating thread:`,
+      err instanceof Error ? err.message : "Unknown error"
+    );
     return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
   }
 }
@@ -79,7 +82,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ threads: threadsList, hasMore, totalCount });
   } catch (err) {
-    debug(`[Threads API] Error fetching threads:`, err instanceof Error ? err.message : "Unknown error");
+    debug(
+      `[Threads API] Error fetching threads:`,
+      err instanceof Error ? err.message : "Unknown error"
+    );
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });
   }
 }

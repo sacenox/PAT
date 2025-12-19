@@ -15,11 +15,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const url = new URL(request.url);
     const optionalRolesParam = url.searchParams.get("optional_roles");
-    
+
     const allowedRoles: string[] = ["user", "assistant"];
-    
+
     if (optionalRolesParam) {
-      const optionalRoles = optionalRolesParam.split(",").map((r) => r.trim()).filter(Boolean);
+      const optionalRoles = optionalRolesParam
+        .split(",")
+        .map((r) => r.trim())
+        .filter(Boolean);
       const validOptionalRoles = optionalRoles.filter((r) => ["system", "tool"].includes(r));
       allowedRoles.push(...validOptionalRoles);
     }

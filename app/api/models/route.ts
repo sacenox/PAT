@@ -11,7 +11,10 @@ export async function GET() {
     }));
     return NextResponse.json({ models });
   } catch (err) {
-    debug(`[Models API] Error fetching models:`, err instanceof Error ? err.message : "Unknown error");
+    debug(
+      `[Models API] Error fetching models:`,
+      err instanceof Error ? err.message : "Unknown error"
+    );
     return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 });
   }
 }

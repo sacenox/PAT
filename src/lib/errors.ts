@@ -30,4 +30,3 @@ export function handleError(error: unknown, onError?: (error: string) => void): 
 export function getParseErrorMessage(parseError: unknown): string {
   return `Failed to parse error response: ${getErrorMessage(parseError, "Invalid JSON")}`;
 }
-

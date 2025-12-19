@@ -24,7 +24,9 @@ vi.mock("@/src/lib/ollama/chat/abort-handler", () => ({
 
 vi.mock("@/src/lib/ollama/chat/message-persistence", () => ({
   saveAssistantMessage: vi.fn().mockResolvedValue(undefined),
-  saveToolMessage: vi.fn().mockResolvedValue({ id: 1, content: "[tool]\nresult", createdAt: new Date() }),
+  saveToolMessage: vi
+    .fn()
+    .mockResolvedValue({ id: 1, content: "[tool]\nresult", createdAt: new Date() }),
   extractToolCounts: vi.fn(),
 }));
 
