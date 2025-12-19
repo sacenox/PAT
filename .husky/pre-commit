@@ -1,0 +1,8 @@
+# Run lint-staged (will fail if prettier or eslint fail)
+npx lint-staged || exit 1
+
+# Run TypeScript type checking (will fail on type errors)
+npm run typecheck || exit 1
+
+# Run tests (will fail if tests fail)
+npm run test:run || exit 1
