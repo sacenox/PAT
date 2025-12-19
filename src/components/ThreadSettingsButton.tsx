@@ -6,13 +6,17 @@ import ThreadSettingsModal from "@/src/components/ThreadSettingsModal";
 import type { Thread } from "@/src/lib/db/schema";
 
 type ThreadSettingsButtonProps = {
-  thread: Thread;
-  onUpdateThread: (
+  thread: Thread | null;
+  onUpdateThread?: (
     threadId: number,
     updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
   ) => Promise<void>;
-  onDeleteThread: (threadId: number) => Promise<void>;
+  onDeleteThread?: (threadId: number) => Promise<void>;
   onError?: (error: string) => void;
+  initialModel?: string;
+  initialMaxPromptLength?: "none" | 1024 | 4096;
+  onModelChange?: (model: string) => void;
+  onMaxPromptLengthChange?: (value: "none" | 1024 | 4096) => void;
 };
 
 export default function ThreadSettingsButton({
@@ -20,6 +24,10 @@ export default function ThreadSettingsButton({
   onUpdateThread,
   onDeleteThread,
   onError,
+  initialModel,
+  initialMaxPromptLength,
+  onModelChange,
+  onMaxPromptLengthChange,
 }: ThreadSettingsButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -44,6 +52,10 @@ export default function ThreadSettingsButton({
         onUpdateThread={onUpdateThread}
         onDeleteThread={onDeleteThread}
         onError={onError}
+        initialModel={initialModel}
+        initialMaxPromptLength={initialMaxPromptLength}
+        onModelChange={onModelChange}
+        onMaxPromptLengthChange={onMaxPromptLengthChange}
       />
     </>
   );

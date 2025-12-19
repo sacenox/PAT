@@ -42,7 +42,7 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
           <XIcon className="h-5 w-5" />
         </button>
         {/* Content */}
-        <div className="pr-8">{children}</div>
+        <div>{children}</div>
       </div>
     </div>
   );

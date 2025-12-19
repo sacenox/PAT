@@ -4,24 +4,12 @@ import { useState, useEffect } from "react";
 
 type NoThreadSelectedProps = {
   threadCount: number;
-  selectedModel: string;
-  onModelChange: (model: string) => void;
-  maxPromptLength: "none" | 1024 | 4096;
-  onMaxPromptLengthChange: (value: "none" | 1024 | 4096) => void;
-  onError?: (error: string) => void;
 };
 
 export default function NoThreadSelected({
   threadCount,
-  selectedModel,
-  onModelChange,
-  maxPromptLength,
-  onMaxPromptLengthChange,
-  onError,
 }: NoThreadSelectedProps) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
-  const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   useEffect(() => {
     // Set initial time only on client after hydration
@@ -32,41 +20,6 @@ export default function NoThreadSelected({
 
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadModels = async () => {
-      setIsLoadingModels(true);
-      try {
-        const res = await fetch("/api/models");
-        if (!res.ok) {
-          const errorData = await res.json().catch((parseError) => {
-            throw new Error(
-              `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
-            );
-          });
-          throw new Error(errorData.error || res.statusText);
-        }
-        const data = await res.json();
-        if (!cancelled) {
-          const availableModels = data.models || [];
-          setModels(availableModels);
-          setIsLoadingModels(false);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setIsLoadingModels(false);
-          if (onError && error instanceof Error) {
-            onError(error.message);
-          }
-        }
-      }
-    };
-    loadModels();
-    return () => {
-      cancelled = true;
-    };
-  }, [onError]);
 
   const formatTime = (date: Date): string => {
     return date.toLocaleString();
@@ -83,50 +36,6 @@ export default function NoThreadSelected({
           below to start new a conversation thread or pick a previous conversation thread from the
           sidebar.
         </p>
-        <hr className="border-neutral-300 dark:border-neutral-700" />
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              Model
-            </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => onModelChange(e.target.value)}
-              disabled={isLoadingModels}
-              className="bg-neutral-100 px-3 py-2 text-neutral-800 focus:outline-none disabled:opacity-50 dark:bg-neutral-900 dark:text-neutral-200"
-            >
-              {isLoadingModels ? (
-                <option>Loading models...</option>
-              ) : models.length === 0 ? (
-                <option>No models available</option>
-              ) : (
-                models.map((model) => (
-                  <option key={model.name} value={model.model}>
-                    {model.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              Max Prompt Length
-            </label>
-            <select
-              value={maxPromptLength}
-              onChange={(e) =>
-                onMaxPromptLengthChange(
-                  e.target.value === "none" ? "none" : (parseInt(e.target.value, 10) as 1024 | 4096)
-                )
-              }
-              className="bg-neutral-100 px-3 py-2 text-neutral-800 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200"
-            >
-              <option value="none">None</option>
-              <option value="1024">1024</option>
-              <option value="4096">4096</option>
-            </select>
-          </div>
-        </div>
         <hr className="border-neutral-300 dark:border-neutral-700" />
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {timeDisplay && (

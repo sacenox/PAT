@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCache, setCache } from "@/src/lib/cache";
-import { getFirstAvailableModel } from "@/src/lib/ollama/models";
 
 const SETTINGS_CACHE_KEY = "app_settings";
 
 type Settings = {
-  maxPromptLength: "none" | 1024 | 4096;
-  selectedModel?: string;
   location?: string;
   currentTime?: string;
   timezone?: string;
@@ -19,12 +16,7 @@ export async function GET() {
       return NextResponse.json({ settings });
     }
 
-    // If no settings exist, get the first available model
-    const firstModel = await getFirstAvailableModel();
-    const defaultSettings: Settings = {
-      maxPromptLength: "none",
-      selectedModel: firstModel || undefined,
-    };
+    const defaultSettings: Settings = {};
 
     return NextResponse.json({ settings: defaultSettings });
   } catch {
@@ -34,25 +26,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { maxPromptLength, selectedModel, location, currentTime, timezone } = await request.json();
+    const { location, currentTime, timezone } = await request.json();
 
     let settings: Partial<Settings> = {};
-
-    // Validate and set maxPromptLength if provided
-    if (maxPromptLength !== undefined) {
-      if (maxPromptLength !== "none" && maxPromptLength !== 1024 && maxPromptLength !== 4096) {
-        return NextResponse.json({ error: "Invalid maxPromptLength value" }, { status: 400 });
-      }
-      settings.maxPromptLength = maxPromptLength;
-    }
-
-    // Validate and set selectedModel if provided
-    if (selectedModel !== undefined) {
-      if (typeof selectedModel !== "string") {
-        return NextResponse.json({ error: "Invalid selectedModel value" }, { status: 400 });
-      }
-      settings.selectedModel = selectedModel;
-    }
 
     // Validate and set location if provided
     if (location !== undefined) {
@@ -82,11 +58,6 @@ export async function POST(request: Request) {
     const existingSettings = await getCache<Settings>(SETTINGS_CACHE_KEY);
     if (existingSettings) {
       settings = { ...existingSettings, ...settings };
-    }
-
-    if (!settings.selectedModel) {
-      const firstModel = await getFirstAvailableModel();
-      settings.selectedModel = firstModel;
     }
 
     // Update the cache with new settings.

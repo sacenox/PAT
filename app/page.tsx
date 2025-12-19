@@ -14,14 +14,9 @@ import "./highlight-theme.css";
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
-  const {
-    selectedModel,
-    handleModelChange,
-    maxPromptLength,
-    handleMaxPromptLengthChange,
-    location,
-    handleLocationChange,
-  } = useSettings(setError);
+  const { location, handleLocationChange } = useSettings(setError);
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
+  const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096>("none");
   const {
     threads,
     totalThreadCount,
@@ -48,6 +43,60 @@ export default function Home() {
     await loadThreads(8, setError);
   });
   const messageInputRef = useRef<MessageInputRef>(null);
+
+  // Initialize model from localStorage or fetch first available model
+  useEffect(() => {
+    const initializeModel = async () => {
+      // Check localStorage for previously selected model
+      const savedModel = localStorage.getItem("selectedModel");
+      if (savedModel) {
+        // Validate that the model still exists
+        try {
+          const res = await fetch("/api/models");
+          if (res.ok) {
+            const data = await res.json();
+            const availableModels = data.models || [];
+            const modelExists = availableModels.some(
+              (m: { name: string; model: string }) => m.model === savedModel
+            );
+            if (modelExists) {
+              setSelectedModel(savedModel);
+              return;
+            }
+          }
+        } catch {
+          // Fall through to default
+        }
+      }
+      
+      // If no saved model or it doesn't exist, get first available
+      try {
+        const res = await fetch("/api/models");
+        if (res.ok) {
+          const data = await res.json();
+          const availableModels = data.models || [];
+          if (availableModels.length > 0) {
+            const firstModel = availableModels[0].model;
+            setSelectedModel(firstModel);
+            localStorage.setItem("selectedModel", firstModel);
+          }
+        }
+      } catch {
+        // Keep default
+      }
+    };
+    
+    initializeModel();
+  }, []);
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    localStorage.setItem("selectedModel", model);
+  };
+
+  const handleMaxPromptLengthChange = (value: "none" | 1024 | 4096) => {
+    setMaxPromptLength(value);
+  };
 
   const handleDeleteMessage = (messageId: number, threadId: number) => {
     deleteMessageInternal(messageId, threadId, setError);
@@ -116,8 +165,8 @@ export default function Home() {
       await sendMessage(
         message,
         currentThreadId,
-        (title, firstMessage, model, maxPromptLength) =>
-          createThread(title, firstMessage, model, maxPromptLength, setError),
+        (title, firstMessage) =>
+          createThread(title, firstMessage, selectedModel, maxPromptLength, setError),
         selectThread,
         () => loadThreads(8, setError),
         selectedModel,
@@ -144,14 +193,7 @@ export default function Home() {
             className={`mx-auto flex min-h-full max-w-5xl flex-col gap-8 ${currentThreadId === null ? "justify-center" : "justify-end"}`}
           >
             {currentThreadId === null ? (
-              <NoThreadSelected
-                threadCount={totalThreadCount}
-                selectedModel={selectedModel}
-                onModelChange={handleModelChange}
-                maxPromptLength={maxPromptLength}
-                onMaxPromptLengthChange={handleMaxPromptLengthChange}
-                onError={setError}
-              />
+              <NoThreadSelected threadCount={totalThreadCount} />
             ) : (
               <MessageList
                 messages={messages}
@@ -177,6 +219,10 @@ export default function Home() {
           onThreadUpdate={handleThreadUpdate}
           onThreadDelete={handleThreadDelete}
           onError={setError}
+          newThreadModel={selectedModel}
+          newThreadMaxPromptLength={maxPromptLength}
+          onNewThreadModelChange={handleModelChange}
+          onNewThreadMaxPromptLengthChange={handleMaxPromptLengthChange}
         />
       </div>
       <Sidebar

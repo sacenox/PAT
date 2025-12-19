@@ -7,8 +7,6 @@ import { getCache } from "@/src/lib/cache";
 const SETTINGS_CACHE_KEY = "app_settings";
 
 type Settings = {
-  maxPromptLength: "none" | 1024 | 4096;
-  selectedModel?: string;
   location?: string;
   currentTime?: string;
   timezone?: string;
@@ -17,6 +15,15 @@ type Settings = {
 export async function POST(request: Request) {
   try {
     const { title, model, maxPromptLength } = await request.json();
+    
+    // Validate required parameters
+    if (!model || typeof model !== "string") {
+      return NextResponse.json({ error: "model is required" }, { status: 400 });
+    }
+    if (maxPromptLength === undefined) {
+      return NextResponse.json({ error: "maxPromptLength is required" }, { status: 400 });
+    }
+    
     const newThread = await db
       .insert(threads)
       .values({

@@ -30,7 +30,7 @@ export default function SettingsModal({
           <select
             value={themeMode}
             onChange={(e) => onThemeChange(e.target.value as "device" | "dark" | "light")}
-            className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200"
+            className="bg-white px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
           >
             <option value="device">Device</option>
             <option value="dark">Dark</option>
@@ -44,7 +44,7 @@ export default function SettingsModal({
             value={location}
             onChange={(e) => onLocationChange(e.target.value)}
             placeholder="Enter location name (e.g., New York, London)"
-            className="bg-neutral-100 px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-900 dark:text-neutral-200"
+            className="bg-white px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
           />
         </div>
       </div>

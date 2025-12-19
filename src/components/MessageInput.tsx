@@ -25,6 +25,10 @@ type MessageInputProps = {
   ) => Promise<void>;
   onThreadDelete?: (threadId: number) => Promise<void>;
   onError?: (error: string) => void;
+  newThreadModel?: string;
+  newThreadMaxPromptLength?: "none" | 1024 | 4096;
+  onNewThreadModelChange?: (model: string) => void;
+  onNewThreadMaxPromptLengthChange?: (value: "none" | 1024 | 4096) => void;
 };
 
 export type MessageInputRef = {
@@ -46,6 +50,10 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onThreadUpdate,
       onThreadDelete,
       onError,
+      newThreadModel,
+      newThreadMaxPromptLength,
+      onNewThreadModelChange,
+      onNewThreadMaxPromptLengthChange,
     },
     ref
   ) => {
@@ -153,14 +161,23 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               {error && <ErrorNotification message={error} />}
             </div>
             <div className="flex items-center justify-end">
-              {currentThreadId !== null && currentThread && onThreadUpdate && onThreadDelete && (
+              {currentThreadId !== null && currentThread && onThreadUpdate && onThreadDelete ? (
                 <ThreadSettingsButton
                   thread={currentThread}
                   onUpdateThread={onThreadUpdate}
                   onDeleteThread={onThreadDelete}
                   onError={onError}
                 />
-              )}
+              ) : currentThreadId === null && onNewThreadModelChange && onNewThreadMaxPromptLengthChange ? (
+                <ThreadSettingsButton
+                  thread={null}
+                  initialModel={newThreadModel}
+                  initialMaxPromptLength={newThreadMaxPromptLength}
+                  onModelChange={onNewThreadModelChange}
+                  onMaxPromptLengthChange={onNewThreadMaxPromptLengthChange}
+                  onError={onError}
+                />
+              ) : null}
             </div>
           </div>
           <form

@@ -49,9 +49,7 @@ export function useMessages(
     currentThreadId: number | null,
     onCreateThread: (
       title?: string,
-      firstMessage?: string,
-      model?: string,
-      maxPromptLength?: "none" | 1024 | 4096
+      firstMessage?: string
     ) => Promise<number | null>,
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
@@ -66,12 +64,10 @@ export function useMessages(
 
     if (!targetThreadId) {
       // Create a new thread if none exists
-      // Use the validated selectedModel instead of reading from localStorage
+      // The onCreateThread callback should already have model and maxPromptLength
       targetThreadId = await onCreateThread(
         message.substring(0, 100),
-        message,
-        selectedModel,
-        maxPromptLength
+        message
       );
       if (!targetThreadId) {
         setIsLoading(false);
