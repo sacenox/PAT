@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 import { getParseErrorMessage, handleError } from "@/src/lib/errors";
 import { useMessageDisplaySettings } from "./useMessageDisplaySettings";
+import {
+  createUserMessage,
+  createAssistantMessage,
+  createToolMessage,
+  createSystemMessage,
+} from "@/src/lib/message-helpers";
 
 /**
  * Custom hook for managing messages within a thread.
@@ -65,63 +71,6 @@ export function useMessages(
     },
     [messageDisplaySettings.showSystemMessages, messageDisplaySettings.showToolMessages]
   );
-
-  const createUserMessage = (message: string, threadId: number): Message => ({
-    id: Date.now(),
-    threadId,
-    role: "user",
-    content: message,
-    createdAt: new Date(),
-    model: null,
-    maxPromptLength: null,
-    generationTimeMs: null,
-    toolCallCounts: null,
-  });
-
-  const createAssistantMessage = (
-    id: number,
-    threadId: number,
-    content: string,
-    metadata?: {
-      model?: string | null;
-      maxPromptLength?: number | null;
-      toolCallCounts?: string | null;
-    }
-  ): Message => ({
-    id,
-    threadId,
-    role: "assistant",
-    content,
-    createdAt: new Date(),
-    model: metadata?.model ?? null,
-    maxPromptLength: metadata?.maxPromptLength ?? null,
-    generationTimeMs: null,
-    toolCallCounts: metadata?.toolCallCounts ?? null,
-  });
-
-  const createToolMessage = (id: number, threadId: number, content: string, createdAt?: string | Date): Message => ({
-    id,
-    threadId,
-    role: "tool",
-    content,
-    createdAt: createdAt ? (typeof createdAt === "string" ? new Date(createdAt) : createdAt) : new Date(),
-    model: null,
-    maxPromptLength: null,
-    generationTimeMs: null,
-    toolCallCounts: null,
-  });
-
-  const createSystemMessage = (id: number, threadId: number, content: string, createdAt?: string | Date): Message => ({
-    id,
-    threadId,
-    role: "system",
-    content,
-    createdAt: createdAt ? (typeof createdAt === "string" ? new Date(createdAt) : createdAt) : new Date(),
-    model: null,
-    maxPromptLength: null,
-    generationTimeMs: null,
-    toolCallCounts: null,
-  });
 
   const updateAssistantMessage = (
     messageId: number,
@@ -198,7 +147,13 @@ export function useMessages(
   const sendMessage = async (
     message: string,
     currentThreadId: number | null,
-    onCreateThread: (title?: string, firstMessage?: string) => Promise<{ threadId: number; systemMessage?: { id: number; content: string; createdAt: string } } | null>,
+    onCreateThread: (
+      title?: string,
+      firstMessage?: string
+    ) => Promise<{
+      threadId: number;
+      systemMessage?: { id: number; content: string; createdAt: string };
+    } | null>,
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
     onError?: (error: string) => void
@@ -220,7 +175,7 @@ export function useMessages(
         return;
       }
       targetThreadId = threadResult.threadId;
-      
+
       // Add system message to state if it was returned and setting is enabled
       if (threadResult.systemMessage && messageDisplaySettings.showSystemMessages) {
         addSystemMessage(
@@ -230,7 +185,7 @@ export function useMessages(
           threadResult.systemMessage.createdAt
         );
       }
-      
+
       // Mark that we're sending to this thread before selecting it
       sendingToThreadIdRef.current = targetThreadId;
       onThreadSelect(targetThreadId);
@@ -291,7 +246,11 @@ export function useMessages(
                 accumulatedContent += data.content || "";
                 // Only add the message when we have content
                 if (!messageAdded && accumulatedContent.trim()) {
-                  const botMsg = createAssistantMessage(assistantMsgId, targetThreadId, accumulatedContent);
+                  const botMsg = createAssistantMessage(
+                    assistantMsgId,
+                    targetThreadId,
+                    accumulatedContent
+                  );
                   setMessages((prev) => [...prev, botMsg]);
                   messageAdded = true;
                 } else if (messageAdded) {
@@ -299,7 +258,12 @@ export function useMessages(
                 }
               } else if (data.type === "toolMessage") {
                 // Add tool message to state in real-time
-                const toolMsg = createToolMessage(data.id, data.threadId, data.content, data.createdAt);
+                const toolMsg = createToolMessage(
+                  data.id,
+                  data.threadId,
+                  data.content,
+                  data.createdAt
+                );
                 setMessages((prev) => [...prev, toolMsg]);
               } else if (data.type === "done") {
                 // Final update with complete answer and metadata
@@ -311,7 +275,12 @@ export function useMessages(
                 };
 
                 if (!messageAdded) {
-                  const botMsg = createAssistantMessage(assistantMsgId, targetThreadId, finalContent, metadata);
+                  const botMsg = createAssistantMessage(
+                    assistantMsgId,
+                    targetThreadId,
+                    finalContent,
+                    metadata
+                  );
                   setMessages((prev) => [...prev, botMsg]);
                 } else {
                   updateAssistantMessage(assistantMsgId, finalContent, metadata);
@@ -346,7 +315,11 @@ export function useMessages(
                 if (data.error === "Generation stopped") {
                   // If we have content but message wasn't added, add it now
                   if (!messageAdded && accumulatedContent.trim()) {
-                    const botMsg = createAssistantMessage(assistantMsgId, targetThreadId, accumulatedContent);
+                    const botMsg = createAssistantMessage(
+                      assistantMsgId,
+                      targetThreadId,
+                      accumulatedContent
+                    );
                     setMessages((prev) => [...prev, botMsg]);
                   }
                   setStreamingMessageId(null);
@@ -416,7 +389,12 @@ export function useMessages(
     }
   };
 
-  const addSystemMessage = (id: number, threadId: number, content: string, createdAt?: string | Date) => {
+  const addSystemMessage = (
+    id: number,
+    threadId: number,
+    content: string,
+    createdAt?: string | Date
+  ) => {
     const systemMsg = createSystemMessage(id, threadId, content, createdAt);
     setMessages((prev) => {
       // Check if message already exists to avoid duplicates

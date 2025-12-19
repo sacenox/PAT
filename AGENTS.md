@@ -10,6 +10,12 @@
 - **Always do exactly what was asked** - Don't add anything that wasn't explicitly mentioned.
 - **Always lint and typecheck** changes using `npm run lint` and `npm run typecheck`.
 - **Always write modular, testable code** - Prefer small, focused functions and components, focused on reusability.
+- **Always review your changes before committing**:
+  - identify code repetition and consolidate
+  - identify overly complex code and simplify
+  - ensure code modularity and separation of concerns
+  - ensure code respects project guidelines
+  - ensure the code uses best practices for React and Next.js
 
 ## Coding Guidelines
 

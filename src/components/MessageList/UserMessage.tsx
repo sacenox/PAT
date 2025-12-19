@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import type { Message } from "@/src/lib/db/schema";
+import { formatTimestamp } from "@/src/lib/format-timestamp";
 
 type UserMessageProps = {
   message: Message;
@@ -10,11 +11,6 @@ type UserMessageProps = {
 export default function UserMessage({ message }: UserMessageProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showGradient, setShowGradient] = useState(false);
-
-  const formatTimestamp = (date: Date | string): string => {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return d.toLocaleString();
-  };
 
   useEffect(() => {
     const checkOverflow = () => {
