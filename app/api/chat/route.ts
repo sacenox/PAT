@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const signal = request.signal;
 
   if (typeof message !== "string" || !message.trim()) {
-    return NextResponse.json({ error: "message is required " }, { status: 400 });
+    return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
   if (!threadIdRaw) {
@@ -81,7 +81,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    debug(`[Chat API] Error:`, err instanceof Error ? err.message : "Unknown error");
+    debug(
+      `[Chat API] Error processing message:`,
+      err instanceof Error ? err.message : "Unknown error"
+    );
     return NextResponse.json({ answer: "Sorry, something went wrong." }, { status: 500 });
   }
 }
