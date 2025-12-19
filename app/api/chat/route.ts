@@ -7,6 +7,13 @@ import { eq, asc } from "drizzle-orm";
 import { streamAssistantResponse } from "@/src/lib/ollama/chat";
 import { debug } from "@/src/lib/debug";
 
+/**
+ * Type guard to validate MaxPromptLength values.
+ */
+function isValidMaxPromptLength(value: unknown): value is MaxPromptLength {
+  return value === null || value === "none" || value === 1024 || value === 4096;
+}
+
 export async function POST(request: Request) {
   const { message, threadId: threadIdRaw } = await request.json();
   const signal = request.signal;
@@ -34,8 +41,11 @@ export async function POST(request: Request) {
     // Use thread-specific settings (stored in thread table)
     const threadModel = thread[0].model;
     // Note: null from database means "none" (no limit), which OllamaChat handles correctly
-    const threadMaxPromptLength: MaxPromptLength =
-      thread[0].maxPromptLength === null ? null : (thread[0].maxPromptLength as MaxPromptLength);
+    // Validate maxPromptLength before use to prevent runtime errors from invalid database values
+    const rawMaxPromptLength = thread[0].maxPromptLength;
+    const threadMaxPromptLength: MaxPromptLength = isValidMaxPromptLength(rawMaxPromptLength)
+      ? rawMaxPromptLength
+      : null;
 
     // 2. Fetch previous messages from thread
     const previousMessages = await db

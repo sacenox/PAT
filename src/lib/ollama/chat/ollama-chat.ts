@@ -18,7 +18,7 @@ import type { OllamaChunk, OllamaChatResponse, MaxPromptLength } from "@/src/lib
  *
  * @param messages - Array of messages in the conversation history.
  * @param onChunk - Optional callback function to receive streaming chunks (content, thinking, toolCalls).
- * @param model - The Ollama model to use..
+ * @param model - The Ollama model to use.
  * @param signal - Optional AbortSignal to cancel the request.
  * @param maxPromptLength - Optional maximum prompt length in tokens. Can be "none", 1024, or 4096.
  * @returns Object containing the response content and generation time in milliseconds.
