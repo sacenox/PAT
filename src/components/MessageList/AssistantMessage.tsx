@@ -4,12 +4,12 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import type { Message } from "@/src/lib/db/schema";
-import { formatTimestamp } from "@/src/lib/format-timestamp";
 import {
   formatGenerationTime,
   formatToolCalls,
   formatPromptSize,
 } from "@/src/lib/format-message-metadata";
+import MessageFooter from "./MessageFooter";
 import "../../../app/highlight-theme.css";
 
 type AssistantMessageProps = {
@@ -26,8 +26,7 @@ export default function AssistantMessage({ message }: AssistantMessageProps) {
           {message.content}
         </ReactMarkdown>
       )}
-      <div className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">
-        generated on {formatTimestamp(message.createdAt)}
+      <MessageFooter message={message} label="generated on">
         {message.model && <span className="ml-1">• model: {message.model}</span>}
         {message.maxPromptLength !== undefined && (
           <span className="ml-1">• prompt size: {formatPromptSize(message.maxPromptLength)}</span>
@@ -38,7 +37,7 @@ export default function AssistantMessage({ message }: AssistantMessageProps) {
         {formatToolCalls(message.toolCallCounts) && (
           <span className="ml-1">• tools: {formatToolCalls(message.toolCallCounts)}</span>
         )}
-      </div>
+      </MessageFooter>
     </div>
   );
 }

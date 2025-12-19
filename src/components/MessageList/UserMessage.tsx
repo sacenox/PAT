@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import type { Message } from "@/src/lib/db/schema";
-import { formatTimestamp } from "@/src/lib/format-timestamp";
+import MessageFooter from "./MessageFooter";
 
 type UserMessageProps = {
   message: Message;
@@ -46,9 +46,7 @@ export default function UserMessage({ message }: UserMessageProps) {
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-neutral-200 to-transparent dark:from-neutral-800 dark:to-transparent" />
         )}
       </div>
-      <div className="mt-4 text-right text-xs text-neutral-600 dark:text-neutral-400">
-        sent on {formatTimestamp(message.createdAt)}
-      </div>
+      <MessageFooter message={message} label="sent on" align="right" />
     </div>
   );
 }
