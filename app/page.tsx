@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useMemo, useCallback } from "react";
+import { useRef, useMemo, useCallback, useEffect } from "react";
 import Sidebar from "@/src/components/Sidebar";
 import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
 import MessageList from "@/src/components/MessageList";
@@ -11,7 +11,6 @@ import { useThreadSelection } from "@/src/hooks/useThreadSelection";
 import { useLocalStorage } from "@/src/hooks/useLocalStorage";
 import { useModelValidation } from "@/src/hooks/useModelValidation";
 import { useErrorWithAutoDismiss } from "@/src/hooks/useErrorWithAutoDismiss";
-import { useThreadManagement } from "@/src/hooks/useThreadManagement";
 import { getErrorMessage } from "@/src/lib/errors";
 import "./highlight-theme.css";
 
@@ -30,6 +29,11 @@ export default function Home() {
 
   useModelValidation(selectedModel, setSelectedModel);
 
+  const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
+    useThreadSelection();
+
+  const clearMessagesRef = useRef<(() => void) | undefined>(undefined);
+
   const {
     threads,
     totalThreadCount,
@@ -38,10 +42,17 @@ export default function Home() {
     loadMoreThreads,
     createThread,
     updateThread,
-    deleteThread,
-  } = useThreads();
-  const { currentThreadId, selectThread, deselectThread, messagesContainerRef } =
-    useThreadSelection();
+    handleThreadSelect,
+    handleThreadUpdate,
+    handleThreadDelete,
+  } = useThreads({
+    selectThread,
+    deselectThread,
+    clearMessagesRef,
+    currentThreadId,
+    setError,
+  });
+
   const {
     messages,
     isLoading,
@@ -55,18 +66,11 @@ export default function Home() {
     await updateThread(threadId, { title }, setError);
     await loadThreads(8, setError);
   });
-  const messageInputRef = useRef<MessageInputRef>(null);
 
-  const { handleThreadSelect, handleThreadUpdate, handleThreadDelete } = useThreadManagement(
-    updateThread,
-    deleteThread,
-    loadThreads,
-    selectThread,
-    deselectThread,
-    clearMessages,
-    currentThreadId,
-    setError
-  );
+  useEffect(() => {
+    clearMessagesRef.current = clearMessages;
+  }, [clearMessages]);
+  const messageInputRef = useRef<MessageInputRef>(null);
 
   const handleModelChange = useCallback(
     (model: string) => {
