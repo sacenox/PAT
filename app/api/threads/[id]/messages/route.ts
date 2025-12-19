@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
 import { eq, asc, and, notInArray } from "drizzle-orm";
+import { debug } from "@/src/lib/debug";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  let threadId: number | null = null;
   try {
     const { id } = await params;
-    const threadId = parseInt(id);
+    threadId = parseInt(id);
     if (isNaN(threadId)) {
       return NextResponse.json({ error: "Invalid thread ID" }, { status: 400 });
     }
@@ -18,7 +20,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .orderBy(asc(messages.createdAt));
 
     return NextResponse.json({ messages: messagesList });
-  } catch {
+  } catch (err) {
+    debug(
+      `[Messages API] Error fetching messages for thread ${threadId ?? "unknown"}:`,
+      err instanceof Error ? err.message : "Unknown error"
+    );
     return NextResponse.json({ error: "Failed to get messages" }, { status: 500 });
   }
 }

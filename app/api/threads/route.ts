@@ -3,6 +3,7 @@ import { db } from "@/src/lib/db";
 import { threads, messages } from "@/src/lib/db/schema";
 import { desc, count } from "drizzle-orm";
 import { generateSystemPrompt } from "@/src/lib/ollama/chat/system-prompt";
+import { debug } from "@/src/lib/debug";
 
 export async function POST(request: Request) {
   try {
@@ -47,7 +48,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ thread: newThread[0] });
-  } catch {
+  } catch (err) {
+    debug(`[Threads API] Error creating thread:`, err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
   }
 }
@@ -70,7 +72,8 @@ export async function GET(request: Request) {
     const hasMore = offset + limit < totalCount;
 
     return NextResponse.json({ threads: threadsList, hasMore, totalCount });
-  } catch {
+  } catch (err) {
+    debug(`[Threads API] Error fetching threads:`, err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to get threads" }, { status: 500 });
   }
 }
