@@ -10,6 +10,9 @@ import { generateTitle } from "@/src/lib/ollama/title";
 /**
  * Extracts tool name counts from an array of tool calls.
  * Returns a JSON string of the format: {"tool_name": count, ...}
+ *
+ * @param toolCalls - Array of tool calls to count
+ * @returns JSON string of tool name counts, or null if empty
  */
 export function extractToolCounts(toolCalls: ToolCall[]): string | null {
   if (toolCalls.length === 0) return null;
@@ -35,6 +38,15 @@ export interface SaveMessageParams {
 /**
  * Saves an assistant message to the database and updates the thread's updatedAt timestamp.
  * Also generates and updates the thread title from the message history.
+ *
+ * @param params - Object containing message data
+ * @param params.threadId - Thread ID to save message to
+ * @param params.content - Message content
+ * @param params.model - Model used for generation
+ * @param params.maxPromptLength - Max prompt length setting
+ * @param params.generationTimeMs - Generation time in milliseconds
+ * @param params.toolCallCounts - JSON string of tool call counts
+ * @returns Promise that resolves when message is saved
  */
 export async function saveAssistantMessage(params: SaveMessageParams): Promise<void> {
   const { threadId, content, model, maxPromptLength, generationTimeMs, toolCallCounts } = params;

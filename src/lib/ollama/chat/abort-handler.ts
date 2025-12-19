@@ -17,6 +17,10 @@ export function setupAbortHandler(signal: AbortSignal, onAbort: () => void): () 
 
 /**
  * Checks if the signal is aborted or if the controller is closed.
+ *
+ * @param signal - AbortSignal to check
+ * @param isClosed - Function that returns whether controller is closed
+ * @returns Boolean indicating if aborted or closed
  */
 export function isAbortedOrClosed(signal: AbortSignal, isClosed: () => boolean): boolean {
   return signal.aborted || isClosed();

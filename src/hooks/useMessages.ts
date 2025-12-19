@@ -1,6 +1,23 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 
+/**
+ * Custom hook for managing messages within a thread.
+ * Handles loading, sending, streaming, and deleting messages.
+ *
+ * @param threadId - The current thread ID or null if no thread is selected
+ * @param onError - Optional error callback function
+ * @param onUpdateThreadTitle - Optional callback for updating thread title after first response
+ * @returns Object containing:
+ *   - `messages` - Array of messages in the current thread
+ *   - `isLoading` - Whether a message is currently being sent/generated
+ *   - `isLoadingMessages` - Whether messages are being loaded from the server
+ *   - `streamingMessageId` - ID of the message currently being streamed, or null
+ *   - `sendMessage` - Function to send a new message
+ *   - `clearMessages` - Function to clear all messages from state
+ *   - `stopGeneration` - Function to stop the current message generation
+ *   - `deleteMessage` - Function to delete a specific message
+ */
 export function useMessages(
   threadId: number | null,
   onError?: (error: string) => void,

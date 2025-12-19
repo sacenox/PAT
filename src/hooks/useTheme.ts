@@ -1,6 +1,14 @@
 import { useEffect } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 
+/**
+ * Custom hook for managing theme mode (device, dark, or light).
+ * Automatically applies the theme and listens for system preference changes when in device mode.
+ *
+ * @returns Object containing:
+ *   - `themeMode` - Current theme mode: "device", "dark", or "light"
+ *   - `handleThemeChange` - Function to change the theme mode
+ */
 export function useTheme() {
   const [themeMode, setThemeMode] = useLocalStorage<"device" | "dark" | "light">(
     "themeMode",

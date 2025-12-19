@@ -18,7 +18,12 @@ const client = postgres(connectionString, {
 // Create drizzle instance
 export const db = drizzle(client, { schema });
 
-// Close database connection (useful for cleanup)
+/**
+ * Closes the database connection.
+ * Useful for cleanup operations, especially in serverless environments.
+ *
+ * @returns Promise that resolves when the connection is closed
+ */
 export async function closeDatabase() {
   await client.end();
 }

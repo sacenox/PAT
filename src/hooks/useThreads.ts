@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react";
 import type { Thread } from "@/src/lib/db/schema";
 
+/**
+ * Custom hook for managing conversation threads.
+ * Provides state and functions for loading, creating, updating, and deleting threads.
+ *
+ * @returns Object containing:
+ *   - `threads` - Array of currently loaded threads
+ *   - `totalThreadCount` - Total number of threads in the database
+ *   - `hasMoreThreads` - Whether there are more threads to load
+ *   - `loadThreads` - Function to load threads with optional limit and error callback
+ *   - `loadMoreThreads` - Function to load additional threads (pagination)
+ *   - `createThread` - Function to create a new thread
+ *   - `updateThread` - Function to update an existing thread
+ *   - `deleteThread` - Function to delete a thread
+ */
 export function useThreads() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [totalThreadCount, setTotalThreadCount] = useState<number>(0);

@@ -3,6 +3,9 @@
 /**
  * Creates safe close and enqueue functions for a ReadableStream controller.
  * These functions prevent double-close errors and handle closed controller states gracefully.
+ *
+ * @param controller - The ReadableStream controller to wrap
+ * @returns Object with `safeClose`, `safeEnqueue`, and `isClosed` functions
  */
 export function createStreamController(controller: ReadableStreamDefaultController<Uint8Array>) {
   let isControllerClosed = false;
