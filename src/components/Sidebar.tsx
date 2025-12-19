@@ -18,6 +18,8 @@ type SidebarProps = {
   onThemeChange: (mode: "device" | "dark" | "light") => void;
   onLoadMore: () => void;
   hasMoreThreads: boolean;
+  location: string;
+  onLocationChange: (location: string) => void;
 };
 
 export default function Sidebar({
@@ -29,6 +31,8 @@ export default function Sidebar({
   onThemeChange,
   onLoadMore,
   hasMoreThreads,
+  location,
+  onLocationChange,
 }: SidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -111,6 +115,8 @@ export default function Sidebar({
         onClose={() => setIsSettingsOpen(false)}
         themeMode={themeMode}
         onThemeChange={onThemeChange}
+        location={location}
+        onLocationChange={onLocationChange}
       />
     </>
   );

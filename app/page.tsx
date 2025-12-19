@@ -14,8 +14,14 @@ import "./highlight-theme.css";
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
-  const { selectedModel, handleModelChange, maxPromptLength, handleMaxPromptLengthChange } =
-    useSettings(setError);
+  const {
+    selectedModel,
+    handleModelChange,
+    maxPromptLength,
+    handleMaxPromptLengthChange,
+    location,
+    handleLocationChange,
+  } = useSettings(setError);
   const {
     threads,
     totalThreadCount,
@@ -184,6 +190,8 @@ export default function Home() {
           void loadMoreThreads(8, setError);
         }}
         hasMoreThreads={hasMoreThreads}
+        location={location}
+        onLocationChange={handleLocationChange}
       />
     </div>
   );

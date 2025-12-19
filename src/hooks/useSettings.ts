@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 export function useSettings(onError?: (error: string) => void) {
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
   const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096>("none");
-  const [location, setLocation] = useState<string | undefined>(undefined);
-  const [currentTime, setCurrentTime] = useState<string | undefined>(undefined);
+  const [location, setLocation] = useState<string>("");
 
   // Load settings from API and validate model against available models
   useEffect(() => {
@@ -24,8 +23,7 @@ export function useSettings(onError?: (error: string) => void) {
         const settings = settingsData.settings || {};
         const savedModel = settings.selectedModel || "";
         const savedMaxPromptLength = settings.maxPromptLength || "none";
-        const savedLocation = settings.location;
-        const savedCurrentTime = settings.currentTime;
+        const savedLocation = settings.location || "";
 
         // Get available models
         const modelsRes = await fetch("/api/models");
@@ -42,19 +40,25 @@ export function useSettings(onError?: (error: string) => void) {
 
         // Set maxPromptLength
         setMaxPromptLength(savedMaxPromptLength);
-        // Set location and currentTime
-        setLocation(savedLocation);
-        setCurrentTime(savedCurrentTime);
 
-        // Post current time in ISO format to settings on app start
+        // Get browser timezone and post current time in ISO format to settings on app start
+        const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         const currentTimeISO = new Date().toISOString();
+        
+        // Use timezone as default location if no location is set
+        const locationToUse = savedLocation || browserTimezone;
+        setLocation(locationToUse);
+
         try {
           await fetch("/api/settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ currentTime: currentTimeISO }),
+            body: JSON.stringify({ 
+              currentTime: currentTimeISO,
+              timezone: browserTimezone,
+              ...(savedLocation ? {} : { location: browserTimezone }),
+            }),
           });
-          setCurrentTime(currentTimeISO);
         } catch (error) {
           // Silently fail - don't block app startup if time update fails
           if (onError && error instanceof Error) {
@@ -94,8 +98,7 @@ export function useSettings(onError?: (error: string) => void) {
         // On error, keep defaults
         setSelectedModel("");
         setMaxPromptLength("none");
-        setLocation(undefined);
-        setCurrentTime(undefined);
+        setLocation("");
       }
     };
 
@@ -150,11 +153,36 @@ export function useSettings(onError?: (error: string) => void) {
     }
   };
 
+  const handleLocationChange = async (value: string) => {
+    setLocation(value);
+    // Save to API
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ location: value }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch((parseError) => {
+          throw new Error(
+            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
+          );
+        });
+        throw new Error(errorData.error || res.statusText);
+      }
+    } catch (error) {
+      if (onError && error instanceof Error) {
+        onError(error.message);
+      }
+    }
+  };
+
   return {
     selectedModel,
     handleModelChange,
     maxPromptLength,
     handleMaxPromptLengthChange,
+    location,
+    handleLocationChange,
   };
 }
-

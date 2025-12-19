@@ -9,6 +9,7 @@ type Settings = {
   selectedModel?: string;
   location?: string;
   currentTime?: string;
+  timezone?: string;
 };
 
 export async function GET() {
@@ -33,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { maxPromptLength, selectedModel, location, currentTime } = await request.json();
+    const { maxPromptLength, selectedModel, location, currentTime, timezone } = await request.json();
 
     let settings: Partial<Settings> = {};
 
@@ -67,6 +68,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Invalid currentTime value" }, { status: 400 });
       }
       settings.currentTime = currentTime;
+    }
+
+    // Validate and set timezone if provided
+    if (timezone !== undefined) {
+      if (typeof timezone !== "string") {
+        return NextResponse.json({ error: "Invalid timezone value" }, { status: 400 });
+      }
+      settings.timezone = timezone;
     }
 
     // Get existing settings and merge, prefering the ones in the request
