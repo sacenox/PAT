@@ -1,8 +1,8 @@
-/* personal-assistant-thing/src/lib/ollama/websearch.ts */
+/* personal-assistant-thing/src/lib/ollama/tools/websearch.ts */
 
 import { google } from "googleapis";
-import { getCache, setCache } from "../cache";
-import { createRateLimiter } from "../ratelimit";
+import { getCache, setCache } from "../../cache";
+import { createRateLimiter } from "../../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 

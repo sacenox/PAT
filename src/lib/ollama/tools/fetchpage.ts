@@ -1,7 +1,7 @@
-/* personal-assistant-thing/src/lib/ollama/fetchpage.ts */
+/* personal-assistant-thing/src/lib/ollama/tools/fetchpage.ts */
 
-import { getCache, setCache } from "../cache";
-import { createRateLimiter } from "../ratelimit";
+import { getCache, setCache } from "../../cache";
+import { createRateLimiter } from "../../ratelimit";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 

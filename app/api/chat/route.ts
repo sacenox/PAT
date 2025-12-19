@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     }
     // Use thread-specific settings (stored in thread table)
     const threadModel = thread[0].model;
-    // Note: null from database means "none" (no limit), which fetchOllamaResponse handles correctly
+    // Note: null from database means "none" (no limit), which OllamaChat handles correctly
     const threadMaxPromptLength: MaxPromptLength =
       thread[0].maxPromptLength === null ? null : (thread[0].maxPromptLength as MaxPromptLength);
 

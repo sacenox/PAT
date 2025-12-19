@@ -41,9 +41,9 @@ Add tests when prompted only.
    - Use named exports for utility functions
 
 3. **Naming Conventions**:
-   - Functions: `camelCase` (e.g., `fetchOllamaResponse`, `sendMessage`)
+   - Functions: `camelCase` (e.g., `sendMessage`) or `PascalCase` for main API functions (e.g., `OllamaChat`)
    - Components: `PascalCase` (e.g., `Home`, `RootLayout`)
-   - Interfaces: `PascalCase` (e.g., `OllamaMessage`, `OllamaResponse`)
+   - Interfaces: `PascalCase` (e.g., `OllamaMessage`, `OllamaChatResponse`)
    - Constants: `UPPER_SNAKE_CASE` or `camelCase` depending on scope
 
 4. **TypeScript Types**:

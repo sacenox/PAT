@@ -179,7 +179,8 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
                     content: data.answer || accumulatedContent,
                     createdAt: new Date(),
                     model: data.model || null,
-                    maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : null,
+                    maxPromptLength:
+                      data.maxPromptLength !== undefined ? data.maxPromptLength : null,
                     generationTimeMs: null,
                     toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : null,
                   };
@@ -196,7 +197,10 @@ export function useMessages(threadId: number | null, onError?: (error: string) =
                               data.maxPromptLength !== undefined
                                 ? data.maxPromptLength
                                 : msg.maxPromptLength,
-                            toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : msg.toolCallCounts,
+                            toolCallCounts:
+                              data.toolCallCounts !== undefined
+                                ? data.toolCallCounts
+                                : msg.toolCallCounts,
                           }
                         : msg
                     )

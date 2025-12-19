@@ -4,9 +4,9 @@
 
 import type { Message, ToolCall } from "ollama";
 
-// Response type from fetchOllamaResponse (includes generation time)
+// Response type from OllamaChat (includes generation time)
 // Based on Message content with additional metadata
-export type OllamaResponse = Pick<Message, "content"> & {
+export type OllamaChatResponse = Pick<Message, "content"> & {
   generationTimeMs: number;
   toolCalls?: ToolCall[]; // Array of tool calls made during the conversation
 };
@@ -14,7 +14,7 @@ export type OllamaResponse = Pick<Message, "content"> & {
 // Streaming chunk type for onChunk callback
 // Based on Message fields for streaming updates (all optional)
 export type OllamaChunk = Partial<Pick<Message, "content" | "thinking">> & {
-  toolCalls?: ToolCall[];
+  tool_calls?: ToolCall[];
 };
 
 // Project-specific type for max prompt length setting

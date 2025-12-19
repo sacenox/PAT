@@ -1,26 +1,11 @@
-/* personal-assistant-thing/src/lib/chat.ts */
-import { fetchOllamaResponse } from "@/src/lib/ollama";
-import type { MaxPromptLength } from "@/src/lib/ollama/types";
-import type { Message, ToolCall } from "ollama";
-import { db } from "@/src/lib/db";
-import { messages, threads } from "@/src/lib/db/schema";
-import { eq } from "drizzle-orm";
+/* personal-assistant-thing/src/lib/ollama/chat/assistant-response.ts */
 
-/**
- * Extracts tool name counts from an array of tool calls.
- * Returns a JSON string of the format: {"tool_name": count, ...}
- */
-function extractToolCounts(toolCalls: ToolCall[]): string | null {
-  if (toolCalls.length === 0) return null;
-
-  const toolCounts: Record<string, number> = {};
-  for (const toolCall of toolCalls) {
-    const toolName = toolCall.function.name;
-    toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;
-  }
-
-  return JSON.stringify(toolCounts);
-}
+import { type Message, type ToolCall } from "ollama";
+import { OllamaChat } from "./ollama-chat";
+import type { MaxPromptLength, OllamaChunk } from "@/src/lib/ollama/types";
+import { createStreamController } from "./stream-controller";
+import { setupAbortHandler, isAbortedOrClosed } from "./abort-handler";
+import { saveAssistantMessage, extractToolCounts } from "./message-persistence";
 
 export interface StreamAssistantResponseParams {
   ollamaMessages: Message[];
@@ -43,31 +28,9 @@ export function streamAssistantResponse({
   let accumulatedContent = "";
   const allToolCalls: ToolCall[] = [];
 
-  const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      // Track if controller is closed to avoid double-close
-      let isControllerClosed = false;
-      const safeClose = () => {
-        if (!isControllerClosed) {
-          isControllerClosed = true;
-          try {
-            controller.close();
-          } catch {
-            // Controller may already be closed, ignore
-          }
-        }
-      };
-
-      const safeEnqueue = (data: unknown) => {
-        if (!isControllerClosed) {
-          try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-          } catch {
-            // Controller may be closed, ignore
-          }
-        }
-      };
+      const { safeClose, safeEnqueue, isClosed } = createStreamController(controller);
 
       try {
         // Check if already aborted
@@ -76,13 +39,9 @@ export function streamAssistantResponse({
           return;
         }
 
-        const onChunk = (chunk: {
-          content?: string;
-          thinking?: string;
-          toolCalls?: ToolCall[];
-        }) => {
+        const onChunk = (chunk: OllamaChunk) => {
           // Check abort signal before each chunk
-          if (signal.aborted || isControllerClosed) {
+          if (isAbortedOrClosed(signal, isClosed)) {
             return;
           }
 
@@ -91,23 +50,22 @@ export function streamAssistantResponse({
             safeEnqueue({ type: "content", content: chunk.content });
           }
 
-          if (chunk.toolCalls) {
-            allToolCalls.push(...chunk.toolCalls);
-            safeEnqueue({ type: "toolCalls", toolCalls: chunk.toolCalls });
+          if (chunk.tool_calls) {
+            allToolCalls.push(...chunk.tool_calls);
+            safeEnqueue({ type: "toolCalls", toolCalls: chunk.tool_calls });
           }
         };
 
         // Set up abort handler
-        const abortHandler = () => {
+        const cleanupAbortHandler = setupAbortHandler(signal, () => {
           safeEnqueue({ type: "error", error: "Generation stopped" });
           safeClose();
-        };
-        signal.addEventListener("abort", abortHandler);
+        });
 
         let generationTimeMs: number | undefined;
 
         try {
-          const result = await fetchOllamaResponse(
+          const result = await OllamaChat(
             ollamaMessages,
             onChunk,
             threadModel,
@@ -123,24 +81,21 @@ export function streamAssistantResponse({
           }
           throw error;
         } finally {
-          signal.removeEventListener("abort", abortHandler);
+          cleanupAbortHandler();
         }
 
         // Check if aborted before saving
         if (signal.aborted) {
           // Save partial content if any was generated
           if (accumulatedContent) {
-            await db.insert(messages).values({
-              threadId: threadId,
-              role: "assistant",
+            await saveAssistantMessage({
+              threadId,
               content: accumulatedContent,
               model: threadModel,
-              maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
-              createdAt: new Date(),
+              maxPromptLength: threadMaxPromptLength,
               generationTimeMs: null,
               toolCallCounts: extractToolCounts(allToolCalls),
             });
-            await db.update(threads).set({ updatedAt: new Date() }).where(eq(threads.id, threadId));
 
             // Send done message with metadata for aborted generation
             safeEnqueue({
@@ -156,19 +111,14 @@ export function streamAssistantResponse({
         }
 
         // Store assistant message with model, maxPromptLength, generation time and tool calls
-        await db.insert(messages).values({
-          threadId: threadId,
-          role: "assistant",
+        await saveAssistantMessage({
+          threadId,
           content: accumulatedContent,
           model: threadModel,
-          maxPromptLength: threadMaxPromptLength === "none" ? null : threadMaxPromptLength, // null means "none" (no limit), otherwise 1024 or 4096
-          createdAt: new Date(),
-          generationTimeMs,
+          maxPromptLength: threadMaxPromptLength,
+          generationTimeMs: generationTimeMs ?? null,
           toolCallCounts: extractToolCounts(allToolCalls),
         });
-
-        // Update thread's updatedAt timestamp
-        await db.update(threads).set({ updatedAt: new Date() }).where(eq(threads.id, threadId));
 
         // Send final message with metadata
         safeEnqueue({
