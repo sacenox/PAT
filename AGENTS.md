@@ -9,7 +9,7 @@
 - **Never add code that is not used** - only add the minimum necessary to satisfy the task.
 - **Always do exactly what was asked** - Don't add anything that wasn't explicitly mentioned.
 - **Always lint and typecheck** changes using `npm run lint` and `npm run typecheck`.
-- **Always write modular, testable code** - Prefer small, focused functions and components, easy to re-use.
+- **Always write modular, testable code** - Prefer small, focused functions and components, focused on reusability.
 
 ## Coding Guidelines
 
