@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useMemo, useCallback } from "react";
 import Sidebar from "@/src/components/Sidebar";
 import MessageInput, { type MessageInputRef } from "@/src/components/MessageInput";
 import MessageList from "@/src/components/MessageList";
@@ -9,15 +9,16 @@ import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
 import { useLocalStorage } from "@/src/hooks/useLocalStorage";
-import { useModels, isValidModel } from "@/src/hooks/useModels";
+import { useModelValidation } from "@/src/hooks/useModelValidation";
+import { useErrorWithAutoDismiss } from "@/src/hooks/useErrorWithAutoDismiss";
+import { useThreadManagement } from "@/src/hooks/useThreadManagement";
 import { getErrorMessage } from "@/src/lib/errors";
 import "./highlight-theme.css";
 
 export default function Home() {
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useErrorWithAutoDismiss();
   const { themeMode, handleThemeChange } = useTheme();
   const [selectedModel, setSelectedModel] = useLocalStorage<string>("selectedModel", "gpt-oss");
-  const { models } = useModels();
   const [maxPromptLength, setMaxPromptLength] = useLocalStorage<"none" | 1024 | 4096>(
     "maxPromptLength",
     "none"
@@ -26,6 +27,9 @@ export default function Home() {
     "newThreadUserPrompt",
     ""
   );
+
+  useModelValidation(selectedModel, setSelectedModel);
+
   const {
     threads,
     totalThreadCount,
@@ -53,117 +57,99 @@ export default function Home() {
   });
   const messageInputRef = useRef<MessageInputRef>(null);
 
-  // Validate and initialize model from localStorage or fetch first available model
-  useEffect(() => {
-    if (models.length === 0) return;
+  const { handleThreadSelect, handleThreadUpdate, handleThreadDelete } = useThreadManagement(
+    updateThread,
+    deleteThread,
+    loadThreads,
+    selectThread,
+    deselectThread,
+    clearMessages,
+    currentThreadId,
+    setError
+  );
 
-    // Validate that the saved model still exists
-    if (selectedModel && isValidModel(selectedModel, models)) {
-      return;
-    }
+  const handleModelChange = useCallback(
+    (model: string) => {
+      setSelectedModel(model);
+    },
+    [setSelectedModel]
+  );
 
-    // If no saved model or it doesn't exist, get first available
-    if (models.length > 0) {
-      setSelectedModel(models[0].model);
-    }
-  }, [models, selectedModel, setSelectedModel]);
+  const handleMaxPromptLengthChange = useCallback(
+    (value: "none" | 1024 | 4096) => {
+      setMaxPromptLength(value);
+    },
+    [setMaxPromptLength]
+  );
 
-  const handleModelChange = (model: string) => {
-    setSelectedModel(model);
-  };
+  const handleNewThreadUserPromptChange = useCallback(
+    (userPrompt: string) => {
+      setNewThreadUserPrompt(userPrompt);
+    },
+    [setNewThreadUserPrompt]
+  );
 
-  const handleMaxPromptLengthChange = (value: "none" | 1024 | 4096) => {
-    setMaxPromptLength(value);
-  };
+  const handleDeleteMessage = useCallback(
+    (messageId: number, threadId: number) => {
+      deleteMessageInternal(messageId, threadId, setError);
+    },
+    [deleteMessageInternal, setError]
+  );
 
-  const handleNewThreadUserPromptChange = (userPrompt: string) => {
-    setNewThreadUserPrompt(userPrompt);
-  };
-
-  const handleDeleteMessage = (messageId: number, threadId: number) => {
-    deleteMessageInternal(messageId, threadId, setError);
-  };
-
-  // Auto-dismiss error after 3 seconds
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-
-  const handleThreadSelect = (threadId: number) => {
-    setError(null);
-    selectThread(threadId);
-  };
-
-  const handleCreateNewThread = () => {
+  const handleCreateNewThread = useCallback(() => {
     deselectThread();
     clearMessages();
     setError(null);
-    // Focus the input after a short delay to ensure DOM has updated
     setTimeout(() => {
       messageInputRef.current?.focus();
     }, 0);
-  };
+  }, [deselectThread, clearMessages, setError]);
 
-  const handleThreadUpdate = async (
-    threadId: number,
-    updates: {
-      model?: string;
-      maxPromptLength?: "none" | 1024 | 4096 | null;
-      userPrompt?: string | null;
-    }
-  ) => {
-    setError(null);
-    try {
-      await updateThread(threadId, updates, setError);
-      // Reload threads to ensure UI is in sync
-      await loadThreads(8, setError);
-    } catch (error) {
-      setError(getErrorMessage(error));
-    }
-  };
-
-  const handleThreadDelete = async (threadId: number) => {
-    setError(null);
-    try {
-      await deleteThread(threadId, setError);
-      // If the deleted thread was the current thread, deselect it
-      if (currentThreadId === threadId) {
-        deselectThread();
-        clearMessages();
+  const handleSendMessage = useCallback(
+    async (message: string) => {
+      setError(null);
+      try {
+        await sendMessage(
+          message,
+          currentThreadId,
+          (title, firstMessage) =>
+            createThread(
+              selectedModel,
+              maxPromptLength,
+              title,
+              firstMessage,
+              newThreadUserPrompt,
+              setError
+            ),
+          selectThread,
+          () => loadThreads(8, setError),
+          setError
+        );
+      } catch (error) {
+        setError(getErrorMessage(error));
       }
-    } catch (error) {
-      setError(getErrorMessage(error));
-    }
-  };
+    },
+    [
+      sendMessage,
+      currentThreadId,
+      createThread,
+      selectedModel,
+      maxPromptLength,
+      newThreadUserPrompt,
+      selectThread,
+      loadThreads,
+      setError,
+    ]
+  );
 
-  const handleSendMessage = async (message: string) => {
-    setError(null);
-    try {
-      await sendMessage(
-        message,
-        currentThreadId,
-        (title, firstMessage) =>
-          createThread(
-            selectedModel,
-            maxPromptLength,
-            title,
-            firstMessage,
-            newThreadUserPrompt,
-            setError
-          ),
-        selectThread,
-        () => loadThreads(8, setError),
-        setError
-      );
-    } catch (error) {
-      setError(getErrorMessage(error));
-    }
-  };
+  const currentThread = useMemo(
+    () => (currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null),
+    [currentThreadId, threads]
+  );
+
+  const handleLoadMore = useCallback(() => {
+    void loadMoreThreads(8, setError);
+  }, [loadMoreThreads, setError]);
 
   return (
     <div className="flex h-screen bg-neutral-100 text-neutral-800 dark:bg-neutral-950 dark:text-neutral-200">
@@ -198,9 +184,7 @@ export default function Home() {
           onStop={stopGeneration}
           error={error}
           currentThreadId={currentThreadId}
-          currentThread={
-            currentThreadId !== null ? threads.find((t) => t.id === currentThreadId) || null : null
-          }
+          currentThread={currentThread}
           onThreadUpdate={handleThreadUpdate}
           onThreadDelete={handleThreadDelete}
           onError={setError}
@@ -219,9 +203,7 @@ export default function Home() {
         onCreateNewThread={handleCreateNewThread}
         onThreadSelect={handleThreadSelect}
         onThemeChange={handleThemeChange}
-        onLoadMore={() => {
-          void loadMoreThreads(8, setError);
-        }}
+        onLoadMore={handleLoadMore}
         hasMoreThreads={hasMoreThreads}
         totalThreadCount={totalThreadCount}
       />

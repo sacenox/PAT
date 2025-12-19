@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Modal from "@/src/components/Modal";
 import SecondaryButton from "@/src/components/buttons/SecondaryButton";
 import TrashIcon from "@/src/components/icons/TrashIcon";
+import ThreadSettingsForm from "@/src/components/ThreadSettingsForm";
 import type { Thread } from "@/src/lib/db/schema";
 import { useModels } from "@/src/hooks/useModels";
 import { handleError } from "@/src/lib/errors";
@@ -68,38 +69,34 @@ export default function ThreadSettingsModal({
     }
   }, [thread, isOpen, isNewThread, initialModel, initialMaxPromptLength, initialUserPrompt]);
 
+  const hasChanges = useMemo(() => {
+    if (isNewThread) return true;
+    if (!thread) return false;
+    return (
+      selectedModel !== (thread.model || "gpt-oss") ||
+      maxPromptLength !==
+        (thread.maxPromptLength === null ? "none" : (thread.maxPromptLength as 1024 | 4096))
+    );
+  }, [isNewThread, thread, selectedModel, maxPromptLength]);
+
   const handleSave = async () => {
     if (isNewThread) {
-      // For new thread, just update the parent's state
-      if (onModelChange) {
-        onModelChange(selectedModel);
+      onModelChange?.(selectedModel);
+      if (maxPromptLength !== null) {
+        onMaxPromptLengthChange?.(maxPromptLength === "none" ? "none" : maxPromptLength);
       }
-      if (onMaxPromptLengthChange && maxPromptLength !== null) {
-        onMaxPromptLengthChange(maxPromptLength === "none" ? "none" : maxPromptLength);
-      }
-      if (onUserPromptChange) {
-        onUserPromptChange(userPrompt);
-      }
+      onUserPromptChange?.(userPrompt);
       onClose();
       return;
     }
 
-    if (!thread || !onUpdateThread) return;
-
-    const hasChanges =
-      selectedModel !== (thread.model || "gpt-oss") ||
-      maxPromptLength !==
-        (thread.maxPromptLength === null ? "none" : (thread.maxPromptLength as 1024 | 4096));
-
-    // If there are no changes, just close the modal
-    if (!hasChanges) {
+    if (!thread || !onUpdateThread || !hasChanges) {
       onClose();
       return;
     }
 
     setIsSaving(true);
     try {
-      // Don't send userPrompt for existing threads - it's read-only
       await onUpdateThread(thread.id, {
         model: selectedModel,
         maxPromptLength: maxPromptLength === "none" ? null : maxPromptLength,
@@ -126,7 +123,15 @@ export default function ThreadSettingsModal({
     }
   };
 
-  const threadTitle = thread ? thread.title || `Thread ${thread.id}` : null;
+  const threadTitle = useMemo(
+    () => (thread ? thread.title || `Thread ${thread.id}` : null),
+    [thread]
+  );
+
+  const handleModelChange = (model: string) => setSelectedModel(model);
+  const handleMaxPromptLengthChange = (value: "none" | 1024 | 4096 | null) =>
+    setMaxPromptLength(value);
+  const handleUserPromptChange = (prompt: string) => setUserPrompt(prompt);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -138,69 +143,17 @@ export default function ThreadSettingsModal({
           <p className="text-sm text-neutral-600 dark:text-neutral-400">{threadTitle}</p>
         )}
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              Model
-            </label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              disabled={isLoadingModels}
-              className="bg-white px-3 py-2 text-neutral-800 focus:outline-none disabled:opacity-50 dark:bg-neutral-950 dark:text-neutral-200"
-            >
-              {isLoadingModels ? (
-                <option>Loading models...</option>
-              ) : models.length === 0 ? (
-                <option>No models available</option>
-              ) : (
-                models.map((model) => (
-                  <option key={model.name} value={model.model}>
-                    {model.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              Max Prompt Length
-            </label>
-            <select
-              value={maxPromptLength === null ? "none" : maxPromptLength}
-              onChange={(e) =>
-                setMaxPromptLength(
-                  e.target.value === "none" ? "none" : (parseInt(e.target.value, 10) as 1024 | 4096)
-                )
-              }
-              className="bg-white px-3 py-2 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
-            >
-              <option value="none">None</option>
-              <option value="1024">1024</option>
-              <option value="4096">4096</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              User Prompt
-            </label>
-            <textarea
-              value={userPrompt}
-              onChange={(e) => setUserPrompt(e.target.value)}
-              placeholder="Additional instructions or information for the assistant..."
-              rows={4}
-              disabled={!isNewThread}
-              className="bg-white px-3 py-2 text-neutral-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-950 dark:text-neutral-200"
-            />
-            {!isNewThread && (
-              <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                User prompt can only be set when creating a new thread.
-              </p>
-            )}
-          </div>
-        </div>
+        <ThreadSettingsForm
+          models={models}
+          isLoadingModels={isLoadingModels}
+          selectedModel={selectedModel}
+          onModelChange={handleModelChange}
+          maxPromptLength={maxPromptLength}
+          onMaxPromptLengthChange={handleMaxPromptLengthChange}
+          userPrompt={userPrompt}
+          onUserPromptChange={handleUserPromptChange}
+          isNewThread={isNewThread}
+        />
 
         <div className="flex justify-between gap-2 border-t border-neutral-300 pt-4 dark:border-neutral-700">
           {!isNewThread && onDeleteThread && (
