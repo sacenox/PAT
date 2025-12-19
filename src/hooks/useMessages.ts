@@ -8,6 +8,7 @@ import {
   createToolMessage,
   createSystemMessage,
 } from "@/src/lib/message-helpers";
+import { fetchAndParseMessageStream } from "@/src/lib/parse-message-stream";
 
 /**
  * Custom hook for managing messages within a thread.
@@ -196,158 +197,101 @@ export function useMessages(
     const userMsg = createUserMessage(message, targetThreadId);
     setMessages((prev) => [...prev, userMsg]);
 
-    // Create assistant message placeholder (but don't add it yet - wait for content)
     const assistantMsgId = Date.now() + 1;
     setStreamingMessageId(assistantMsgId);
 
-    // Create AbortController for this request
     abortControllerRef.current = new AbortController();
+    let messageAdded = false;
+    let accumulatedContent = "";
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim(), threadId: targetThreadId }),
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch((parseError) => {
-          throw new Error(getParseErrorMessage(parseError));
-        });
-        throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
-      }
-
-      if (!res.body) {
-        throw new Error("Response body is null");
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let accumulatedContent = "";
-      let shouldStop = false;
-      let messageAdded = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.trim() === "") continue; // Skip empty lines
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.type === "content") {
-                accumulatedContent += data.content || "";
-                // Only add the message when we have content
-                if (!messageAdded && accumulatedContent.trim()) {
-                  const botMsg = createAssistantMessage(
-                    assistantMsgId,
-                    targetThreadId,
-                    accumulatedContent
-                  );
-                  setMessages((prev) => [...prev, botMsg]);
-                  messageAdded = true;
-                } else if (messageAdded) {
-                  updateAssistantMessage(assistantMsgId, accumulatedContent);
-                }
-              } else if (data.type === "toolMessage") {
-                // Add tool message to state in real-time
-                const toolMsg = createToolMessage(
-                  data.id,
-                  data.threadId,
-                  data.content,
-                  data.createdAt
-                );
-                setMessages((prev) => [...prev, toolMsg]);
-              } else if (data.type === "done") {
-                // Final update with complete answer and metadata
-                const finalContent = data.answer || accumulatedContent;
-                const metadata = {
-                  model: data.model || null,
-                  maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : null,
-                  toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : null,
-                };
-
-                if (!messageAdded) {
-                  const botMsg = createAssistantMessage(
-                    assistantMsgId,
-                    targetThreadId,
-                    finalContent,
-                    metadata
-                  );
-                  setMessages((prev) => [...prev, botMsg]);
-                } else {
-                  updateAssistantMessage(assistantMsgId, finalContent, metadata);
-                }
-                setStreamingMessageId(null);
-
-                // Generate title after first assistant response
-                const previousUserMessages = messages.filter(
-                  (m) => m.role === "user" && m.threadId === targetThreadId
-                );
-                const previousAssistantMessages = messages.filter(
-                  (m) => m.role === "assistant" && m.threadId === targetThreadId
-                );
-
-                const totalUserMessages = previousUserMessages.length + 1;
-                const totalAssistantMessages = previousAssistantMessages.length + 1;
-
-                if (
-                  totalUserMessages === 1 &&
-                  totalAssistantMessages === 1 &&
-                  onUpdateThreadTitle &&
-                  data.model
-                ) {
-                  await handleTitleGeneration(targetThreadId, data.model, onUpdateThreadTitle);
-                }
-
-                shouldStop = true;
-                break;
-              } else if (data.type === "error") {
-                // If it's a stop error, keep the partial content
-                // Note: metadata will be sent via "done" message after the message is saved
-                if (data.error === "Generation stopped") {
-                  // If we have content but message wasn't added, add it now
-                  if (!messageAdded && accumulatedContent.trim()) {
-                    const botMsg = createAssistantMessage(
-                      assistantMsgId,
-                      targetThreadId,
-                      accumulatedContent
-                    );
-                    setMessages((prev) => [...prev, botMsg]);
-                  }
-                  setStreamingMessageId(null);
-                  shouldStop = true;
-                  break;
-                }
-                const errorMsg = data.error || "Unknown error";
-                if (onError) onError(errorMsg);
-                throw new Error(errorMsg);
-              }
-            } catch (parseError) {
-              handleError(parseError, onError);
+      await fetchAndParseMessageStream(
+        message,
+        targetThreadId,
+        {
+          onContent: (content) => {
+            accumulatedContent = content;
+            if (!messageAdded && accumulatedContent.trim()) {
+              const botMsg = createAssistantMessage(
+                assistantMsgId,
+                targetThreadId,
+                accumulatedContent
+              );
+              setMessages((prev) => [...prev, botMsg]);
+              messageAdded = true;
+            } else if (messageAdded) {
+              updateAssistantMessage(assistantMsgId, accumulatedContent);
             }
-          }
-        }
-        if (shouldStop) break;
-      }
+          },
+          onToolMessage: (id, threadId, content, createdAt) => {
+            const toolMsg = createToolMessage(id, threadId, content, createdAt);
+            setMessages((prev) => [...prev, toolMsg]);
+          },
+          onDone: async (data) => {
+            const finalContent = data.answer || accumulatedContent;
+            const metadata = {
+              model: data.model || null,
+              maxPromptLength: data.maxPromptLength !== undefined ? data.maxPromptLength : null,
+              toolCallCounts: data.toolCallCounts !== undefined ? data.toolCallCounts : null,
+            };
 
-      // Reload threads to update the order
+            if (!messageAdded) {
+              const botMsg = createAssistantMessage(
+                assistantMsgId,
+                targetThreadId,
+                finalContent,
+                metadata
+              );
+              setMessages((prev) => [...prev, botMsg]);
+            } else {
+              updateAssistantMessage(assistantMsgId, finalContent, metadata);
+            }
+            setStreamingMessageId(null);
+
+            const previousUserMessages = messages.filter(
+              (m) => m.role === "user" && m.threadId === targetThreadId
+            );
+            const previousAssistantMessages = messages.filter(
+              (m) => m.role === "assistant" && m.threadId === targetThreadId
+            );
+
+            const totalUserMessages = previousUserMessages.length + 1;
+            const totalAssistantMessages = previousAssistantMessages.length + 1;
+
+            if (
+              totalUserMessages === 1 &&
+              totalAssistantMessages === 1 &&
+              onUpdateThreadTitle &&
+              data.model
+            ) {
+              await handleTitleGeneration(targetThreadId, data.model, onUpdateThreadTitle);
+            }
+          },
+          onStop: () => {
+            if (!messageAdded && accumulatedContent.trim()) {
+              const botMsg = createAssistantMessage(
+                assistantMsgId,
+                targetThreadId,
+                accumulatedContent
+              );
+              setMessages((prev) => [...prev, botMsg]);
+            }
+            setStreamingMessageId(null);
+          },
+          onError: (errorMsg) => {
+            if (onError) onError(errorMsg);
+          },
+        },
+        abortControllerRef.current.signal,
+        onError
+      );
+
       onThreadsReload();
     } catch (error) {
-      // Don't log abort errors as they're intentional
       if (error instanceof Error && error.name !== "AbortError") {
-        // Only remove the assistant message on non-abort errors (if it was added)
         setMessages((prev) => prev.filter((msg) => msg.id !== assistantMsgId));
         handleError(error, onError);
       }
-      // For abort errors, keep the partial content (message will be added if it has content)
       setStreamingMessageId(null);
     } finally {
       setIsLoading(false);
