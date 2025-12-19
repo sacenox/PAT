@@ -5,6 +5,8 @@ import Modal from "@/src/components/Modal";
 import SecondaryButton from "@/src/components/buttons/SecondaryButton";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import type { Thread } from "@/src/lib/db/schema";
+import { useModels } from "@/src/hooks/useModels";
+import { handleError } from "@/src/lib/errors";
 
 type ThreadSettingsModalProps = {
   isOpen: boolean;
@@ -42,44 +44,13 @@ export default function ThreadSettingsModal({
   onMaxPromptLengthChange,
   onUserPromptChange,
 }: ThreadSettingsModalProps) {
-  const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const { models, isLoading: isLoadingModels } = useModels(onError);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
   const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096 | null>("none");
   const [userPrompt, setUserPrompt] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isNewThread = thread === null;
-
-  // Load models when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setIsLoadingModels(true);
-      fetch("/api/models")
-        .then(async (res) => {
-          if (!res.ok) {
-            const errorData = await res.json().catch((parseError) => {
-              throw new Error(
-                `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
-              );
-            });
-            throw new Error(errorData.error || res.statusText);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          const availableModels = data.models || [];
-          setModels(availableModels);
-          setIsLoadingModels(false);
-        })
-        .catch((error) => {
-          setIsLoadingModels(false);
-          if (onError && error instanceof Error) {
-            onError(error.message);
-          }
-        });
-    }
-  }, [isOpen, onError]);
 
   // Load thread settings when thread changes or when modal opens for new thread
   useEffect(() => {
@@ -135,9 +106,7 @@ export default function ThreadSettingsModal({
       });
       onClose();
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
     } finally {
       setIsSaving(false);
     }
@@ -151,9 +120,7 @@ export default function ThreadSettingsModal({
       await onDeleteThread(thread.id);
       onClose();
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
     } finally {
       setIsDeleting(false);
     }

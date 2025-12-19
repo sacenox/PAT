@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Thread } from "@/src/lib/db/schema";
+import { getErrorMessage, getParseErrorMessage, handleError } from "@/src/lib/errors";
 
 /**
  * Custom hook for managing conversation threads.
@@ -32,9 +33,7 @@ export function useThreads() {
       setHasMoreThreads(data.hasMore || false);
       setTotalThreadCount(data.totalCount || 0);
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
     }
   };
 
@@ -54,9 +53,7 @@ export function useThreads() {
         setHasMoreThreads(false);
       }
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
     }
   };
 
@@ -92,9 +89,7 @@ export function useThreads() {
 
       return newThread.id;
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
       return null;
     }
   };
@@ -121,9 +116,7 @@ export function useThreads() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(
-            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
-          );
+          throw new Error(getParseErrorMessage(parseError));
         });
         throw new Error(errorData.error || "Failed to update thread");
       }
@@ -133,8 +126,8 @@ export function useThreads() {
       // Update the thread in local state
       setThreads((prev) => prev.map((t) => (t.id === threadId ? updatedThread : t)));
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to update thread";
-      if (onError) onError(errorMsg);
+      const errorMsg = getErrorMessage(error, "Failed to update thread");
+      handleError(errorMsg, onError);
       throw error;
     }
   };
@@ -149,9 +142,7 @@ export function useThreads() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch((parseError) => {
-          throw new Error(
-            `Failed to parse error response: ${parseError instanceof Error ? parseError.message : "Invalid JSON"}`
-          );
+          throw new Error(getParseErrorMessage(parseError));
         });
         throw new Error(errorData.error || "Failed to delete thread");
       }
@@ -159,8 +150,8 @@ export function useThreads() {
       setThreads((prev) => prev.filter((t) => t.id !== threadId));
       setTotalThreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : "Failed to delete thread";
-      if (onError) onError(errorMsg);
+      const errorMsg = getErrorMessage(error, "Failed to delete thread");
+      handleError(errorMsg, onError);
       throw error;
     }
   };

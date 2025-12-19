@@ -3,6 +3,7 @@
 import { useState } from "react";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import DeleteConfirmationModal from "@/src/components/DeleteConfirmationModal";
+import { handleError } from "@/src/lib/errors";
 
 type DeleteThreadButtonProps = {
   threadId: number;
@@ -26,9 +27,7 @@ export default function DeleteThreadButton({
       await onDeleteThread(threadId);
       setIsModalOpen(false);
     } catch (error) {
-      if (onError && error instanceof Error) {
-        onError(error.message);
-      }
+      handleError(error, onError);
     } finally {
       setIsDeleting(false);
     }

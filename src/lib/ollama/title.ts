@@ -3,6 +3,7 @@
 
 import ollama from "ollama";
 import { debug } from "@/src/lib/debug";
+import { getErrorMessage } from "@/src/lib/errors";
 
 /**
  * Generates a concise title for a conversation based on message contents.
@@ -53,11 +54,9 @@ export async function generateTitle(
     // Clean up markdown characters and quotes
     const generatedTitle = response.response
       .trim()
-      .replace(/^["']|["']$/g, "")
-      .replace(/[*#`\[\](){}]/g, "")
-      .replace(/^#+\s*/, "")
-      .replace(/\*\*/g, "")
-      .replace(/\*/g, "")
+      .replace(/^["']|["']$/g, "") // Remove surrounding quotes
+      .replace(/^#+\s*/g, "") // Remove markdown headers
+      .replace(/[*#`\[\](){}]/g, "") // Remove markdown formatting characters
       .trim();
 
     if (!generatedTitle) {
@@ -67,7 +66,7 @@ export async function generateTitle(
 
     return generatedTitle;
   } catch (err) {
-    debug(`[Title] Error:`, err instanceof Error ? err.message : "Unknown error");
+    debug(`[Title] Error:`, getErrorMessage(err));
     return null;
   }
 }

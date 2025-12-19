@@ -2,6 +2,7 @@
 
 import ollama, { type Message, type ToolCall } from "ollama";
 import { debug } from "@/src/lib/debug";
+import { getErrorMessage } from "@/src/lib/errors";
 import { duckDuckGoTool } from "@/src/lib/ollama/tools/duckduckgo";
 import { fetchPageTool } from "@/src/lib/ollama/tools/fetchpage";
 import { weatherTool } from "@/src/lib/ollama/tools/weather";
@@ -181,7 +182,7 @@ export async function OllamaChat(
         const toolResponse = await executeToolCall(toolCall);
         currentMessages.push(toolResponse);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage = getErrorMessage(error);
         debug(`[Ollama] Tool execution failed: ${errorMessage}`);
         // Add error message as tool response so the model can handle it
         currentMessages.push({

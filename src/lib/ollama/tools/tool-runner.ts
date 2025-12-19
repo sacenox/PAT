@@ -2,6 +2,7 @@
 
 import { type Message, type ToolCall } from "ollama";
 import { debug } from "@/src/lib/debug";
+import { getErrorMessage } from "@/src/lib/errors";
 import { queryDuckDuckGo, fetchPage, queryWeather, queryWebSearch } from "@/src/lib/ollama/tools";
 
 /**
@@ -116,28 +117,22 @@ export async function executeToolCall(toolCall: ToolCall): Promise<Message> {
 
   const { query, url, timezone, forecastDays } = validationResult;
 
-  type ToolName = "query_web_search" | "query_weather" | "query_duckduckgo" | "fetch_page";
-  const tools: Record<ToolName, (query: string) => Promise<string>> = {
-    query_web_search: queryWebSearch,
-    query_weather: queryWeather,
-    query_duckduckgo: queryDuckDuckGo,
-    fetch_page: fetchPage,
-  };
-
   let result: string;
   try {
     if (name === "query_weather") {
       result = await queryWeather(query!, timezone, forecastDays);
     } else if (name === "fetch_page") {
       result = await fetchPage(url!);
-    } else if (name in tools) {
-      result = await tools[name as ToolName](query!);
+    } else if (name === "query_web_search") {
+      result = await queryWebSearch(query!);
+    } else if (name === "query_duckduckgo") {
+      result = await queryDuckDuckGo(query!);
     } else {
       throw new Error(`Unknown tool: ${name}`);
     }
     debug(`[Tool] ${name} completed (${result.length} chars)`);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = getErrorMessage(error);
     debug(`[Tool] ${name} failed: ${errorMessage}`);
     result = `Error: ${errorMessage}`;
   }

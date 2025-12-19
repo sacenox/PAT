@@ -9,12 +9,15 @@ import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
 import { useLocalStorage } from "@/src/hooks/useLocalStorage";
+import { useModels, isValidModel } from "@/src/hooks/useModels";
+import { getErrorMessage } from "@/src/lib/errors";
 import "./highlight-theme.css";
 
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
   const [selectedModel, setSelectedModel] = useLocalStorage<string>("selectedModel", "gpt-oss");
+  const { models } = useModels();
   const [maxPromptLength, setMaxPromptLength] = useLocalStorage<"none" | 1024 | 4096>(
     "maxPromptLength",
     "none"
@@ -52,46 +55,18 @@ export default function Home() {
 
   // Validate and initialize model from localStorage or fetch first available model
   useEffect(() => {
-    const initializeModel = async () => {
-      // Capture the current selectedModel value
-      const currentModel = selectedModel;
-      // Validate that the saved model still exists
-      if (currentModel) {
-        try {
-          const res = await fetch("/api/models");
-          if (res.ok) {
-            const data = await res.json();
-            const availableModels = data.models || [];
-            const modelExists = availableModels.some(
-              (m: { name: string; model: string }) => m.model === currentModel
-            );
-            if (modelExists) {
-              return;
-            }
-          }
-        } catch {
-          // Fall through to default
-        }
-      }
+    if (models.length === 0) return;
 
-      // If no saved model or it doesn't exist, get first available
-      try {
-        const res = await fetch("/api/models");
-        if (res.ok) {
-          const data = await res.json();
-          const availableModels = data.models || [];
-          if (availableModels.length > 0) {
-            const firstModel = availableModels[0].model;
-            setSelectedModel(firstModel);
-          }
-        }
-      } catch {
-        // Keep default
-      }
-    };
+    // Validate that the saved model still exists
+    if (selectedModel && isValidModel(selectedModel, models)) {
+      return;
+    }
 
-    initializeModel();
-  }, [selectedModel, setSelectedModel]);
+    // If no saved model or it doesn't exist, get first available
+    if (models.length > 0) {
+      setSelectedModel(models[0].model);
+    }
+  }, [models, selectedModel, setSelectedModel]);
 
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
@@ -148,9 +123,7 @@ export default function Home() {
       // Reload threads to ensure UI is in sync
       await loadThreads(8, setError);
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
+      setError(getErrorMessage(error));
     }
   };
 
@@ -164,9 +137,7 @@ export default function Home() {
         clearMessages();
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
+      setError(getErrorMessage(error));
     }
   };
 
@@ -190,9 +161,7 @@ export default function Home() {
         setError
       );
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      }
+      setError(getErrorMessage(error));
     }
   };
 
