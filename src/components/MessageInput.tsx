@@ -21,14 +21,20 @@ type MessageInputProps = {
   currentThread: Thread | null;
   onThreadUpdate?: (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+    updates: {
+      model?: string;
+      maxPromptLength?: "none" | 1024 | 4096 | null;
+      userPrompt?: string | null;
+    }
   ) => Promise<void>;
   onThreadDelete?: (threadId: number) => Promise<void>;
   onError?: (error: string) => void;
   newThreadModel?: string;
   newThreadMaxPromptLength?: "none" | 1024 | 4096;
+  newThreadUserPrompt?: string;
   onNewThreadModelChange?: (model: string) => void;
   onNewThreadMaxPromptLengthChange?: (value: "none" | 1024 | 4096) => void;
+  onNewThreadUserPromptChange?: (userPrompt: string) => void;
 };
 
 export type MessageInputRef = {
@@ -52,8 +58,10 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       onError,
       newThreadModel,
       newThreadMaxPromptLength,
+      newThreadUserPrompt,
       onNewThreadModelChange,
       onNewThreadMaxPromptLengthChange,
+      onNewThreadUserPromptChange,
     },
     ref
   ) => {
@@ -168,13 +176,18 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
                   onDeleteThread={onThreadDelete}
                   onError={onError}
                 />
-              ) : currentThreadId === null && onNewThreadModelChange && onNewThreadMaxPromptLengthChange ? (
+              ) : currentThreadId === null &&
+                onNewThreadModelChange &&
+                onNewThreadMaxPromptLengthChange &&
+                onNewThreadUserPromptChange ? (
                 <ThreadSettingsButton
                   thread={null}
                   initialModel={newThreadModel}
                   initialMaxPromptLength={newThreadMaxPromptLength}
+                  initialUserPrompt={newThreadUserPrompt}
                   onModelChange={onNewThreadModelChange}
                   onMaxPromptLengthChange={onNewThreadMaxPromptLengthChange}
+                  onUserPromptChange={onNewThreadUserPromptChange}
                   onError={onError}
                 />
               ) : null}

@@ -1,0 +1,1 @@
+ALTER TABLE "threads" ADD COLUMN "user_prompt" text;

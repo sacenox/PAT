@@ -47,14 +47,9 @@ export function useMessages(
   const sendMessage = async (
     message: string,
     currentThreadId: number | null,
-    onCreateThread: (
-      title?: string,
-      firstMessage?: string
-    ) => Promise<number | null>,
+    onCreateThread: (title?: string, firstMessage?: string) => Promise<number | null>,
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
-    selectedModel: string = "gpt-oss",
-    maxPromptLength?: "none" | 1024 | 4096,
     onError?: (error: string) => void
   ) => {
     if (!message.trim() || isLoading) return;
@@ -65,10 +60,7 @@ export function useMessages(
     if (!targetThreadId) {
       // Create a new thread if none exists
       // The onCreateThread callback should already have model and maxPromptLength
-      targetThreadId = await onCreateThread(
-        message.substring(0, 100),
-        message
-      );
+      targetThreadId = await onCreateThread(message.substring(0, 100), message);
       if (!targetThreadId) {
         setIsLoading(false);
         if (onError) {

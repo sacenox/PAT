@@ -2,20 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads, messages } from "@/src/lib/db/schema";
 import { desc, count } from "drizzle-orm";
-import { getCache } from "@/src/lib/cache";
-
-const SETTINGS_CACHE_KEY = "app_settings";
-
-type Settings = {
-  location?: string;
-  currentTime?: string;
-  timezone?: string;
-};
+import { generateSystemPrompt } from "@/src/lib/ollama/chat/system-prompt";
 
 export async function POST(request: Request) {
   try {
-    const { title, model, maxPromptLength } = await request.json();
-    
+    const { title, model, maxPromptLength, userPrompt, time, timezone } = await request.json();
+
     // Validate required parameters
     if (!model || typeof model !== "string") {
       return NextResponse.json({ error: "model is required" }, { status: 400 });
@@ -23,7 +15,7 @@ export async function POST(request: Request) {
     if (maxPromptLength === undefined) {
       return NextResponse.json({ error: "maxPromptLength is required" }, { status: 400 });
     }
-    
+
     const newThread = await db
       .insert(threads)
       .values({
@@ -31,6 +23,7 @@ export async function POST(request: Request) {
         model: model,
         maxPromptLength:
           maxPromptLength === "none" || maxPromptLength === null ? null : maxPromptLength,
+        userPrompt: userPrompt || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -38,47 +31,12 @@ export async function POST(request: Request) {
 
     const threadId = newThread[0].id;
 
-    // Get location, currentTime, and timezone from settings
-    const settings = await getCache<Settings>(SETTINGS_CACHE_KEY);
-    const location = settings?.location;
-    const currentTime = settings?.currentTime;
-    const timezone = settings?.timezone;
-
-    // Build system prompt with location and time if available
-    let systemPrompt = `You are PAT, a helpful personal assistant. You must follow these guidelines:
-- Only repeat tool calls in case of errors
-- Use simple and concise language
-- Reply with markdown whenever possible
-- When asked for code or text return it in a markdown code block`;
-
-    if (location || currentTime || timezone) {
-      systemPrompt += "\n\n";
-      if (currentTime && timezone) {
-        // Format time in the user's timezone
-        try {
-          const timeDate = new Date(currentTime);
-          const formattedTime = new Intl.DateTimeFormat("en-US", {
-            timeZone: timezone,
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "short",
-          }).format(timeDate);
-          systemPrompt += `Current time: ${formattedTime}\n`;
-        } catch (error) {
-          // Fallback to ISO string if timezone formatting fails
-          systemPrompt += `Current time: ${currentTime}\n`;
-        }
-      } else if (currentTime) {
-        systemPrompt += `Current time: ${currentTime}\n`;
-      }
-      if (location) {
-        systemPrompt += `Location: ${location}`;
-      }
-    }
+    // Generate system prompt
+    const systemPrompt = generateSystemPrompt({
+      time,
+      timezone,
+      userPrompt: userPrompt || null,
+    });
 
     // Insert system message with guidelines
     await db.insert(messages).values({

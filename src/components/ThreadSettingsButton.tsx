@@ -9,14 +9,20 @@ type ThreadSettingsButtonProps = {
   thread: Thread | null;
   onUpdateThread?: (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+    updates: {
+      model?: string;
+      maxPromptLength?: "none" | 1024 | 4096 | null;
+      userPrompt?: string | null;
+    }
   ) => Promise<void>;
   onDeleteThread?: (threadId: number) => Promise<void>;
   onError?: (error: string) => void;
   initialModel?: string;
   initialMaxPromptLength?: "none" | 1024 | 4096;
+  initialUserPrompt?: string;
   onModelChange?: (model: string) => void;
   onMaxPromptLengthChange?: (value: "none" | 1024 | 4096) => void;
+  onUserPromptChange?: (userPrompt: string) => void;
 };
 
 export default function ThreadSettingsButton({
@@ -26,8 +32,10 @@ export default function ThreadSettingsButton({
   onError,
   initialModel,
   initialMaxPromptLength,
+  initialUserPrompt,
   onModelChange,
   onMaxPromptLengthChange,
+  onUserPromptChange,
 }: ThreadSettingsButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,8 +62,10 @@ export default function ThreadSettingsButton({
         onError={onError}
         initialModel={initialModel}
         initialMaxPromptLength={initialMaxPromptLength}
+        initialUserPrompt={initialUserPrompt}
         onModelChange={onModelChange}
         onMaxPromptLengthChange={onMaxPromptLengthChange}
+        onUserPromptChange={onUserPromptChange}
       />
     </>
   );

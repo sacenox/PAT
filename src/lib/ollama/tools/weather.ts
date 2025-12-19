@@ -51,13 +51,8 @@ export async function queryWeather(
   // Increment rate limit counter before making the request
   // This ensures all API attempts are counted, not just successful ones
   await weatherRateLimiter.increment();
-  
-  // Extract city name: if query contains a forward slash assume it's the timezone, use everything after it
-  // Otherwise use the query as-is. Replace underscores with spaces for readability.
-  const sanitizedQuery = query.includes("/")
-    ? query.split("/").slice(1).join("/").replace(/_/g, " ").trim()
-    : query.trim();
-  
+
+  const sanitizedQuery = query.trim();
   // First, geocode the location to get coordinates
   const geocodeUrl = "https://geocoding-api.open-meteo.com/v1/search";
   const geocodeParams = new URLSearchParams({

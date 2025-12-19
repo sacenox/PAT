@@ -53,7 +53,6 @@ export async function POST(request: Request) {
     });
 
     // 4. Build messages array for Ollama
-    // Note: tool_calls are not needed for conversation history, only stored for display
     const ollamaMessages: Message[] = previousMessages.map((msg) => ({
       role: msg.role as Message["role"],
       content: msg.content,

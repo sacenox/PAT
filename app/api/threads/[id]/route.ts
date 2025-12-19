@@ -12,7 +12,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
 
     const body = await request.json();
-    const { model, maxPromptLength, title } = body;
+    const { model, maxPromptLength, title, userPrompt } = body;
+
+    // Reject userPrompt updates - it can only be set at thread creation
+    if (userPrompt !== undefined) {
+      return NextResponse.json(
+        { error: "User prompt can only be set when creating a new thread" },
+        { status: 400 }
+      );
+    }
 
     const updateData: {
       model?: string;

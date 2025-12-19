@@ -43,6 +43,13 @@
       "when": 1766093474935,
       "tag": "0005_harsh_wild_pack",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1766148194532,
+      "tag": "0006_productive_smasher",
+      "breakpoints": true
     }
   ]
 }

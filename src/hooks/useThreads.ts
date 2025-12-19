@@ -47,10 +47,11 @@ export function useThreads() {
   };
 
   const createThread = async (
-    titleOverride?: string,
-    firstMessage?: string,
     model: string,
     maxPromptLength: "none" | 1024 | 4096,
+    titleOverride?: string,
+    firstMessage?: string,
+    userPrompt?: string,
     onError?: (error: string) => void
   ): Promise<number | null> => {
     try {
@@ -63,6 +64,7 @@ export function useThreads() {
           title,
           model,
           maxPromptLength,
+          userPrompt: userPrompt || null,
         }),
       });
       if (!res.ok) {
@@ -89,6 +91,7 @@ export function useThreads() {
       model?: string;
       maxPromptLength?: "none" | 1024 | 4096 | null;
       title?: string;
+      userPrompt?: string | null;
     },
     onError?: (error: string) => void
   ): Promise<void> => {

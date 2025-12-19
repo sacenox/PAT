@@ -7,6 +7,7 @@ export const threads = pgTable("threads", {
   title: text("title"),
   model: text("model").notNull().default("gpt-oss"),
   maxPromptLength: integer("max_prompt_length"), // null, 1024, or 4096
+  userPrompt: text("user_prompt"), // User-defined prompt to include in system prompt
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

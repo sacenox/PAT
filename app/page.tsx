@@ -5,18 +5,24 @@ import MessageInput, { type MessageInputRef } from "@/src/components/MessageInpu
 import MessageList from "@/src/components/MessageList";
 import NoThreadSelected from "@/src/components/NoThreadSelected";
 import { useTheme } from "@/src/hooks/useTheme";
-import { useSettings } from "@/src/hooks/useSettings";
 import { useThreads } from "@/src/hooks/useThreads";
 import { useMessages } from "@/src/hooks/useMessages";
 import { useThreadSelection } from "@/src/hooks/useThreadSelection";
+import { useLocalStorage } from "@/src/hooks/useLocalStorage";
 import "./highlight-theme.css";
 
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const { themeMode, handleThemeChange } = useTheme();
-  const { location, handleLocationChange } = useSettings(setError);
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
-  const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096>("none");
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>("selectedModel", "gpt-oss");
+  const [maxPromptLength, setMaxPromptLength] = useLocalStorage<"none" | 1024 | 4096>(
+    "maxPromptLength",
+    "none"
+  );
+  const [newThreadUserPrompt, setNewThreadUserPrompt] = useLocalStorage<string>(
+    "newThreadUserPrompt",
+    ""
+  );
   const {
     threads,
     totalThreadCount,
@@ -44,23 +50,22 @@ export default function Home() {
   });
   const messageInputRef = useRef<MessageInputRef>(null);
 
-  // Initialize model from localStorage or fetch first available model
+  // Validate and initialize model from localStorage or fetch first available model
   useEffect(() => {
     const initializeModel = async () => {
-      // Check localStorage for previously selected model
-      const savedModel = localStorage.getItem("selectedModel");
-      if (savedModel) {
-        // Validate that the model still exists
+      // Capture the current selectedModel value
+      const currentModel = selectedModel;
+      // Validate that the saved model still exists
+      if (currentModel) {
         try {
           const res = await fetch("/api/models");
           if (res.ok) {
             const data = await res.json();
             const availableModels = data.models || [];
             const modelExists = availableModels.some(
-              (m: { name: string; model: string }) => m.model === savedModel
+              (m: { name: string; model: string }) => m.model === currentModel
             );
             if (modelExists) {
-              setSelectedModel(savedModel);
               return;
             }
           }
@@ -68,7 +73,7 @@ export default function Home() {
           // Fall through to default
         }
       }
-      
+
       // If no saved model or it doesn't exist, get first available
       try {
         const res = await fetch("/api/models");
@@ -78,24 +83,26 @@ export default function Home() {
           if (availableModels.length > 0) {
             const firstModel = availableModels[0].model;
             setSelectedModel(firstModel);
-            localStorage.setItem("selectedModel", firstModel);
           }
         }
       } catch {
         // Keep default
       }
     };
-    
+
     initializeModel();
-  }, []);
+  }, [selectedModel, setSelectedModel]);
 
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
-    localStorage.setItem("selectedModel", model);
   };
 
   const handleMaxPromptLengthChange = (value: "none" | 1024 | 4096) => {
     setMaxPromptLength(value);
+  };
+
+  const handleNewThreadUserPromptChange = (userPrompt: string) => {
+    setNewThreadUserPrompt(userPrompt);
   };
 
   const handleDeleteMessage = (messageId: number, threadId: number) => {
@@ -129,7 +136,11 @@ export default function Home() {
 
   const handleThreadUpdate = async (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+    updates: {
+      model?: string;
+      maxPromptLength?: "none" | 1024 | 4096 | null;
+      userPrompt?: string | null;
+    }
   ) => {
     setError(null);
     try {
@@ -166,11 +177,16 @@ export default function Home() {
         message,
         currentThreadId,
         (title, firstMessage) =>
-          createThread(title, firstMessage, selectedModel, maxPromptLength, setError),
+          createThread(
+            selectedModel,
+            maxPromptLength,
+            title,
+            firstMessage,
+            newThreadUserPrompt,
+            setError
+          ),
         selectThread,
         () => loadThreads(8, setError),
-        selectedModel,
-        maxPromptLength,
         setError
       );
     } catch (error) {
@@ -193,7 +209,7 @@ export default function Home() {
             className={`mx-auto flex min-h-full max-w-5xl flex-col gap-8 ${currentThreadId === null ? "justify-center" : "justify-end"}`}
           >
             {currentThreadId === null ? (
-              <NoThreadSelected threadCount={totalThreadCount} />
+              <NoThreadSelected />
             ) : (
               <MessageList
                 messages={messages}
@@ -221,8 +237,10 @@ export default function Home() {
           onError={setError}
           newThreadModel={selectedModel}
           newThreadMaxPromptLength={maxPromptLength}
+          newThreadUserPrompt={newThreadUserPrompt}
           onNewThreadModelChange={handleModelChange}
           onNewThreadMaxPromptLengthChange={handleMaxPromptLengthChange}
+          onNewThreadUserPromptChange={handleNewThreadUserPromptChange}
         />
       </div>
       <Sidebar
@@ -236,8 +254,7 @@ export default function Home() {
           void loadMoreThreads(8, setError);
         }}
         hasMoreThreads={hasMoreThreads}
-        location={location}
-        onLocationChange={handleLocationChange}
+        totalThreadCount={totalThreadCount}
       />
     </div>
   );

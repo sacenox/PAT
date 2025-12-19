@@ -7,8 +7,6 @@ type SettingsModalProps = {
   onClose: () => void;
   themeMode: "device" | "dark" | "light";
   onThemeChange: (mode: "device" | "dark" | "light") => void;
-  location: string;
-  onLocationChange: (location: string) => void;
 };
 
 export default function SettingsModal({
@@ -16,8 +14,6 @@ export default function SettingsModal({
   onClose,
   themeMode,
   onThemeChange,
-  location,
-  onLocationChange,
 }: SettingsModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -36,16 +32,6 @@ export default function SettingsModal({
             <option value="dark">Dark</option>
             <option value="light">Light</option>
           </select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-neutral-600 dark:text-neutral-400">Location</label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => onLocationChange(e.target.value)}
-            placeholder="Enter location name (e.g., New York, London)"
-            className="bg-white px-3 py-1 text-neutral-800 focus:outline-none dark:bg-neutral-950 dark:text-neutral-200"
-          />
         </div>
       </div>
     </Modal>

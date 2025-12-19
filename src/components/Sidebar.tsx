@@ -18,8 +18,7 @@ type SidebarProps = {
   onThemeChange: (mode: "device" | "dark" | "light") => void;
   onLoadMore: () => void;
   hasMoreThreads: boolean;
-  location: string;
-  onLocationChange: (location: string) => void;
+  totalThreadCount: number;
 };
 
 export default function Sidebar({
@@ -31,8 +30,7 @@ export default function Sidebar({
   onThemeChange,
   onLoadMore,
   hasMoreThreads,
-  location,
-  onLocationChange,
+  totalThreadCount,
 }: SidebarProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -64,7 +62,12 @@ export default function Sidebar({
               <GearIcon className="h-4 w-4" />
               Settings
             </SecondaryButton>
-            <label className="text-neutral-500">Threads</label>
+            <label className="text-neutral-500">
+              Threads{" "}
+              <span className="text-neutral-400 dark:text-neutral-500">
+                ({threads.length} out of {totalThreadCount})
+              </span>
+            </label>
             <div className="flex flex-col gap-2">
               <div className="flex flex-col">
                 {threads.length === 0 ? (
@@ -115,8 +118,6 @@ export default function Sidebar({
         onClose={() => setIsSettingsOpen(false)}
         themeMode={themeMode}
         onThemeChange={onThemeChange}
-        location={location}
-        onLocationChange={onLocationChange}
       />
     </>
   );

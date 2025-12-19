@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Modal from "@/src/components/Modal";
 import SecondaryButton from "@/src/components/buttons/SecondaryButton";
-import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import type { Thread } from "@/src/lib/db/schema";
 
@@ -13,14 +12,20 @@ type ThreadSettingsModalProps = {
   thread: Thread | null;
   onUpdateThread?: (
     threadId: number,
-    updates: { model?: string; maxPromptLength?: "none" | 1024 | 4096 | null }
+    updates: {
+      model?: string;
+      maxPromptLength?: "none" | 1024 | 4096 | null;
+      userPrompt?: string | null;
+    }
   ) => Promise<void>;
   onDeleteThread?: (threadId: number) => Promise<void>;
   onError?: (error: string) => void;
   initialModel?: string;
   initialMaxPromptLength?: "none" | 1024 | 4096;
+  initialUserPrompt?: string;
   onModelChange?: (model: string) => void;
   onMaxPromptLengthChange?: (value: "none" | 1024 | 4096) => void;
+  onUserPromptChange?: (userPrompt: string) => void;
 };
 
 export default function ThreadSettingsModal({
@@ -32,13 +37,16 @@ export default function ThreadSettingsModal({
   onError,
   initialModel,
   initialMaxPromptLength,
+  initialUserPrompt,
   onModelChange,
   onMaxPromptLengthChange,
+  onUserPromptChange,
 }: ThreadSettingsModalProps) {
   const [models, setModels] = useState<Array<{ name: string; model: string }>>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-oss");
   const [maxPromptLength, setMaxPromptLength] = useState<"none" | 1024 | 4096 | null>("none");
+  const [userPrompt, setUserPrompt] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isNewThread = thread === null;
@@ -80,12 +88,14 @@ export default function ThreadSettingsModal({
       setMaxPromptLength(
         thread.maxPromptLength === null ? "none" : (thread.maxPromptLength as 1024 | 4096)
       );
+      setUserPrompt(thread.userPrompt || "");
     } else if (isOpen && isNewThread) {
       // For new thread, use initial values or defaults
       setSelectedModel(initialModel || "gpt-oss");
       setMaxPromptLength(initialMaxPromptLength || "none");
+      setUserPrompt(initialUserPrompt || "");
     }
-  }, [thread, isOpen, isNewThread, initialModel, initialMaxPromptLength]);
+  }, [thread, isOpen, isNewThread, initialModel, initialMaxPromptLength, initialUserPrompt]);
 
   const handleSave = async () => {
     if (isNewThread) {
@@ -95,6 +105,9 @@ export default function ThreadSettingsModal({
       }
       if (onMaxPromptLengthChange && maxPromptLength !== null) {
         onMaxPromptLengthChange(maxPromptLength === "none" ? "none" : maxPromptLength);
+      }
+      if (onUserPromptChange) {
+        onUserPromptChange(userPrompt);
       }
       onClose();
       return;
@@ -115,6 +128,7 @@ export default function ThreadSettingsModal({
 
     setIsSaving(true);
     try {
+      // Don't send userPrompt for existing threads - it's read-only
       await onUpdateThread(thread.id, {
         model: selectedModel,
         maxPromptLength: maxPromptLength === "none" ? null : maxPromptLength,
@@ -145,7 +159,7 @@ export default function ThreadSettingsModal({
     }
   };
 
-  const threadTitle = thread ? (thread.title || `Thread ${thread.id}`) : null;
+  const threadTitle = thread ? thread.title || `Thread ${thread.id}` : null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -199,6 +213,25 @@ export default function ThreadSettingsModal({
               <option value="1024">1024</option>
               <option value="4096">4096</option>
             </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+              User Prompt
+            </label>
+            <textarea
+              value={userPrompt}
+              onChange={(e) => setUserPrompt(e.target.value)}
+              placeholder="Additional instructions or information for the assistant..."
+              rows={4}
+              disabled={!isNewThread}
+              className="bg-white px-3 py-2 text-neutral-800 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-950 dark:text-neutral-200"
+            />
+            {!isNewThread && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                User prompt can only be set when creating a new thread.
+              </p>
+            )}
           </div>
         </div>
 

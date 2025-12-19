@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useLocalStorage } from "./useLocalStorage";
 
 export function useTheme() {
-  const [themeMode, setThemeMode] = useState<"device" | "dark" | "light">(() => {
-    if (typeof window !== "undefined") {
-      const savedMode = localStorage.getItem("themeMode") as "device" | "dark" | "light" | null;
-      return savedMode || "device";
-    }
-    return "device";
-  });
+  const [themeMode, setThemeMode] = useLocalStorage<"device" | "dark" | "light">(
+    "themeMode",
+    "device"
+  );
 
   const applyTheme = (mode: "device" | "dark" | "light") => {
     let shouldBeDark = false;
@@ -39,7 +37,6 @@ export function useTheme() {
 
   const handleThemeChange = (mode: "device" | "dark" | "light") => {
     setThemeMode(mode);
-    localStorage.setItem("themeMode", mode);
     applyTheme(mode);
   };
 
