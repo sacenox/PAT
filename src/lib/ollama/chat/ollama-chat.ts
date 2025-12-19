@@ -22,6 +22,7 @@ import type { OllamaChunk, OllamaChatResponse, MaxPromptLength } from "@/src/lib
  * @param model - The Ollama model to use.
  * @param signal - Optional AbortSignal to cancel the request.
  * @param maxPromptLength - Optional maximum prompt length in tokens. Can be "none", 1024, or 4096.
+ * @param onToolMessage - Optional callback function to save tool messages to the database.
  * @returns Object containing the response content and generation time in milliseconds.
  * @throws If the request fails.
  */
@@ -30,7 +31,8 @@ export async function OllamaChat(
   onChunk?: (chunk: OllamaChunk) => void,
   model = "",
   signal?: AbortSignal,
-  maxPromptLength?: MaxPromptLength
+  maxPromptLength?: MaxPromptLength,
+  onToolMessage?: (content: string, toolName: string) => Promise<void>
 ): Promise<OllamaChatResponse> {
   const tools = [duckDuckGoTool, weatherTool, webSearchTool, fetchPageTool];
   let totalDuration = 0;
@@ -181,15 +183,24 @@ export async function OllamaChat(
       try {
         const toolResponse = await executeToolCall(toolCall);
         currentMessages.push(toolResponse);
+        // Save tool message to database if callback provided
+        if (onToolMessage && toolResponse.role === "tool" && toolResponse.tool_name) {
+          await onToolMessage(toolResponse.content, toolResponse.tool_name);
+        }
       } catch (error) {
         const errorMessage = getErrorMessage(error);
         debug(`[Ollama] Tool execution failed: ${errorMessage}`);
         // Add error message as tool response so the model can handle it
-        currentMessages.push({
+        const errorToolMessage: Message = {
           role: "tool",
           tool_name: toolCall.function.name,
           content: `Error: ${errorMessage}`,
-        });
+        };
+        currentMessages.push(errorToolMessage);
+        // Save error tool message to database if callback provided
+        if (onToolMessage) {
+          await onToolMessage(errorToolMessage.content, toolCall.function.name);
+        }
       }
     }
   }

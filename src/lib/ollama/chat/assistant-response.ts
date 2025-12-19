@@ -5,7 +5,7 @@ import { OllamaChat } from "./ollama-chat";
 import type { MaxPromptLength, OllamaChunk } from "@/src/lib/ollama/types";
 import { createStreamController } from "./stream-controller";
 import { setupAbortHandler, isAbortedOrClosed } from "./abort-handler";
-import { saveAssistantMessage, extractToolCounts } from "./message-persistence";
+import { saveAssistantMessage, saveToolMessage, extractToolCounts } from "./message-persistence";
 
 export interface StreamAssistantResponseParams {
   ollamaMessages: Message[];
@@ -70,7 +70,22 @@ export function streamAssistantResponse({
             onChunk,
             threadModel ?? "",
             signal,
-            threadMaxPromptLength
+            threadMaxPromptLength,
+            async (content: string, toolName: string) => {
+              const savedMessage = await saveToolMessage({
+                threadId,
+                content,
+                toolName,
+              });
+              // Stream tool message to frontend
+              safeEnqueue({
+                type: "toolMessage",
+                id: savedMessage.id,
+                content: savedMessage.content,
+                threadId,
+                createdAt: savedMessage.createdAt.toISOString(),
+              });
+            }
           );
           generationTimeMs = result.generationTimeMs;
         } catch (error) {

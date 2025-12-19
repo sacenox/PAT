@@ -35,6 +35,44 @@ export interface SaveMessageParams {
   toolCallCounts: string | null;
 }
 
+export interface SaveToolMessageParams {
+  threadId: number;
+  content: string;
+  toolName: string;
+}
+
+/**
+ * Saves a tool message to the database and updates the thread's updatedAt timestamp.
+ *
+ * @param params - Object containing tool message data
+ * @param params.threadId - Thread ID to save message to
+ * @param params.content - Tool response content
+ * @param params.toolName - Name of the tool that was called
+ * @returns Promise that resolves with the saved message ID and content
+ */
+export async function saveToolMessage(params: SaveToolMessageParams): Promise<{ id: number; content: string; createdAt: Date }> {
+  const { threadId, content, toolName } = params;
+
+  const savedMessage = await db
+    .insert(messages)
+    .values({
+      threadId,
+      role: "tool",
+      content: `[${toolName}]\n${content}`,
+      createdAt: new Date(),
+    })
+    .returning({ id: messages.id, content: messages.content, createdAt: messages.createdAt });
+
+  // Update thread's updatedAt timestamp
+  await db.update(threads).set({ updatedAt: new Date() }).where(eq(threads.id, threadId));
+
+  return {
+    id: savedMessage[0].id,
+    content: savedMessage[0].content,
+    createdAt: savedMessage[0].createdAt,
+  };
+}
+
 /**
  * Saves an assistant message to the database and updates the thread's updatedAt timestamp.
  * Also generates and updates the thread title from the message history.

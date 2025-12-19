@@ -64,7 +64,7 @@ export function useThreads() {
     firstMessage?: string,
     userPrompt?: string,
     onError?: (error: string) => void
-  ): Promise<number | null> => {
+  ): Promise<{ threadId: number; systemMessage?: { id: number; content: string; createdAt: string } } | null> => {
     try {
       const title = titleOverride || (firstMessage ? firstMessage.substring(0, 100) : "New Thread");
 
@@ -87,7 +87,16 @@ export function useThreads() {
       // Reload threads to get the full list
       await loadThreads(8);
 
-      return newThread.id;
+      return {
+        threadId: newThread.id,
+        systemMessage: data.systemMessage
+          ? {
+              id: data.systemMessage.id,
+              content: data.systemMessage.content,
+              createdAt: data.systemMessage.createdAt,
+            }
+          : undefined,
+      };
     } catch (error) {
       handleError(error, onError);
       return null;

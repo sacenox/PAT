@@ -40,14 +40,20 @@ export async function POST(request: Request) {
     });
 
     // Insert system message with guidelines
-    await db.insert(messages).values({
-      threadId,
-      role: "system",
-      content: systemPrompt,
-      createdAt: new Date(),
-    });
+    const systemMessage = await db
+      .insert(messages)
+      .values({
+        threadId,
+        role: "system",
+        content: systemPrompt,
+        createdAt: new Date(),
+      })
+      .returning({ id: messages.id, content: messages.content, createdAt: messages.createdAt });
 
-    return NextResponse.json({ thread: newThread[0] });
+    return NextResponse.json({
+      thread: newThread[0],
+      systemMessage: systemMessage[0],
+    });
   } catch (err) {
     debug(`[Threads API] Error creating thread:`, err instanceof Error ? err.message : "Unknown error");
     return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });

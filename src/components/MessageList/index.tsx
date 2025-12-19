@@ -4,6 +4,8 @@ import { useRef, useEffect } from "react";
 import type { Message } from "@/src/lib/db/schema";
 import AssistantMessage from "./AssistantMessage";
 import UserMessage from "./UserMessage";
+import SystemMessage from "./SystemMessage";
+import ToolMessage from "./ToolMessage";
 import DeleteMessageButton from "./DeleteMessageButton";
 
 type MessageListProps = {
@@ -45,15 +47,21 @@ export default function MessageList({ messages, threadId, onDeleteMessage }: Mes
           <div className="p-2">
             {msg.role === "assistant" ? (
               <AssistantMessage message={msg} />
-            ) : (
+            ) : msg.role === "user" ? (
               <UserMessage message={msg} />
+            ) : msg.role === "system" ? (
+              <SystemMessage message={msg} />
+            ) : msg.role === "tool" ? (
+              <ToolMessage message={msg} />
+            ) : null}
+            {msg.role !== "system" && msg.role !== "tool" && (
+              <DeleteMessageButton
+                messageId={msg.id}
+                threadId={threadId}
+                onDeleteMessage={onDeleteMessage}
+                align={msg.role === "user" ? "right" : "left"}
+              />
             )}
-            <DeleteMessageButton
-              messageId={msg.id}
-              threadId={threadId}
-              onDeleteMessage={onDeleteMessage}
-              align={msg.role === "user" ? "right" : "left"}
-            />
           </div>
         </div>
       ))}

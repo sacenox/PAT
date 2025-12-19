@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
 import { getParseErrorMessage, handleError } from "@/src/lib/errors";
+import { useMessageDisplaySettings } from "./useMessageDisplaySettings";
 
 /**
  * Custom hook for managing messages within a thread.
@@ -30,23 +31,40 @@ export function useMessages(
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
   const sendingToThreadIdRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [messageDisplaySettings] = useMessageDisplaySettings();
 
-  const loadMessages = useCallback(async (id: number, onError?: (error: string) => void) => {
-    setIsLoadingMessages(true);
-    try {
-      const res = await fetch(`/api/threads/${id}/messages`);
-      if (!res.ok) {
-        throw new Error(`Failed to load messages: ${res.status}`);
+  const loadMessages = useCallback(
+    async (id: number, onError?: (error: string) => void) => {
+      setIsLoadingMessages(true);
+      try {
+        const optionalRoles: string[] = [];
+        if (messageDisplaySettings.showSystemMessages) {
+          optionalRoles.push("system");
+        }
+        if (messageDisplaySettings.showToolMessages) {
+          optionalRoles.push("tool");
+        }
+
+        let url = `/api/threads/${id}/messages`;
+        if (optionalRoles.length > 0) {
+          url += `?optional_roles=${optionalRoles.join(",")}`;
+        }
+
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Failed to load messages: ${res.status}`);
+        }
+        const data = await res.json();
+        const loadedMessages = data.messages || [];
+        setMessages(loadedMessages);
+      } catch (error) {
+        handleError(error, onError);
+      } finally {
+        setIsLoadingMessages(false);
       }
-      const data = await res.json();
-      const loadedMessages = data.messages || [];
-      setMessages(loadedMessages);
-    } catch (error) {
-      handleError(error, onError);
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, []);
+    },
+    [messageDisplaySettings.showSystemMessages, messageDisplaySettings.showToolMessages]
+  );
 
   const createUserMessage = (message: string, threadId: number): Message => ({
     id: Date.now(),
@@ -79,6 +97,30 @@ export function useMessages(
     maxPromptLength: metadata?.maxPromptLength ?? null,
     generationTimeMs: null,
     toolCallCounts: metadata?.toolCallCounts ?? null,
+  });
+
+  const createToolMessage = (id: number, threadId: number, content: string, createdAt?: string | Date): Message => ({
+    id,
+    threadId,
+    role: "tool",
+    content,
+    createdAt: createdAt ? (typeof createdAt === "string" ? new Date(createdAt) : createdAt) : new Date(),
+    model: null,
+    maxPromptLength: null,
+    generationTimeMs: null,
+    toolCallCounts: null,
+  });
+
+  const createSystemMessage = (id: number, threadId: number, content: string, createdAt?: string | Date): Message => ({
+    id,
+    threadId,
+    role: "system",
+    content,
+    createdAt: createdAt ? (typeof createdAt === "string" ? new Date(createdAt) : createdAt) : new Date(),
+    model: null,
+    maxPromptLength: null,
+    generationTimeMs: null,
+    toolCallCounts: null,
   });
 
   const updateAssistantMessage = (
@@ -139,10 +181,24 @@ export function useMessages(
     }
   }, [threadId, loadMessages, onError]);
 
+  // Reload messages when display settings change (if we have a thread selected)
+  // Use JSON.stringify to create a stable dependency key from the settings object
+  const settingsKey = JSON.stringify(messageDisplaySettings);
+  const prevSettingsKeyRef = useRef<string>(settingsKey);
+
+  useEffect(() => {
+    if (settingsKey !== prevSettingsKeyRef.current) {
+      prevSettingsKeyRef.current = settingsKey;
+      if (threadId !== null && sendingToThreadIdRef.current !== threadId) {
+        loadMessages(threadId, onError);
+      }
+    }
+  }, [settingsKey, threadId, loadMessages, onError]);
+
   const sendMessage = async (
     message: string,
     currentThreadId: number | null,
-    onCreateThread: (title?: string, firstMessage?: string) => Promise<number | null>,
+    onCreateThread: (title?: string, firstMessage?: string) => Promise<{ threadId: number; systemMessage?: { id: number; content: string; createdAt: string } } | null>,
     onThreadSelect: (id: number) => void,
     onThreadsReload: () => void,
     onError?: (error: string) => void
@@ -155,14 +211,26 @@ export function useMessages(
     if (!targetThreadId) {
       // Create a new thread if none exists
       // The onCreateThread callback should already have model and maxPromptLength
-      targetThreadId = await onCreateThread(message.substring(0, 100), message);
-      if (!targetThreadId) {
+      const threadResult = await onCreateThread(message.substring(0, 100), message);
+      if (!threadResult) {
         setIsLoading(false);
         if (onError) {
           onError("Failed to create thread");
         }
         return;
       }
+      targetThreadId = threadResult.threadId;
+      
+      // Add system message to state if it was returned and setting is enabled
+      if (threadResult.systemMessage && messageDisplaySettings.showSystemMessages) {
+        addSystemMessage(
+          threadResult.systemMessage.id,
+          targetThreadId,
+          threadResult.systemMessage.content,
+          threadResult.systemMessage.createdAt
+        );
+      }
+      
       // Mark that we're sending to this thread before selecting it
       sendingToThreadIdRef.current = targetThreadId;
       onThreadSelect(targetThreadId);
@@ -229,6 +297,10 @@ export function useMessages(
                 } else if (messageAdded) {
                   updateAssistantMessage(assistantMsgId, accumulatedContent);
                 }
+              } else if (data.type === "toolMessage") {
+                // Add tool message to state in real-time
+                const toolMsg = createToolMessage(data.id, data.threadId, data.content, data.createdAt);
+                setMessages((prev) => [...prev, toolMsg]);
               } else if (data.type === "done") {
                 // Final update with complete answer and metadata
                 const finalContent = data.answer || accumulatedContent;
@@ -344,6 +416,17 @@ export function useMessages(
     }
   };
 
+  const addSystemMessage = (id: number, threadId: number, content: string, createdAt?: string | Date) => {
+    const systemMsg = createSystemMessage(id, threadId, content, createdAt);
+    setMessages((prev) => {
+      // Check if message already exists to avoid duplicates
+      if (prev.some((msg) => msg.id === id)) {
+        return prev;
+      }
+      return [...prev, systemMsg];
+    });
+  };
+
   return {
     messages,
     isLoading,
@@ -353,5 +436,6 @@ export function useMessages(
     clearMessages,
     stopGeneration,
     deleteMessage,
+    addSystemMessage,
   };
 }
