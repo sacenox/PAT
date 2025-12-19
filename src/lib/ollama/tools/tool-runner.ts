@@ -19,7 +19,8 @@ export async function executeToolCall(toolCall: ToolCall): Promise<Message> {
     forecastDays?: number;
   };
 
-  const tools = {
+  type ToolName = "query_web_search" | "query_weather" | "query_duckduckgo" | "fetch_page";
+  const tools: Record<ToolName, (query: string) => Promise<string>> = {
     query_web_search: queryWebSearch,
     query_weather: queryWeather,
     query_duckduckgo: queryDuckDuckGo,
@@ -32,8 +33,10 @@ export async function executeToolCall(toolCall: ToolCall): Promise<Message> {
       result = await queryWeather(query!, timezone, forecastDays);
     } else if (name === "fetch_page") {
       result = await fetchPage(url!);
+    } else if (name in tools) {
+      result = await tools[name as ToolName](query!);
     } else {
-      result = await tools[name](query!);
+      throw new Error(`Unknown tool: ${name}`);
     }
     debug(`[Tool] ${name} completed (${result.length} chars)`);
   } catch (error) {

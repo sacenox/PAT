@@ -2,7 +2,12 @@
 
 import ValKey from "iovalkey";
 
-const valkey = new ValKey(process.env.VALKEY_URL);
+const valkeyUrl = process.env.VALKEY_URL;
+if (!valkeyUrl) {
+  throw new Error("VALKEY_URL environment variable is not set");
+}
+
+const valkey = new ValKey(valkeyUrl);
 
 /**
  * Sets a value in the cache with an optional TTL (time-to-live).

@@ -68,7 +68,7 @@ export function streamAssistantResponse({
           const result = await OllamaChat(
             ollamaMessages,
             onChunk,
-            threadModel,
+            threadModel ?? "",
             signal,
             threadMaxPromptLength
           );
