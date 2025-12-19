@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { Message } from "@/src/lib/db/schema";
-import { getParseErrorMessage, handleError } from "@/src/lib/errors";
+import { handleError } from "@/src/lib/errors";
 import { useMessageDisplaySettings } from "./useMessageDisplaySettings";
+import { useFetch } from "./useFetch";
 import {
   createUserMessage,
   createAssistantMessage,
@@ -39,6 +40,7 @@ export function useMessages(
   const sendingToThreadIdRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [messageDisplaySettings] = useMessageDisplaySettings();
+  const fetchWithErrorHandling = useFetch();
 
   const loadMessages = useCallback(
     async (id: number, onError?: (error: string) => void) => {
@@ -57,20 +59,23 @@ export function useMessages(
           url += `?optional_roles=${optionalRoles.join(",")}`;
         }
 
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Failed to load messages: ${res.status}`);
+        const data = await fetchWithErrorHandling<{ messages: Message[] }>(url, {
+          errorMessage: "Failed to load messages",
+          onError,
+        });
+        if (data) {
+          const loadedMessages = data.messages || [];
+          setMessages(loadedMessages);
         }
-        const data = await res.json();
-        const loadedMessages = data.messages || [];
-        setMessages(loadedMessages);
-      } catch (error) {
-        handleError(error, onError);
       } finally {
         setIsLoadingMessages(false);
       }
     },
-    [messageDisplaySettings.showSystemMessages, messageDisplaySettings.showToolMessages]
+    [
+      messageDisplaySettings.showSystemMessages,
+      messageDisplaySettings.showToolMessages,
+      fetchWithErrorHandling,
+    ]
   );
 
   const updateAssistantMessage = (
@@ -316,20 +321,14 @@ export function useMessages(
     threadId: number,
     onError?: (error: string) => void
   ) => {
-    try {
-      const res = await fetch(`/api/threads/${threadId}/messages/${messageId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch((parseError) => {
-          throw new Error(getParseErrorMessage(parseError));
-        });
-        throw new Error(errorData.error || "Failed to delete message");
-      }
+    const result = await fetchWithErrorHandling(`/api/threads/${threadId}/messages/${messageId}`, {
+      method: "DELETE",
+      errorMessage: "Failed to delete message",
+      onError,
+    });
+    if (result !== null) {
       // Remove the message from local state
       setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
-    } catch (error) {
-      handleError(error, onError);
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { handleError } from "@/src/lib/errors";
+import { useFetch } from "./useFetch";
 
 export type Model = {
   name: string;
@@ -14,34 +14,27 @@ export type Model = {
 export function useModels(onError?: (error: string) => void) {
   const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const fetchWithErrorHandling = useFetch();
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch("/api/models")
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch models: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) {
-          setModels(data.models || []);
-          setIsLoading(false);
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setIsLoading(false);
-          handleError(error, onError);
-        }
-      });
+    fetchWithErrorHandling<{ models: Model[] }>("/api/models", {
+      errorMessage: "Failed to fetch models",
+      onError,
+    }).then((data) => {
+      if (!cancelled && data) {
+        setModels(data.models || []);
+        setIsLoading(false);
+      } else if (!cancelled) {
+        setIsLoading(false);
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [onError]);
+  }, [fetchWithErrorHandling, onError]);
 
   return { models, isLoading };
 }
@@ -55,4 +48,3 @@ export function useModels(onError?: (error: string) => void) {
 export function isValidModel(modelName: string, models: Model[]): boolean {
   return models.some((m) => m.model === modelName);
 }
-
