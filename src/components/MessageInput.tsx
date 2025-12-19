@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useImperativeHandle, forwardRef, useEffect } from "react";
+import { useImperativeHandle, forwardRef } from "react";
 import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
 import PrimaryButton from "@/src/components/buttons/PrimaryButton";
 import ThinkingNotification from "@/src/components/ThinkingNotification";
@@ -8,6 +8,8 @@ import ThreadSettingsButton from "@/src/components/ThreadSettingsButton";
 import ErrorNotification from "@/src/components/ErrorNotification";
 import type { Message } from "@/src/lib/db/schema";
 import type { Thread } from "@/src/lib/db/schema";
+import { useAutoResizeTextarea } from "@/src/hooks/useAutoResizeTextarea";
+import { useMessageHistory } from "@/src/hooks/useMessageHistory";
 
 type MessageInputProps = {
   isLoading: boolean;
@@ -65,44 +67,14 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     },
     ref
   ) => {
-    const [input, setInput] = useState("");
-    const [historyIndex, setHistoryIndex] = useState<number | null>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const draftInputRef = useRef<string>("");
+    const { input, setInput, handleKeyDown, resetHistory } = useMessageHistory(messages);
+    const textareaRef = useAutoResizeTextarea(input);
 
     useImperativeHandle(ref, () => ({
       focus: () => {
         textareaRef.current?.focus();
       },
     }));
-
-    // Auto-resize textarea to keep an empty line at the bottom
-    useEffect(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      // Reset height to auto to get the correct scrollHeight
-      textarea.style.height = "auto";
-
-      // Calculate line height from computed styles
-      const computedStyle = getComputedStyle(textarea);
-      const lineHeight = parseFloat(computedStyle.lineHeight) || 24;
-      const paddingTop = parseFloat(computedStyle.paddingTop) || 8;
-      const paddingBottom = parseFloat(computedStyle.paddingBottom) || 8;
-
-      // Minimum height for 3 lines
-      const minHeight = lineHeight * 3 + paddingTop + paddingBottom;
-
-      // Maximum height for 10 lines
-      const maxHeight = lineHeight * 10 + paddingTop + paddingBottom;
-
-      // Set height to scrollHeight or minHeight, whichever is larger
-      // Add one extra line height to keep an empty line at the bottom
-      // Cap at maxHeight to enable scrolling after 10 lines
-      const calculatedHeight = textarea.scrollHeight + lineHeight;
-      const newHeight = Math.min(maxHeight, Math.max(minHeight, calculatedHeight));
-      textarea.style.height = `${newHeight}px`;
-    }, [input]);
 
     const isAnyLoading = isLoading || isLoadingMessages;
 
@@ -115,46 +87,19 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       const inputValue = input.trim();
       onSubmit(inputValue);
       setInput("");
-      setHistoryIndex(null);
+      resetHistory();
 
-      // Reset textarea height after submit
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Only cycle through user messages, not assistant messages
-      const userMessages = messages.filter((m) => m.role === "user");
-
+    const handleKeyDownWithSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
-      } else if (e.key === "ArrowUp" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        // Save current input as draft if we're starting to cycle from the current state
-        if (historyIndex === null) {
-          draftInputRef.current = input;
-        }
-        const idx = historyIndex ?? userMessages.length;
-        if (idx > 0) {
-          const newIdx = idx - 1;
-          setHistoryIndex(newIdx);
-          setInput(userMessages[newIdx].content);
-        }
-      } else if (e.key === "ArrowDown" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        if (historyIndex !== null) {
-          const newIdx = historyIndex + 1;
-          if (newIdx < userMessages.length) {
-            setHistoryIndex(newIdx);
-            setInput(userMessages[newIdx].content);
-          } else {
-            // Restore draft input when cycling back to current state
-            setHistoryIndex(null);
-            setInput(draftInputRef.current);
-          }
-        }
+      } else {
+        handleKeyDown(e);
       }
     };
 
@@ -201,7 +146,7 @@ const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={handleKeyDownWithSubmit}
               placeholder={isAnyLoading ? "" : "Type a message..."}
               disabled={isAnyLoading}
               rows={3}
