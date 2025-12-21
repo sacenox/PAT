@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Message } from "@/src/lib/db/schema";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Fetches messages for a given thread using react-query.

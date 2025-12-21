@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
-import { desc, count } from "drizzle-orm";
 import { debug } from "@/src/lib/debug";
 import { createThread } from "@/src/lib/threads";
+import { count, desc } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {

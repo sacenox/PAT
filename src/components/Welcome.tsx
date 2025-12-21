@@ -1,10 +1,10 @@
 "use client";
 
-import SettingsForm from "@/src/components/SettingsForm";
 import Button from "@/src/components/Button";
 import GearIcon from "@/src/components/icons/GearIcon";
-import { useState } from "react";
 import XIcon from "@/src/components/icons/XIcon";
+import SettingsForm from "@/src/components/SettingsForm";
+import { useState } from "react";
 
 export default function Welcome() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);

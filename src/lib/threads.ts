@@ -1,7 +1,7 @@
+import { generateResponse } from "@/src/lib/chat";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
 import { createMessage } from "@/src/lib/messages";
-import { generateResponse } from "@/src/lib/chat";
 import ollama from "ollama";
 
 export async function generateTitle(model: string, message: string): Promise<string | null> {

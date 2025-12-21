@@ -1,12 +1,12 @@
 /* personal-assistant-thing/src/lib/ollama/tools/index.ts */
 
-import type { ToolCall } from "ollama";
 import { queryDuckDuckGo } from "@/src/lib/tools/duckduckgo";
 import { fetchPage } from "@/src/lib/tools/fetchpage";
 import { queryWeather } from "@/src/lib/tools/weather";
 import { queryWebSearch } from "@/src/lib/tools/websearch";
+import type { ToolCall } from "ollama";
 
-export { queryDuckDuckGo, duckDuckGoTool } from "@/src/lib/tools/duckduckgo";
+export { duckDuckGoTool, queryDuckDuckGo } from "@/src/lib/tools/duckduckgo";
 export { fetchPage, fetchPageTool } from "@/src/lib/tools/fetchpage";
 export { queryWeather, weatherTool } from "@/src/lib/tools/weather";
 export { queryWebSearch, webSearchTool } from "@/src/lib/tools/websearch";

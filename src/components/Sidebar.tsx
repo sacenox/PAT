@@ -1,10 +1,10 @@
 "use client";
 
-import BowtieIcon from "@/src/components/icons/BowtieIcon";
-import PlusIcon from "@/src/components/icons/PlusIcon";
 import { useAppContext } from "@/src/components/App";
 import Button from "@/src/components/Button";
+import BowtieIcon from "@/src/components/icons/BowtieIcon";
 import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
+import PlusIcon from "@/src/components/icons/PlusIcon";
 import { useThreads } from "@/src/hooks/api/useThreads";
 
 export default function Sidebar() {

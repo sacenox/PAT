@@ -1,8 +1,8 @@
 "use client";
 
-import type { Model } from "@/src/hooks/api/useModels";
 import { useAppContext } from "@/src/components/App";
 import { Switch } from "@/src/components/Switch";
+import type { Model } from "@/src/hooks/api/useModels";
 import { useAutoResizeTextarea } from "@/src/hooks/useAutoResizeTextarea";
 
 export default function SettingsForm() {

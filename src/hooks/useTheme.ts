@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { useLocalStorage } from "@/src/hooks/useLocalStorage";
+import { useEffect } from "react";
 
 /**
  * Custom hook for managing theme mode (device, dark, or light).

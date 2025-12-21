@@ -1,8 +1,8 @@
 /* personal-assistant-thing/src/lib/ratelimit.test.ts */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createRateLimiter, type RateLimitConfig } from "@/src/lib/ratelimit";
 import * as cacheModule from "@/src/lib/cache";
+import { createRateLimiter, type RateLimitConfig } from "@/src/lib/ratelimit";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the cache module
 vi.mock("@/src/lib/cache", () => ({

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { debug } from "@/src/lib/debug";
+import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let threadId: number | null = null;

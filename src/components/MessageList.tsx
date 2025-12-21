@@ -1,15 +1,15 @@
 "use client";
 
 import { useAppContext } from "@/src/components/App";
-import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
-import { Message } from "@/src/lib/db/schema";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
-import { useEffect, useRef, useState } from "react";
 import Button from "@/src/components/Button";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import useDeleteMessage from "@/src/hooks/api/useDeleteMessage";
+import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
+import { Message } from "@/src/lib/db/schema";
+import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import remarkGfm from "remark-gfm";
 
 function BaseMessage({
   message,

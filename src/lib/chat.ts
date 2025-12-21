@@ -1,16 +1,16 @@
-import { db } from "./db";
-import { messages, threads } from "./db/schema";
-import { eq, asc } from "drizzle-orm";
-import ollama, { type Tool } from "ollama";
+import { debug } from "@/src/lib/debug";
+import { createMessage } from "@/src/lib/messages";
 import {
   duckDuckGoTool,
-  weatherTool,
-  fetchPageTool,
-  webSearchTool,
   executeToolCall,
+  fetchPageTool,
+  weatherTool,
+  webSearchTool,
 } from "@/src/lib/tools";
-import { createMessage } from "@/src/lib/messages";
-import { debug } from "@/src/lib/debug";
+import { asc, eq } from "drizzle-orm";
+import ollama, { type Tool } from "ollama";
+import { db } from "./db";
+import { messages, threads } from "./db/schema";
 
 export async function generateResponse(threadId: number) {
   if (!threadId) {

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { generateResponse } from "@/src/lib/chat";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
-import { eq, asc, and, inArray } from "drizzle-orm";
 import { debug } from "@/src/lib/debug";
 import { createMessage } from "@/src/lib/messages";
-import { generateResponse } from "@/src/lib/chat";
+import { and, asc, eq, inArray } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let threadId: number | null = null;
