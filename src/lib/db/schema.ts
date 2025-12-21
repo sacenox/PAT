@@ -5,7 +5,7 @@ import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
   title: text("title"),
-  model: text("model").notNull().default("gpt-oss"),
+  model: text("model").notNull(),
   maxPromptLength: integer("max_prompt_length"), // null, 1024, or 4096
   userPrompt: text("user_prompt"), // User-defined prompt to include in system prompt
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -19,11 +19,8 @@ export const messages = pgTable("messages", {
     .references(() => threads.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "user" or "assistant"
   content: text("content").notNull(),
-  model: text("model"), // Model used to generate this message (for assistant messages)
-  maxPromptLength: integer("max_prompt_length"), // Prompt size used to generate this message (for assistant messages) - null, 1024, or 4096
+  thinking: text("thinking"), // Thinking (for assistant messages)
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  generationTimeMs: integer("generation_time_ms"), // Time taken to generate response (for assistant messages)
-  toolCallCounts: text("tool_call_counts"), // JSON string of tool name counts, e.g. {"query_weather": 2, "query_web_search": 1}
 });
 
 // Define relations

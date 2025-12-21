@@ -1,16 +1,63 @@
-import { debug } from "@/src/lib/debug";
+import { db } from "@/src/lib/db";
+import { messages, threads } from "@/src/lib/db/schema";
 import { createMessage } from "@/src/lib/messages";
-import {
-  duckDuckGoTool,
-  executeToolCall,
-  fetchPageTool,
-  weatherTool,
-  webSearchTool,
-} from "@/src/lib/tools";
+import { executeToolCall, fetchPageTool, weatherTool, webSearchTool } from "@/src/lib/tools";
 import { asc, eq } from "drizzle-orm";
-import ollama, { type Tool } from "ollama";
-import { db } from "./db";
-import { messages, threads } from "./db/schema";
+import ollama, { type Tool, type ToolCall } from "ollama";
+
+type MessageHistory = {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  thinking?: string;
+}[];
+
+async function agentLoop(model: string, messageHistory: MessageHistory) {
+  const tools: Tool[] = [weatherTool, fetchPageTool, webSearchTool];
+  const newMessages: MessageHistory = [];
+  let maxIterations = 6;
+
+  while (true) {
+    maxIterations--;
+
+    const stream = await ollama.chat({
+      model: model,
+      messages: [...messageHistory, ...newMessages],
+      tools: maxIterations > 0 ? tools : undefined,
+      think: true,
+      stream: true,
+    });
+
+    let thinking = "";
+    let content = "";
+    const calls: ToolCall[] = [];
+
+    for await (const chunk of stream) {
+      if (chunk.message.thinking) {
+        thinking += chunk.message;
+      }
+      if (chunk.message.content) {
+        content += chunk.message.content;
+      }
+      if (chunk.message.tool_calls?.length) {
+        calls.push(...chunk.message.tool_calls);
+      }
+    }
+
+    if (content) {
+      newMessages.push({ role: "assistant", content: content, thinking: thinking });
+    }
+    if (calls.length) {
+      for (const call of calls) {
+        const toolResponse = await executeToolCall(call);
+        newMessages.push({ role: "tool", content: `[${call.function.name}] ${toolResponse}` });
+      }
+    } else {
+      break;
+    }
+  }
+
+  return newMessages;
+}
 
 export async function generateResponse(threadId: number) {
   if (!threadId) {
@@ -24,63 +71,24 @@ export async function generateResponse(threadId: number) {
   }
 
   // Get all of the messages for this thread:
-  const messagesList = await db
-    .select()
+  const messagesList = (await db
+    .select({
+      role: messages.role,
+      content: messages.content,
+      thinking: messages.thinking,
+    })
     .from(messages)
     .where(eq(messages.threadId, threadId))
-    .orderBy(asc(messages.createdAt));
+    .orderBy(asc(messages.createdAt))) as MessageHistory;
 
   if (messagesList.length === 0) {
     throw new Error("No messages found for this thread");
   }
 
-  const tools: Tool[] = [duckDuckGoTool, weatherTool, fetchPageTool, webSearchTool];
-  const chatMessages = messagesList.map((message) => ({
-    role: message.role,
-    content: message.content,
-  }));
-  let iterations = 0;
-  let toolCallsExist = true;
+  const messageHistory = await agentLoop(thread[0].model, messagesList);
 
-  // Repeatedly generate model responses until no tool calls remain
-  while (toolCallsExist) {
-    iterations++;
-
-    const response = await ollama.chat({
-      model: thread[0].model,
-      messages: chatMessages,
-      tools: iterations >= 10 ? undefined : tools, // Avoid looping forever
-      think: true,
-    });
-
-    if (response.message.thinking) {
-      debug("Thinking:", response.message.thinking);
-    }
-
-    if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
-      for (const toolCall of response.message.tool_calls) {
-        try {
-          const toolResponse = await executeToolCall(toolCall);
-          await createMessage(`${toolCall.function.name}: ${toolResponse}`, "tool", threadId);
-          chatMessages.push({
-            role: "tool",
-            content: toolResponse,
-          });
-        } catch (error) {
-          const content = `${toolCall.function.name}: Error: ${error instanceof Error ? error.message : "Unknown error"}`;
-          await createMessage(content, "tool", threadId);
-          chatMessages.push({
-            role: "tool",
-            content: content,
-          });
-
-          debug(content);
-        }
-      }
-    } else {
-      toolCallsExist = false;
-      // insert the final response into the thread:
-      await createMessage(response.message.content, "assistant", threadId);
-    }
+  // Update the thread with the new message history:
+  for (const message of messageHistory) {
+    await createMessage(message.content, message.role, threadId);
   }
 }

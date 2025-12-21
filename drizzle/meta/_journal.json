@@ -50,6 +50,13 @@
       "when": 1766148194532,
       "tag": "0006_productive_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1766350897443,
+      "tag": "0007_spotty_maestro",
+      "breakpoints": true
     }
   ]
 }
