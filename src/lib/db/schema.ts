@@ -1,6 +1,6 @@
 /* personal-assistant-thing/src/lib/db/schema.ts */
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 
 export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),

@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
-import { eq, and } from "drizzle-orm";
 import { debug } from "@/src/lib/debug";
+import { and, eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 export async function DELETE(
   request: Request,

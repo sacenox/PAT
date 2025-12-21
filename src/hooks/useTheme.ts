@@ -1,5 +1,5 @@
+import { useLocalStorage } from "@/src/hooks/useLocalStorage";
 import { useEffect } from "react";
-import { useLocalStorage } from "./useLocalStorage";
 
 /**
  * Custom hook for managing theme mode (device, dark, or light).
@@ -11,7 +11,7 @@ import { useLocalStorage } from "./useLocalStorage";
  */
 export function useTheme() {
   const [themeMode, setThemeMode] = useLocalStorage<"device" | "dark" | "light">(
-    "themeMode",
+    "theme.mode",
     "device"
   );
 
@@ -40,6 +40,8 @@ export function useTheme() {
       const handleChange = () => applyTheme("device");
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
+    } else {
+      applyTheme(themeMode);
     }
   }, [themeMode]);
 

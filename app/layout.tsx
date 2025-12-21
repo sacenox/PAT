@@ -1,5 +1,6 @@
 import { Montserrat } from "next/font/google";
 import "./globals.css";
+import "./highlight-theme.css";
 
 const montserrat = Montserrat({
   weight: ["400", "700"],

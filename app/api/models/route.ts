@@ -1,6 +1,6 @@
+import { debug } from "@/src/lib/debug";
 import { NextResponse } from "next/server";
 import ollama from "ollama";
-import { debug } from "@/src/lib/debug";
 
 export async function GET() {
   try {
