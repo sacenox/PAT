@@ -31,6 +31,7 @@ export default function MessageEditor() {
     (threadId: number) => {
       setUserMessage("");
       setSelectedThreadId(threadId);
+      textareaRef.current?.focus();
     }
   );
 
@@ -39,6 +40,7 @@ export default function MessageEditor() {
     userMessage,
     () => {
       setUserMessage("");
+      textareaRef.current?.focus();
     }
   );
 
