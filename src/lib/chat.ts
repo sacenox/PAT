@@ -39,20 +39,17 @@ export async function generateResponse(threadId: number) {
     role: message.role,
     content: message.content,
   }));
+  let iterations = 0;
   let toolCallsExist = true;
-  let errors = [];
 
   // Repeatedly generate model responses until no tool calls remain
   while (toolCallsExist) {
-    // Check if we have errors from tool calls.
-    errors = chatMessages.filter(
-      (message) => message.role === "tool" && message.content.includes("Error:")
-    );
+    iterations++;
 
     const response = await ollama.chat({
       model: thread[0].model,
       messages: chatMessages,
-      tools: errors.length > 0 ? undefined : tools, // If we have errors, force an answer with no tool calls.
+      tools: iterations >= 10 ? undefined : tools, // Avoid looping forever
       think: true,
     });
 
@@ -71,7 +68,7 @@ export async function generateResponse(threadId: number) {
           });
         } catch (error) {
           const content = `${toolCall.function.name}: Error: ${error instanceof Error ? error.message : "Unknown error"}`;
-          createMessage(content, "tool", threadId);
+          await createMessage(content, "tool", threadId);
           chatMessages.push({
             role: "tool",
             content: content,

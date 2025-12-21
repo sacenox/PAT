@@ -1,16 +1,17 @@
 import { generateResponse } from "@/src/lib/chat";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
+import { debug } from "@/src/lib/debug";
 import { createMessage } from "@/src/lib/messages";
 import ollama from "ollama";
 
-export async function generateTitle(model: string, message: string): Promise<string | null> {
+export async function generateTitle(model: string, message: string): Promise<string> {
   const response = await ollama.generate({
     model: model,
-    prompt: `Create a concise summary of the following message: "${message}. Return only alphanumeric characters and spaces."`,
+    prompt: `Create a concise summary using only alphanumeric characters and spaces of the following message: "${message}."`,
   });
 
-  return response.response || message.substring(0, 100);
+  return response.response ?? message.substring(0, 100);
 }
 
 export function generateSystemPrompt(options: {
@@ -78,9 +79,11 @@ export async function createThread(
   time: string,
   timezone: string
 ) {
-  let title = await generateTitle(model, userMessage);
-  if (!title) {
-    title = userMessage.substring(0, 100);
+  let title = userMessage.substring(0, 100);
+  try {
+    title = await generateTitle(model, userMessage);
+  } catch (error) {
+    debug(`[Threads] Error generating title:`, error);
   }
 
   const newThread = await db

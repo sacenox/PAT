@@ -35,7 +35,7 @@ export default function MessageEditor() {
   );
 
   const { mutate: createThreadMessage, isPending: isCreatingThreadMessage } = useNewThreadMessage(
-    selectedThreadId || 0,
+    selectedThreadId,
     userMessage,
     () => {
       setUserMessage("");

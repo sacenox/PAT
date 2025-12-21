@@ -14,7 +14,7 @@ export function useThreadMessages(threadId: number | null, optionalRoles: string
     queryFn: async () => {
       if (!threadId) {
         console.error("Thread ID is missing");
-        return [];
+        return { messages: [] };
       }
       const requestParams = new URLSearchParams();
       if (optionalRoles.length > 0) {
@@ -26,5 +26,6 @@ export function useThreadMessages(threadId: number | null, optionalRoles: string
       }
       return response.json();
     },
+    enabled: threadId !== null,
   });
 }
