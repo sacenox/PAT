@@ -2,12 +2,12 @@
 
 import { useAutoResizeTextarea } from "@/src/hooks/useAutoResizeTextarea";
 import { useState } from "react";
-import Button from "./Button";
-import PaperPlaneIcon from "./icons/PaperPlaneIcon";
-import TrashIcon from "./icons/TrashIcon";
-import { useNewThread } from "../hooks/api/useNewThread";
-import { useAppContext } from "./App";
-import { useNewThreadMessage } from "../hooks/api/useNewThreadMessage";
+import Button from "@/src/components/Button";
+import PaperPlaneIcon from "@/src/components/icons/PaperPlaneIcon";
+import TrashIcon from "@/src/components/icons/TrashIcon";
+import { useNewThread } from "@/src/hooks/api/useNewThread";
+import { useAppContext } from "@/src/components/App";
+import { useNewThreadMessage } from "@/src/hooks/api/useNewThreadMessage";
 
 export default function MessageEditor() {
   const [userMessage, setUserMessage] = useState("");

@@ -5,8 +5,9 @@ import { useModels, type Model } from "@/src/hooks/api/useModels";
 import MessageList from "@/src/components/MessageList";
 import Welcome from "@/src/components/Welcome";
 import Sidebar from "@/src/components/Sidebar";
-import { useTheme } from "../hooks/useTheme";
-import MessageEditor from "./MessageEditor";
+import { useTheme } from "@/src/hooks/useTheme";
+import { useLocalStorage } from "@/src/hooks/useLocalStorage";
+import MessageEditor from "@/src/components/MessageEditor";
 
 export type AppContextType = {
   selectedModel: Model | null;
@@ -41,13 +42,25 @@ export function useAppContext(): AppContextType {
 export default function App() {
   const { themeMode, handleThemeChange } = useTheme();
   const { data: modelsData, isLoading: isModelsLoading, error: modelsError } = useModels();
-
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
-  const [maxPromptLength, setMaxPromptLength] = useState<number | null>(null);
-  const [userPrompt, setUserPrompt] = useState<string>("");
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
-  const [showSystemMessages, setShowSystemMessages] = useState<boolean>(true);
-  const [showToolMessages, setShowToolMessages] = useState<boolean>(true);
+
+  const [selectedModel, setSelectedModel] = useLocalStorage<Model | null>(
+    "app.selectedModel",
+    null
+  );
+  const [maxPromptLength, setMaxPromptLength] = useLocalStorage<number | null>(
+    "app.maxPromptLength",
+    null
+  );
+  const [userPrompt, setUserPrompt] = useLocalStorage<string>("app.userPrompt", "");
+  const [showSystemMessages, setShowSystemMessages] = useLocalStorage<boolean>(
+    "app.showSystemMessages",
+    true
+  );
+  const [showToolMessages, setShowToolMessages] = useLocalStorage<boolean>(
+    "app.showToolMessages",
+    true
+  );
 
   return (
     <AppContext.Provider

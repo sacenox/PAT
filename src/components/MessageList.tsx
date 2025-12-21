@@ -2,13 +2,13 @@
 
 import { useAppContext } from "@/src/components/App";
 import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
-import { Message } from "../lib/db/schema";
+import { Message } from "@/src/lib/db/schema";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { useEffect, useRef, useState } from "react";
-import Button from "./Button";
-import TrashIcon from "./icons/TrashIcon";
+import Button from "@/src/components/Button";
+import TrashIcon from "@/src/components/icons/TrashIcon";
 
 function BaseMessage({
   message,
@@ -33,7 +33,7 @@ function BaseMessage({
 
   return (
     <div
-      className={`flex min-w-64 flex-col p-2 text-neutral-500 dark:text-neutral-500 ${justifyClass} ${alignClass}`}
+      className={`message flex min-w-64 flex-col p-2 text-neutral-500 dark:text-neutral-500 ${justifyClass} ${alignClass}`}
     >
       <div className={`${alignClass}`}>{children}</div>
       <div
@@ -114,9 +114,9 @@ export default function MessageList() {
       currentMessageCount > 0
     ) {
       // Scroll the last message into view
-      const lastMessageElement = listRef.current.querySelector(":scope > *:last-child");
+      const lastMessageElement = listRef.current.querySelector(".message:last-child");
       if (lastMessageElement) {
-        (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "end" });
+        (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
     prevMessageCount.current = currentMessageCount;

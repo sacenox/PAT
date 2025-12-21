@@ -1,12 +1,11 @@
 "use client";
 
 import BowtieIcon from "@/src/components/icons/BowtieIcon";
-import GearIcon from "@/src/components/icons/GearIcon";
 import PlusIcon from "@/src/components/icons/PlusIcon";
 import { useAppContext } from "@/src/components/App";
 import Button from "@/src/components/Button";
-import ChevronDownIcon from "./icons/ChevronDownIcon";
-import { useThreads } from "../hooks/api/useThreads";
+import ChevronDownIcon from "@/src/components/icons/ChevronDownIcon";
+import { useThreads } from "@/src/hooks/api/useThreads";
 
 export default function Sidebar() {
   const { selectedThreadId, setSelectedThreadId } = useAppContext();
@@ -31,10 +30,6 @@ export default function Sidebar() {
           <Button onClick={() => setSelectedThreadId(null)}>
             <PlusIcon className="h-4 w-4" />
             New Thread
-          </Button>
-          <Button>
-            <GearIcon className="h-4 w-4" />
-            Settings
           </Button>
         </div>
         <div className="flex flex-col gap-4">
