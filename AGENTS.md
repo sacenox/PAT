@@ -28,7 +28,7 @@
 
 ### Code Organization
 
-- Use path aliases: `@/` for root imports (e.g., `@/src/components/...`).
+- Always use absolute paths in import using path aliases: `@/` for root imports (e.g., `@/src/components/...`).
 - Follow modular structure: `src/components/`, `src/hooks/`, `src/lib/`, `app/api/`.
 - Keep files focused - one main export per file when possible.
 

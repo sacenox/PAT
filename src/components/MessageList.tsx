@@ -1,0 +1,146 @@
+"use client";
+
+import { useAppContext } from "@/src/components/App";
+import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
+import { Message } from "../lib/db/schema";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import { useEffect, useRef, useState } from "react";
+import Button from "./Button";
+import TrashIcon from "./icons/TrashIcon";
+
+function BaseMessage({
+  message,
+  children,
+  justify = "start",
+  align = "left",
+}: {
+  message: Message;
+  children: React.ReactNode;
+  justify?: "start" | "end";
+  align?: "left" | "right";
+}) {
+  const justifyClass = {
+    start: "justify-start",
+    end: "justify-end",
+  }[justify];
+
+  const alignClass = {
+    left: "text-left",
+    right: "text-right",
+  }[align];
+
+  return (
+    <div
+      className={`flex min-w-64 flex-col p-2 text-neutral-500 dark:text-neutral-500 ${justifyClass} ${alignClass}`}
+    >
+      <div className={`${alignClass}`}>{children}</div>
+      <div
+        className={`mt-2 flex flex-row items-center gap-0 text-xs ${alignClass} ${justifyClass} text-neutral-600 dark:text-neutral-400`}
+      >
+        <div>
+          on: {message.createdAt?.toLocaleString()} • from: {message.role}
+        </div>
+        {message.role !== "system" && message.role !== "tool" && (
+          <Button inline>
+            <TrashIcon className="h-3 w-3" /> Delete
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SystemOrToolMessage({ message }: { message: Message }) {
+  const [isCollapsed, setIsCollapsed] = useState(true);
+
+  return (
+    <BaseMessage message={message}>
+      <pre
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className={`m-0 cursor-pointer overflow-hidden whitespace-pre-wrap break-words bg-transparent p-0 font-mono text-xs leading-normal text-neutral-500 ${isCollapsed ? "line-clamp-2" : ""}`}
+      >
+        {message.content}
+      </pre>
+    </BaseMessage>
+  );
+}
+
+function UserMessage({ message }: { message: Message }) {
+  return (
+    <BaseMessage message={message} justify="end" align="right">
+      <div className="prose prose-neutral max-w-none dark:prose-invert">
+        <pre className="whitespace-pre-wrap break-words bg-neutral-300 font-sans text-sm text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+          {message.content}
+        </pre>
+      </div>
+    </BaseMessage>
+  );
+}
+
+function AssistantMessage({ message }: { message: Message }) {
+  return (
+    <BaseMessage message={message} justify="start" align="left">
+      <div className="prose prose-neutral max-w-none dark:prose-invert">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+          {message.content}
+        </ReactMarkdown>
+      </div>
+    </BaseMessage>
+  );
+}
+
+export default function MessageList() {
+  const { selectedThreadId, showSystemMessages, showToolMessages } = useAppContext();
+  const optionalRoles = [
+    ...(showSystemMessages ? ["system"] : []),
+    ...(showToolMessages ? ["tool"] : []),
+  ];
+  const {
+    data: messagesData,
+    isLoading: isLoadingMessages,
+    error: messagesError,
+  } = useThreadMessages(selectedThreadId, optionalRoles);
+
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const prevMessageCount = useRef<number>(0);
+
+  useEffect(() => {
+    const currentMessageCount = messagesData?.messages.length ?? 0;
+    if (
+      listRef.current &&
+      currentMessageCount > prevMessageCount.current &&
+      currentMessageCount > 0
+    ) {
+      // Scroll the last message into view
+      const lastMessageElement = listRef.current.querySelector(":scope > *:last-child");
+      if (lastMessageElement) {
+        (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
+    prevMessageCount.current = currentMessageCount;
+  }, [messagesData?.messages.length]);
+
+  return (
+    <div className="mx-auto max-w-5xl p-8">
+      {isLoadingMessages ? (
+        <div>Loading messages...</div>
+      ) : messagesError ? (
+        <div>Error loading messages: {messagesError.message}</div>
+      ) : (
+        <div ref={listRef} className="flex flex-col gap-8">
+          {messagesData?.messages.map((message) =>
+            message.role === "system" || message.role === "tool" ? (
+              <SystemOrToolMessage key={message.id} message={message} />
+            ) : message.role === "user" ? (
+              <UserMessage key={message.id} message={message} />
+            ) : (
+              <AssistantMessage key={message.id} message={message} />
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

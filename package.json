@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@googleapis/customsearch": "^7.0.1",
     "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-query": "^5.90.12",
     "autoprefixer": "^10.4.17",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
@@ -46,6 +48,7 @@
     "typescript": "^5.4.2"
   },
   "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.91.2",
     "@types/node": "^20.19.27",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
