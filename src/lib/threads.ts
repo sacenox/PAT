@@ -2,67 +2,15 @@ import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
 import { createMessage } from "@/src/lib/messages";
 import { generateResponse } from "@/src/lib/chat";
-import { debug } from "@/src/lib/debug";
 import ollama from "ollama";
 
-export async function generateTitle(
-  model: string,
-  messageContents: string[]
-): Promise<string | null> {
-  if (!model || !model.trim()) {
-    debug("[Title] Model is not set");
-    return null;
-  }
+export async function generateTitle(model: string, message: string): Promise<string | null> {
+  const response = await ollama.generate({
+    model: model,
+    prompt: `Create a concise summary of the following message: "${message}. Return only alphanumeric characters and spaces."`,
+  });
 
-  if (!messageContents || messageContents.length === 0) {
-    debug("[Title] Message contents list is empty");
-    return null;
-  }
-
-  // Use the first non-empty message content for title generation
-  const firstMessage = messageContents.find((msg) => msg && msg.trim());
-  if (!firstMessage || !firstMessage.trim()) {
-    debug("[Title] No valid message content found");
-    return null;
-  }
-
-  try {
-    // Generate the prompt internally
-    const titlePrompt = `Generate a concise title (maximum 5 words) for a conversation. Return only plain text, no markdown formatting, no quotes, no asterisks, no special characters: "${firstMessage.substring(0, 200)}"`;
-
-    const response = await ollama.generate({
-      model,
-      prompt: titlePrompt,
-      options: {
-        num_predict: 20,
-        temperature: 0.7,
-        stop: ["\n", "*", "#", "`", "[", "]", "(", ")", "{", "}"],
-      },
-    });
-
-    if (!response.response) {
-      debug("[Title] No response from Ollama");
-      return null;
-    }
-
-    // Clean up markdown characters and quotes
-    const generatedTitle = response.response
-      .trim()
-      .replace(/^["']|["']$/g, "") // Remove surrounding quotes
-      .replace(/^#+\s*/g, "") // Remove markdown headers
-      .replace(/[*#`\[\](){}]/g, "") // Remove markdown formatting characters
-      .trim();
-
-    if (!generatedTitle) {
-      debug("[Title] Generated title is empty after cleanup");
-      return null;
-    }
-
-    return generatedTitle;
-  } catch (err) {
-    debug(`[Title] Error: ${err instanceof Error ? err.message : "Unknown error"}`);
-    return null;
-  }
+  return response.response || message.substring(0, 100);
 }
 
 export function generateSystemPrompt(options: {
@@ -73,11 +21,10 @@ export function generateSystemPrompt(options: {
   const { time, timezone, userPrompt } = options;
 
   // Build system prompt with location and time if available
-  let systemPrompt = `You are PAT, a helpful personal assistant. You must follow these guidelines:
-    - Only repeat tool calls in case of errors
-    - Use simple and concise language
-    - Reply with markdown whenever possible
-    - When asked for code or text return it in a markdown code block`;
+  let systemPrompt = `**Purpose:** Assist the user with their questions and tasks. Don't lie, don't make up information, don't make assumptions.
+**Format:** Reply with markdown whenever possible. When asked for code or text return it in a markdown code block.
+**Style and tone:** Use a friendly, professional, and helpful tone. Be concise and to the point. Avoid repeating yourself. Avoid using emojis.
+**Context:** You are PAT, a helpful personal assistant. Bellow you can see the contextual information for the conversation, like time and location of the user. Use this information to help the user.`;
 
   // Filter out empty strings - only use non-empty values
   const validTime = time?.trim() || undefined;
@@ -99,25 +46,25 @@ export function generateSystemPrompt(options: {
           second: "2-digit",
           timeZoneName: "short",
         }).format(timeDate);
-        systemPrompt += `Current time: ${formattedTime}\n`;
+        systemPrompt += `**User's current time:** ${formattedTime}\n`;
       } catch {
         // Fallback to ISO string if timezone formatting fails
-        systemPrompt += `Current time: ${validTime}\n`;
+        systemPrompt += `**User's current time:** ${validTime}\n`;
       }
     } else if (validTime) {
-      systemPrompt += `Current time: ${validTime}\n`;
+      systemPrompt += `**User's current time:** ${validTime}\n`;
     }
     if (validTimezone) {
       // Extract city name, take everything after the / and replace underscores.
       const timezoneCity = validTimezone.split("/").slice(1).join("/").replace(/_/g, " ").trim();
-      systemPrompt += `Location: ${timezoneCity}`;
+      systemPrompt += `**User's location:** ${timezoneCity}`;
     }
   }
 
   // Add user prompt if provided
   if (userPrompt && userPrompt.trim()) {
     systemPrompt += "\n\n";
-    systemPrompt += `Additional instructions:\n${userPrompt.trim()}`;
+    systemPrompt += `**User added information:**:\n${userPrompt.trim()}`;
   }
 
   return systemPrompt;
@@ -131,7 +78,7 @@ export async function createThread(
   time: string,
   timezone: string
 ) {
-  let title = await generateTitle(model, [userMessage]);
+  let title = await generateTitle(model, userMessage);
   if (!title) {
     title = userMessage.substring(0, 100);
   }

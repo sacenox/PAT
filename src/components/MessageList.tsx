@@ -9,6 +9,7 @@ import rehypeHighlight from "rehype-highlight";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/src/components/Button";
 import TrashIcon from "@/src/components/icons/TrashIcon";
+import useDeleteMessage from "@/src/hooks/api/useDeleteMessage";
 
 function BaseMessage({
   message,
@@ -21,6 +22,11 @@ function BaseMessage({
   justify?: "start" | "end";
   align?: "left" | "right";
 }) {
+  const { mutate: deleteMessage, isPending: isDeletingMessage } = useDeleteMessage(
+    message.threadId,
+    message.id
+  );
+
   const justifyClass = {
     start: "justify-start",
     end: "justify-end",
@@ -43,7 +49,7 @@ function BaseMessage({
           on: {message.createdAt?.toLocaleString()} • from: {message.role}
         </div>
         {message.role !== "system" && message.role !== "tool" && (
-          <Button inline>
+          <Button inline disabled={isDeletingMessage} onClick={() => deleteMessage()}>
             <TrashIcon className="h-3 w-3" /> Delete
           </Button>
         )}

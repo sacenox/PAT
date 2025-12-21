@@ -35,16 +35,14 @@ export async function generateResponse(threadId: number) {
   }
 
   const tools: Tool[] = [duckDuckGoTool, weatherTool, fetchPageTool, webSearchTool];
-
-  // Repeatedly generate model responses until no tool calls remain
   const chatMessages = messagesList.map((message) => ({
     role: message.role,
     content: message.content,
   }));
   let toolCallsExist = true;
-
   let errors = [];
 
+  // Repeatedly generate model responses until no tool calls remain
   while (toolCallsExist) {
     // Check if we have errors from tool calls.
     errors = chatMessages.filter(
@@ -55,7 +53,12 @@ export async function generateResponse(threadId: number) {
       model: thread[0].model,
       messages: chatMessages,
       tools: errors.length > 0 ? undefined : tools, // If we have errors, force an answer with no tool calls.
+      think: true,
     });
+
+    if (response.message.thinking) {
+      debug("Thinking:", response.message.thinking);
+    }
 
     if (response.message?.tool_calls && response.message.tool_calls.length > 0) {
       for (const toolCall of response.message.tool_calls) {
