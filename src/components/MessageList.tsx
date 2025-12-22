@@ -4,7 +4,6 @@ import { useAppContext } from "@/src/components/App";
 import Button from "@/src/components/Button";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import useDeleteMessage from "@/src/hooks/api/useDeleteMessage";
-import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
 import { Message } from "@/src/lib/db/schema";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -86,63 +85,66 @@ function UserMessage({ message }: { message: Message }) {
 }
 
 function AssistantMessage({ message }: { message: Message }) {
+  const [isCollapsed, setIsCollapsed] = useState(message.id !== 0); // Only show opened optimistic thinking rendered messages
+  const { showToolMessages } = useAppContext();
+
   return (
     <BaseMessage message={message} justify="start" align="left">
-      <div className="prose prose-neutral max-w-none dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-          {message.content}
-        </ReactMarkdown>
+      <div className="flex flex-col gap-8">
+        {showToolMessages && message.thinking && (
+          <div
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`m-0 cursor-pointer overflow-hidden whitespace-pre-wrap break-words bg-transparent p-0 text-xs leading-normal text-neutral-500 ${isCollapsed ? "line-clamp-2" : ""}`}
+          >
+            <span className="font-bold">thinking:</span> {message.thinking}
+          </div>
+        )}
+        <div className="prose prose-neutral max-w-none dark:prose-invert">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+            {message.content}
+          </ReactMarkdown>
+        </div>
       </div>
     </BaseMessage>
   );
 }
 
-export default function MessageList() {
-  const { selectedThreadId, showSystemMessages, showToolMessages } = useAppContext();
-  const optionalRoles = [
-    ...(showSystemMessages ? ["system"] : []),
-    ...(showToolMessages ? ["tool"] : []),
-  ];
-  const {
-    data: messagesData,
-    isLoading: isLoadingMessages,
-    error: messagesError,
-  } = useThreadMessages(selectedThreadId, optionalRoles);
-
+export default function MessageList({
+  messages,
+  isLoading,
+  error,
+}: {
+  messages: Message[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
   const listRef = useRef<HTMLDivElement | null>(null);
-  const prevMessageCount = useRef<number>(0);
 
   useEffect(() => {
-    const currentMessageCount = messagesData?.messages.length ?? 0;
-    if (
-      listRef.current &&
-      currentMessageCount > prevMessageCount.current &&
-      currentMessageCount > 0
-    ) {
-      // Scroll the last message into view
+    // Scroll to the last message on every render
+    if (listRef.current && messages.length > 0) {
       const lastMessageElement = listRef.current.querySelector(".message:last-child");
       if (lastMessageElement) {
         (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-    prevMessageCount.current = currentMessageCount;
-  }, [messagesData?.messages.length]);
+  });
 
   return (
     <div className="mx-auto max-w-5xl p-8">
-      {isLoadingMessages ? (
+      {isLoading ? (
         <div>Loading messages...</div>
-      ) : messagesError ? (
-        <div>Error loading messages: {messagesError.message}</div>
+      ) : error ? (
+        <div>Error loading messages: {error.message}</div>
       ) : (
         <div ref={listRef} className="flex flex-col gap-8">
-          {messagesData?.messages.map((message) =>
+          {messages.map((message) =>
             message.role === "system" || message.role === "tool" ? (
-              <SystemOrToolMessage key={message.id} message={message} />
+              <SystemOrToolMessage key={message.id + message.role} message={message} />
             ) : message.role === "user" ? (
-              <UserMessage key={message.id} message={message} />
+              <UserMessage key={message.id + message.role} message={message} />
             ) : (
-              <AssistantMessage key={message.id} message={message} />
+              <AssistantMessage key={message.id + message.role} message={message} />
             )
           )}
         </div>
