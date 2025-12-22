@@ -7,12 +7,6 @@ export type ThreadsData = {
   totalCount: number;
 };
 
-/**
- * Fetches threads using react-query's useInfiniteQuery for paginated data.
- *
- * @param limit Number of threads to fetch per page.
- * @returns InfiniteQuery result with `ThreadsData` pages.
- */
 export function useThreads(limit: number = 8) {
   return useInfiniteQuery<ThreadsData, Error>({
     queryKey: ["threads", limit],

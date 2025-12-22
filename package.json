@@ -36,6 +36,7 @@
     "highlight.js": "^11.11.1",
     "iovalkey": "^0.3.3",
     "next": "^16.0.10",
+    "node-html-better-parser": "^1.5.8",
     "ollama": "^0.6.3",
     "postcss": "^8.4.30",
     "postgres": "^3.4.5",

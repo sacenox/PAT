@@ -1,4 +1,3 @@
-/* personal-assistant-thing/src/lib/db/index.ts */
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
@@ -17,13 +16,3 @@ const client = postgres(connectionString, {
 
 // Create drizzle instance
 export const db = drizzle(client, { schema });
-
-/**
- * Closes the database connection.
- * Useful for cleanup operations, especially in serverless environments.
- *
- * @returns Promise that resolves when the connection is closed
- */
-export async function closeDatabase() {
-  await client.end();
-}

@@ -5,11 +5,6 @@ export type Model = {
   model: string;
 };
 
-/**
- * Hook to fetch available models from the API.
- *
- * @returns a list of Models
- */
 export function useModels() {
   return useQuery<{ models: Model[] }, Error>({
     queryKey: ["models"],

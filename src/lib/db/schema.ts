@@ -1,4 +1,3 @@
-/* personal-assistant-thing/src/lib/db/schema.ts */
 import { relations } from "drizzle-orm";
 import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 

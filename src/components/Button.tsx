@@ -10,11 +10,6 @@ type ButtonProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
   inline?: boolean;
 };
 
-/**
- * Button: A reusable button component with neutral hover and selection states.
- * When selected (isSelected=true), displays a neutral-800 background (dark) or neutral-200 (light).
- * On hover, displays a neutral-700 background (dark) or neutral-300 (light).
- */
 export default function Button({
   children,
   isSelected = false,

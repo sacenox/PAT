@@ -12,18 +12,6 @@ type SwitchProps = {
   "aria-label"?: string;
 };
 
-/**
- * Switch component: accessible, keyboard-navigable, styled toggle.
- *
- * @param checked - Whether the switch is on
- * @param onChange - Change handler
- * @param disabled - Optional, disables interaction
- * @param id - Optional, input id
- * @param name - Optional, form input name
- * @param className - Optional additional class names
- * @param aria-label - Optional accessibility label
- * @returns React component
- */
 export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   { checked, onChange, disabled = false, id, name, className = "", "aria-label": ariaLabel },
   ref

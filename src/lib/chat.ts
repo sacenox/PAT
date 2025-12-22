@@ -1,7 +1,7 @@
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { createMessage } from "@/src/lib/messages";
-import { executeToolCall, fetchPageTool, weatherTool, webSearchTool } from "@/src/lib/tools";
+import { executeToolCall, fetchPageTool, webSearchTool } from "@/src/lib/tools";
 import { asc, eq } from "drizzle-orm";
 import ollama, { type Tool, type ToolCall } from "ollama";
 
@@ -40,7 +40,7 @@ async function agentLoop(
   messageHistory: MessageHistory,
   enqueue: (message: MessageHistoryEntry & { done?: boolean }) => void
 ) {
-  const tools: Tool[] = [weatherTool, fetchPageTool, webSearchTool];
+  const tools: Tool[] = [fetchPageTool, webSearchTool];
   const newMessages: MessageHistory = [];
   let maxIterations = 6;
 
