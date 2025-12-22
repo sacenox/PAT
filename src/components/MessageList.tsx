@@ -121,8 +121,8 @@ export default function MessageList({
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    // Scroll to the last message on every render
     if (listRef.current && messages.length > 0) {
-      // Scroll the last message into view
       const lastMessageElement = listRef.current.querySelector(".message:last-child");
       if (lastMessageElement) {
         (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });

@@ -17,10 +17,7 @@ export default function Main() {
   ];
 
   const handleSetLoadedMessages = useCallback((messages: Message[]) => {
-    setLoadedMessages((previousMessages) => [
-      ...messages,
-      ...previousMessages.filter((message) => message.threadId === 0), // Keep messages that aren't saved yet
-    ]);
+    setLoadedMessages(messages);
   }, []);
 
   const { isLoading: isLoadingMessages, error: messagesError } = useThreadMessages(

@@ -38,7 +38,6 @@ export function useNewThreadMessage(
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          console.log("[useNewThreadMessage] Stream finished reading");
           break;
         }
         accumulated += decoder.decode(value, { stream: true });
