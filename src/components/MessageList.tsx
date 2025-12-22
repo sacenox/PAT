@@ -140,11 +140,11 @@ export default function MessageList({
         <div ref={listRef} className="flex flex-col gap-8">
           {messages.map((message) =>
             message.role === "system" || message.role === "tool" ? (
-              <SystemOrToolMessage key={message.id} message={message} />
+              <SystemOrToolMessage key={message.id + message.role} message={message} />
             ) : message.role === "user" ? (
-              <UserMessage key={message.id} message={message} />
+              <UserMessage key={message.id + message.role} message={message} />
             ) : (
-              <AssistantMessage key={message.id} message={message} />
+              <AssistantMessage key={message.id + message.role} message={message} />
             )
           )}
         </div>

@@ -39,6 +39,13 @@ export default function MessageEditor({
               id: 0, // Means it's not saved yet
               createdAt: new Date(),
               threadId: selectedThreadId,
+              role: "user",
+              content: userMessage,
+            },
+            {
+              id: 0, // Means it's not saved yet
+              createdAt: new Date(),
+              threadId: selectedThreadId,
               role: msg.role,
               content: msg.content,
               thinking: msg.thinking,
