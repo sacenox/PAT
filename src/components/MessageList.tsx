@@ -96,7 +96,8 @@ function AssistantMessage({ message }: { message: Message }) {
             onClick={() => setIsCollapsed(!isCollapsed)}
             className={`m-0 cursor-pointer overflow-hidden whitespace-pre-wrap break-words bg-transparent p-0 text-xs leading-normal text-neutral-500 ${isCollapsed ? "line-clamp-2" : ""}`}
           >
-            <span className="font-bold">thinking:</span> {message.thinking}
+            <span className="font-bold">thinking:</span>
+            <p>{message.thinking}</p>
           </div>
         )}
         <div className="prose prose-neutral max-w-none dark:prose-invert">
