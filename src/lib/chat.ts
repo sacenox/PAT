@@ -79,8 +79,12 @@ async function agentLoop(
     if (calls.length) {
       for (const call of calls) {
         const toolResponse = await executeToolCall(call);
-        newMessages.push({ role: "tool", content: `[${call.function.name}] ${toolResponse}` });
-        enqueue({ role: "tool", content: `[${call.function.name}] ${toolResponse}` });
+        const toolContent = toolResponse ? JSON.stringify(toolResponse) : "null";
+        newMessages.push({
+          role: "tool",
+          content: `[${call.function.name}] ${toolContent}`,
+        });
+        enqueue({ role: "tool", content: `[${call.function.name}] ${toolContent}` });
       }
     } else {
       enqueue({

@@ -1,13 +1,18 @@
 import { getCache, incrementCache, setCache } from "@/src/lib/cache";
 import { google } from "googleapis";
-import type { customsearch_v1 } from "googleapis/build/src/apis/customsearch/v1";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export async function webSearch(query: string): Promise<customsearch_v1.Schema$Result[] | null> {
+type WebSearchResult = {
+  title: string;
+  snippet: string;
+  link: string;
+};
+
+export async function webSearch(query: string): Promise<WebSearchResult[] | null> {
   // Check cache first
   const cacheKey = `websearch:${query.toLowerCase().trim()}`;
-  const cached = await getCache<customsearch_v1.Schema$Result[]>(cacheKey);
+  const cached = await getCache<WebSearchResult[]>(cacheKey);
   if (cached !== null) {
     return cached;
   }
@@ -43,7 +48,11 @@ export async function webSearch(query: string): Promise<customsearch_v1.Schema$R
     return null;
   }
 
-  const results = res.data.items;
+  const results = res.data.items.map((item) => ({
+    title: item.title || "",
+    snippet: item.snippet || "",
+    link: item.link || "",
+  }));
   await setCache(cacheKey, results, CACHE_TTL_MS);
   return results;
 }

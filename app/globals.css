@@ -57,29 +57,6 @@
 }
 
 @layer utilities {
-  @keyframes spin-and-color-cycle {
-    0% {
-      transform: rotate(0deg);
-      color: rgb(239 68 68); /* red-500 */
-    }
-    33.33% {
-      transform: rotate(120deg);
-      color: rgb(249 115 22); /* orange-500 */
-    }
-    66.66% {
-      transform: rotate(240deg);
-      color: rgb(245 158 11); /* amber-500 */
-    }
-    100% {
-      transform: rotate(360deg);
-      color: rgb(239 68 68); /* red-500 */
-    }
-  }
-
-  .animate-spin-and-color-cycle {
-    animation: spin-and-color-cycle 3s linear infinite;
-  }
-
   @keyframes color-cycle {
     0% {
       color: rgb(239 68 68); /* red-500 */
@@ -96,6 +73,17 @@
   }
 
   .animate-color-cycle {
-    animation: color-cycle 3s linear infinite;
+    animation:
+      color-cycle 3s linear infinite,
+      pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 }

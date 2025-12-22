@@ -39,13 +39,6 @@ export default function MessageEditor({
               id: 0, // Means it's not saved yet
               createdAt: new Date(),
               threadId: selectedThreadId,
-              role: "user",
-              content: userMessage,
-            },
-            {
-              id: 0, // Means it's not saved yet
-              createdAt: new Date(),
-              threadId: selectedThreadId,
               role: msg.role,
               content: msg.content,
               thinking: msg.thinking,
@@ -79,6 +72,10 @@ export default function MessageEditor({
   }, [isCreatingThread, isCreatingThreadMessage]);
 
   const handleSave = () => {
+    if (userMessage.trim() === "") {
+      return;
+    }
+
     if (!selectedThreadId) {
       createThread();
     } else {
@@ -102,25 +99,31 @@ export default function MessageEditor({
           value={userMessage}
           onChange={(e) => setUserMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="resize-none rounded-md bg-neutral-50 px-4 py-2 text-neutral-800 placeholder:italic focus:outline-none dark:bg-neutral-950 dark:text-neutral-300 "
+          className="resize-none rounded-md bg-neutral-50 px-4 py-2 text-neutral-800 placeholder:italic focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-neutral-950 dark:text-neutral-300"
           disabled={isLoading}
         />
         <div className="flex flex-row items-center justify-end gap-2">
-          {userMessage && (
-            <Button
-              color="neutral"
-              type="button"
-              onClick={() => setUserMessage("")}
-              disabled={isLoading}
-            >
-              <TrashIcon className="h-8 w-10 p-1.5" />
-              Clear
-            </Button>
+          {isLoading ? (
+            <p className="animate-color-cycle text-sm font-bold">Loading...</p>
+          ) : (
+            <>
+              {userMessage && (
+                <Button
+                  color="neutral"
+                  type="button"
+                  onClick={() => setUserMessage("")}
+                  disabled={isLoading}
+                >
+                  <TrashIcon className="h-8 w-10 p-1.5" />
+                  Clear
+                </Button>
+              )}
+              <Button color="neutral" type="button" onClick={handleSave} disabled={isLoading}>
+                <PaperPlaneIcon className="h-8 w-10 p-1.5" />
+                Send
+              </Button>
+            </>
           )}
-          <Button color="neutral" type="button" onClick={handleSave} disabled={isLoading}>
-            <PaperPlaneIcon className="h-8 w-10 p-1.5" />
-            Send
-          </Button>
         </div>
       </div>
     </div>

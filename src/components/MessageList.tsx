@@ -85,7 +85,7 @@ function UserMessage({ message }: { message: Message }) {
 }
 
 function AssistantMessage({ message }: { message: Message }) {
-  const [isCollapsed, setIsCollapsed] = useState(message.id !== 0); // Only show opened optimistic thinking rendered messages
+  const [isCollapsed, setIsCollapsed] = useState(message.content.trim() !== "");
   const { showToolMessages } = useAppContext();
 
   return (
