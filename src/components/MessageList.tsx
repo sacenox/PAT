@@ -1,5 +1,6 @@
 "use client";
 
+import { useAppContext } from "@/src/components/App";
 import Button from "@/src/components/Button";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import useDeleteMessage from "@/src/hooks/api/useDeleteMessage";
@@ -84,11 +85,17 @@ function UserMessage({ message }: { message: Message }) {
 }
 
 function AssistantMessage({ message }: { message: Message }) {
+  const [isCollapsed, setIsCollapsed] = useState(message.id !== 0); // Only show opened optimistic thinking rendered messages
+  const { showToolMessages } = useAppContext();
+
   return (
     <BaseMessage message={message} justify="start" align="left">
-      <div className="flex flex-col gap-4">
-        {message.thinking && (
-          <div className="prose prose-neutral max-w-none text-xs text-neutral-400 dark:prose-invert dark:text-neutral-600">
+      <div className="flex flex-col gap-8">
+        {showToolMessages && message.thinking && (
+          <div
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`m-0 cursor-pointer overflow-hidden whitespace-pre-wrap break-words bg-transparent p-0 text-xs leading-normal text-neutral-500 ${isCollapsed ? "line-clamp-2" : ""}`}
+          >
             <span className="font-bold">thinking:</span> {message.thinking}
           </div>
         )}
@@ -112,23 +119,16 @@ export default function MessageList({
   error: Error | null;
 }) {
   const listRef = useRef<HTMLDivElement | null>(null);
-  const prevMessageCount = useRef<number>(0);
 
   useEffect(() => {
-    const currentMessageCount = messages.length;
-    if (
-      listRef.current &&
-      currentMessageCount > prevMessageCount.current &&
-      currentMessageCount > 0
-    ) {
+    if (listRef.current && messages.length > 0) {
       // Scroll the last message into view
       const lastMessageElement = listRef.current.querySelector(".message:last-child");
       if (lastMessageElement) {
         (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-    prevMessageCount.current = currentMessageCount;
-  }, [messages.length]);
+  });
 
   return (
     <div className="mx-auto max-w-5xl p-8">
