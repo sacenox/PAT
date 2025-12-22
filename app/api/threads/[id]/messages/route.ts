@@ -1,4 +1,4 @@
-import { generateResponse } from "@/src/lib/chat";
+import { generateResponse, streamResponse } from "@/src/lib/chat";
 import { db } from "@/src/lib/db";
 import { messages } from "@/src/lib/db/schema";
 import { debug } from "@/src/lib/debug";
@@ -63,10 +63,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     await createMessage(message, "user", threadId);
 
+    const stream = streamResponse(async (enqueue) => {
+      if (threadId) {
+        await generateResponse(threadId, enqueue);
+      }
+    });
     // Generate a response from the model.
-    await generateResponse(threadId);
-
-    return NextResponse.json({ message: message });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
   } catch (err) {
     debug(
       `[Messages API] Error creating message for thread ${threadId ?? "unknown"}:`,

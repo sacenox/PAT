@@ -1,4 +1,3 @@
-import { generateResponse } from "@/src/lib/chat";
 import { db } from "@/src/lib/db";
 import { threads } from "@/src/lib/db/schema";
 import { debug } from "@/src/lib/debug";
@@ -110,10 +109,6 @@ export async function createThread(
 
   // Insert system message with guidelines
   await createMessage(systemPrompt, "system", threadId);
-  await createMessage(userMessage, "user", threadId);
-
-  // Generate a response from the model.
-  await generateResponse(threadId);
 
   return newThread[0];
 }

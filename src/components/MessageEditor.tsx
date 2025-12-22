@@ -7,11 +7,16 @@ import TrashIcon from "@/src/components/icons/TrashIcon";
 import { useNewThread } from "@/src/hooks/api/useNewThread";
 import { useNewThreadMessage } from "@/src/hooks/api/useNewThreadMessage";
 import { useAutoResizeTextarea } from "@/src/hooks/useAutoResizeTextarea";
-import { useState } from "react";
+import { Message } from "@/src/lib/db/schema";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-export default function MessageEditor() {
+export default function MessageEditor({
+  setLoadedMessages,
+}: {
+  setLoadedMessages: Dispatch<SetStateAction<Message[]>>;
+}) {
   const [userMessage, setUserMessage] = useState("");
-  const textareaRef = useAutoResizeTextarea(userMessage);
+  const [isLoading, setIsLoading] = useState(false);
   const {
     selectedModel,
     models,
@@ -20,6 +25,32 @@ export default function MessageEditor() {
     selectedThreadId,
     setSelectedThreadId,
   } = useAppContext();
+  const textareaRef = useAutoResizeTextarea(userMessage);
+
+  const { mutate: createThreadMessage, isPending: isCreatingThreadMessage } = useNewThreadMessage(
+    selectedThreadId,
+    userMessage,
+    (msg) => {
+      setLoadedMessages(
+        (previousMessages) =>
+          [
+            ...previousMessages.filter((message) => message.id !== 0), // Remove messages that are not saved yet
+            {
+              id: 0, // Means it's not saved yet
+              createdAt: new Date(),
+              threadId: selectedThreadId,
+              role: msg.role,
+              content: msg.content,
+              thinking: msg.thinking,
+            },
+          ] as Message[]
+      );
+    },
+    () => {
+      setUserMessage("");
+      textareaRef.current?.focus();
+    }
+  );
 
   const { mutate: createThread, isPending: isCreatingThread } = useNewThread(
     userMessage,
@@ -29,22 +60,16 @@ export default function MessageEditor() {
     new Date().toISOString(),
     Intl.DateTimeFormat().resolvedOptions().timeZone,
     (threadId: number) => {
-      setUserMessage("");
-      setSelectedThreadId(threadId);
-      textareaRef.current?.focus();
+      setSelectedThreadId(() => {
+        createThreadMessage();
+        return threadId;
+      });
     }
   );
 
-  const { mutate: createThreadMessage, isPending: isCreatingThreadMessage } = useNewThreadMessage(
-    selectedThreadId,
-    userMessage,
-    () => {
-      setUserMessage("");
-      textareaRef.current?.focus();
-    }
-  );
-
-  const isLoading = isCreatingThread || isCreatingThreadMessage;
+  useEffect(() => {
+    setIsLoading(isCreatingThread || isCreatingThreadMessage);
+  }, [isCreatingThread, isCreatingThreadMessage]);
 
   const handleSave = () => {
     if (!selectedThreadId) {

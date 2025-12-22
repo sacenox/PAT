@@ -1,10 +1,8 @@
 "use client";
 
-import { useAppContext } from "@/src/components/App";
 import Button from "@/src/components/Button";
 import TrashIcon from "@/src/components/icons/TrashIcon";
 import useDeleteMessage from "@/src/hooks/api/useDeleteMessage";
-import { useThreadMessages } from "@/src/hooks/api/useThreadMessages";
 import { Message } from "@/src/lib/db/schema";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -88,32 +86,36 @@ function UserMessage({ message }: { message: Message }) {
 function AssistantMessage({ message }: { message: Message }) {
   return (
     <BaseMessage message={message} justify="start" align="left">
-      <div className="prose prose-neutral max-w-none dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
-          {message.content}
-        </ReactMarkdown>
+      <div className="flex flex-col gap-4">
+        {message.thinking && (
+          <div className="prose prose-neutral max-w-none text-xs text-neutral-400 dark:prose-invert dark:text-neutral-600">
+            <span className="font-bold">thinking:</span> {message.thinking}
+          </div>
+        )}
+        <div className="prose prose-neutral max-w-none dark:prose-invert">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+            {message.content}
+          </ReactMarkdown>
+        </div>
       </div>
     </BaseMessage>
   );
 }
 
-export default function MessageList() {
-  const { selectedThreadId, showSystemMessages, showToolMessages } = useAppContext();
-  const optionalRoles = [
-    ...(showSystemMessages ? ["system"] : []),
-    ...(showToolMessages ? ["tool"] : []),
-  ];
-  const {
-    data: messagesData,
-    isLoading: isLoadingMessages,
-    error: messagesError,
-  } = useThreadMessages(selectedThreadId, optionalRoles);
-
+export default function MessageList({
+  messages,
+  isLoading,
+  error,
+}: {
+  messages: Message[];
+  isLoading: boolean;
+  error: Error | null;
+}) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const prevMessageCount = useRef<number>(0);
 
   useEffect(() => {
-    const currentMessageCount = messagesData?.messages.length ?? 0;
+    const currentMessageCount = messages.length;
     if (
       listRef.current &&
       currentMessageCount > prevMessageCount.current &&
@@ -126,17 +128,17 @@ export default function MessageList() {
       }
     }
     prevMessageCount.current = currentMessageCount;
-  }, [messagesData?.messages.length]);
+  }, [messages.length]);
 
   return (
     <div className="mx-auto max-w-5xl p-8">
-      {isLoadingMessages ? (
+      {isLoading ? (
         <div>Loading messages...</div>
-      ) : messagesError ? (
-        <div>Error loading messages: {messagesError.message}</div>
+      ) : error ? (
+        <div>Error loading messages: {error.message}</div>
       ) : (
         <div ref={listRef} className="flex flex-col gap-8">
-          {messagesData?.messages.map((message) =>
+          {messages.map((message) =>
             message.role === "system" || message.role === "tool" ? (
               <SystemOrToolMessage key={message.id} message={message} />
             ) : message.role === "user" ? (

@@ -1,30 +1,28 @@
 "use client";
 
-import MessageEditor from "@/src/components/MessageEditor";
-import MessageList from "@/src/components/MessageList";
+import Main from "@/src/components/Main";
 import Sidebar from "@/src/components/Sidebar";
-import Welcome from "@/src/components/Welcome";
 import { useModels, type Model } from "@/src/hooks/api/useModels";
 import { useLocalStorage } from "@/src/hooks/useLocalStorage";
 import { useTheme } from "@/src/hooks/useTheme";
-import { createContext, useContext, useState } from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useState } from "react";
 
 export type AppContextType = {
   selectedModel: Model | null;
-  setSelectedModel: (model: Model) => void;
+  setSelectedModel: Dispatch<SetStateAction<Model | null>>;
   maxPromptLength: number | null;
-  setMaxPromptLength: (length: number | null) => void;
+  setMaxPromptLength: Dispatch<SetStateAction<number | null>>;
   userPrompt: string;
-  setUserPrompt: (prompt: string) => void;
+  setUserPrompt: Dispatch<SetStateAction<string>>;
   models: Model[];
   isModelsLoading: boolean;
   modelsError: Error | null;
   selectedThreadId: number | null;
-  setSelectedThreadId: (threadId: number | null) => void;
+  setSelectedThreadId: Dispatch<SetStateAction<number | null>>;
   showSystemMessages: boolean;
-  setShowSystemMessages: (show: boolean) => void;
+  setShowSystemMessages: Dispatch<SetStateAction<boolean>>;
   showToolMessages: boolean;
-  setShowToolMessages: (show: boolean) => void;
+  setShowToolMessages: Dispatch<SetStateAction<boolean>>;
   themeMode: "device" | "dark" | "light";
   handleThemeChange: (mode: "device" | "dark" | "light") => void;
 };
@@ -85,10 +83,7 @@ export default function App() {
       }}
     >
       <div className="flex h-screen overflow-hidden bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200">
-        <div className="relative flex-1 overflow-y-auto pb-48">
-          {selectedThreadId ? <MessageList /> : <Welcome />}
-          <MessageEditor />
-        </div>
+        <Main />
         <Sidebar />
       </div>
     </AppContext.Provider>

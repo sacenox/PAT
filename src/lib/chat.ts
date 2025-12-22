@@ -5,13 +5,41 @@ import { executeToolCall, fetchPageTool, weatherTool, webSearchTool } from "@/sr
 import { asc, eq } from "drizzle-orm";
 import ollama, { type Tool, type ToolCall } from "ollama";
 
-type MessageHistory = {
+type MessageHistoryEntry = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
   thinking?: string;
-}[];
+};
 
-async function agentLoop(model: string, messageHistory: MessageHistory) {
+type MessageHistory = MessageHistoryEntry[];
+
+export function streamResponse(
+  onChunk: (enqueue: (message: MessageHistoryEntry & { done?: boolean }) => void) => void
+) {
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    start(controller) {
+      const enqueue = (message: MessageHistoryEntry & { done?: boolean }) => {
+        const encoded = encoder.encode("data: " + JSON.stringify(message) + "\n\n");
+        controller.enqueue(encoded);
+        if (message.done) {
+          controller.close();
+        }
+      };
+
+      onChunk(enqueue);
+    },
+  });
+
+  return stream;
+}
+
+async function agentLoop(
+  model: string,
+  messageHistory: MessageHistory,
+  enqueue: (message: MessageHistoryEntry & { done?: boolean }) => void
+) {
   const tools: Tool[] = [weatherTool, fetchPageTool, webSearchTool];
   const newMessages: MessageHistory = [];
   let maxIterations = 6;
@@ -33,10 +61,12 @@ async function agentLoop(model: string, messageHistory: MessageHistory) {
 
     for await (const chunk of stream) {
       if (chunk.message.thinking) {
-        thinking += chunk.message;
+        thinking += chunk.message.thinking;
+        enqueue({ role: "assistant", content: content, thinking: thinking });
       }
       if (chunk.message.content) {
         content += chunk.message.content;
+        enqueue({ role: "assistant", content: content, thinking: thinking });
       }
       if (chunk.message.tool_calls?.length) {
         calls.push(...chunk.message.tool_calls);
@@ -50,8 +80,15 @@ async function agentLoop(model: string, messageHistory: MessageHistory) {
       for (const call of calls) {
         const toolResponse = await executeToolCall(call);
         newMessages.push({ role: "tool", content: `[${call.function.name}] ${toolResponse}` });
+        enqueue({ role: "tool", content: `[${call.function.name}] ${toolResponse}` });
       }
     } else {
+      enqueue({
+        role: "assistant",
+        content: content,
+        thinking: thinking,
+        done: true,
+      });
       break;
     }
   }
@@ -59,7 +96,10 @@ async function agentLoop(model: string, messageHistory: MessageHistory) {
   return newMessages;
 }
 
-export async function generateResponse(threadId: number) {
+export async function generateResponse(
+  threadId: number,
+  enqueue: (message: MessageHistoryEntry) => void
+) {
   if (!threadId) {
     throw new Error("Thread ID is required");
   }
@@ -85,10 +125,10 @@ export async function generateResponse(threadId: number) {
     throw new Error("No messages found for this thread");
   }
 
-  const messageHistory = await agentLoop(thread[0].model, messagesList);
+  const messageHistory = await agentLoop(thread[0].model, messagesList, enqueue);
 
   // Update the thread with the new message history:
   for (const message of messageHistory) {
-    await createMessage(message.content, message.role, threadId);
+    await createMessage(message.content, message.role, threadId, message.thinking);
   }
 }
