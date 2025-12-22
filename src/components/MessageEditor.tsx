@@ -104,7 +104,7 @@ export default function MessageEditor({
         />
         <div className="flex flex-row items-center justify-end gap-2">
           {isLoading ? (
-            <p className="animate-color-cycle text-sm font-bold">Loading...</p>
+            <p className="animate-color-cycle p-2.5 text-sm font-bold">Loading...</p>
           ) : (
             <>
               {userMessage && (
