@@ -6,17 +6,17 @@ A web-based personal assistant that connects to local Ollama models for chat con
 
 - 💬 **Chat Interface**: Thread-based conversations with message history
 - 🤖 **Ollama Integration**: Connect to local LLM models via Ollama
-- 🛠️ **Tool Calling**: Built-in tools for weather, web search, DuckDuckGo, and page fetching
+- 🧠 **Thinking Mode**: View model reasoning process with thinking output
+- 🛠️ **Tool Calling**: Built-in tools for web search (SearXNG) and page fetching
 - 🎨 **Modern UI**: Clean, responsive interface with dark/light theme support
 - 💾 **Persistent Storage**: PostgreSQL database for threads and messages
 - ⚡ **Caching**: Valkey (Redis-compatible) caching for improved performance
-- 🔒 **Rate Limiting**: Built-in rate limiting for API calls
 - 📝 **Markdown Support**: Rich markdown rendering with syntax highlighting
 
 ## Prerequisites
 
 - Node.js >= 25.0.0
-- Docker (for running PostgreSQL and Valkey)
+- Docker (for running PostgreSQL, Valkey, and SearXNG)
 - Ollama installed and running locally
 
 ## Getting Started
@@ -52,18 +52,23 @@ POSTGRES_USER=postgres
 POSTGRES_DB=personal_assistant
 POSTGRES_PORT=5432
 
-# Optional: Google Custom Search API (for web search tool)
-GOOGLE_CUSTOM_SEARCH_API_KEY=your_api_key
-GOOGLE_CUSTOM_SEARCH_ENGINE_ID=your_engine_id
+# Optional: SearXNG URL (for web search tool, defaults to http://localhost:8888)
+SEARXNG_URL=http://localhost:8888
 ```
 
 ### 4. Start Docker Services
 
-The project includes scripts to start PostgreSQL and Valkey containers:
+The project includes scripts to start PostgreSQL, Valkey, and SearXNG containers:
 
 ```bash
 npm run start:docker
 ```
+
+This will start:
+
+- PostgreSQL database on port 5432
+- Valkey (Redis-compatible) cache on port 6379
+- SearXNG search engine on port 8888
 
 To stop the containers:
 
@@ -132,17 +137,18 @@ personal-assistant-thing/
 │       ├── cache/         # Caching utilities
 │       └── ...
 ├── drizzle/               # Database migrations
-└── scripts/               # Utility scripts
+├── scripts/               # Utility scripts
+└── searxng/              # SearXNG configuration
 ```
 
 ## Tools
 
 The assistant supports the following tools:
 
-- **Weather**: Get current weather and forecasts
-- **Web Search**: Search the web using Google Custom Search API
-- **DuckDuckGo**: Search using DuckDuckGo
-- **Fetch Page**: Fetch and extract content from web pages
+- **Web Search**: Search the web using SearXNG (privacy-focused metasearch engine)
+- **Fetch Page**: Fetch and extract content from web pages, including title, content, and links
+
+Both tools use caching to improve performance and reduce API calls.
 
 ## Database Schema
 
