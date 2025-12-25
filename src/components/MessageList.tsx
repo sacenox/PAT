@@ -38,7 +38,7 @@ function BaseMessage({
 
   return (
     <div
-      className={`message flex min-w-64 flex-col p-2 text-neutral-500 dark:text-neutral-500 ${justifyClass} ${alignClass}`}
+      className={`message flex min-w-64 scroll-mb-48 flex-col p-2 text-neutral-500 dark:text-neutral-500 ${justifyClass} ${alignClass}`}
     >
       <div className={`${alignClass}`}>{children}</div>
       <div
@@ -126,7 +126,7 @@ export default function MessageList({
     if (listRef.current && messages.length > 0) {
       const lastMessageElement = listRef.current.querySelector(".message:last-child");
       if (lastMessageElement) {
-        (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+        (lastMessageElement as HTMLElement).scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }
   });

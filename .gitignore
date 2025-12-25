@@ -3,3 +3,5 @@ node_modules
 .env
 data/
 tsconfig.tsbuildinfo
+logs/
+searxng/data/
