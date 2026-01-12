@@ -141,7 +141,13 @@ export async function retrieveRelevantContext(query: string): Promise<string | n
 **Code snippet for `src/lib/chat.ts` modification:**
 
 ```typescript
+import { db } from "@/src/lib/db";
+import { messages, threads } from "@/src/lib/db/schema";
+import { createMessage } from "@/src/lib/messages";
 import { retrieveRelevantContext } from "@/src/lib/rag";
+import { asc, eq } from "drizzle-orm";
+
+// ... existing type definitions and functions ...
 
 export async function generateResponse(
   threadId: number,
@@ -243,7 +249,7 @@ import { OllamaEmbeddings } from "@langchain/ollama";
 import { storeDocuments } from "@/src/lib/rag";
 import { db } from "@/src/lib/db";
 import { documentChunks } from "@/src/lib/db/schema";
-import { count, eq } from "drizzle-orm";
+import { count } from "drizzle-orm";
 
 const DATA_FILE_PATH = "./data.txt";
 const CHUNK_SIZE = 1000;
@@ -379,8 +385,7 @@ export const documentChunks = pgTable(
 
 ```
 src/lib/
-├── rag/
-│   └── index.ts            # All RAG functionality (embeddings, vector store, retrieval)
+├── rag.ts                  # All RAG functionality (embeddings, vector store, retrieval)
 └── chat.ts                 # (update to integrate RAG)
 scripts/
 └── update-vector-data.ts   # Script to update vector database (chunking, embedding, storage)
