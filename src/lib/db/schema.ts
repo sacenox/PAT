@@ -1,5 +1,14 @@
 import { relations } from "drizzle-orm";
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  vector,
+} from "drizzle-orm/pg-core";
 
 export const threads = pgTable("threads", {
   id: serial("id").primaryKey(),
@@ -33,6 +42,22 @@ export const messagesRelations = relations(messages, ({ one }) => ({
     references: [threads.id],
   }),
 }));
+
+// Note: Verify that nomic-embed-text produces 768-dimensional embeddings
+// If using a different embedding model, adjust the dimensions accordingly
+const EMBEDDING_DIMENSIONS = 768;
+
+export const documentChunks = pgTable(
+  "document_chunks",
+  {
+    id: serial("id").primaryKey(),
+    content: text("content").notNull(),
+    embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("embeddingIndex").using("hnsw", table.embedding.op("vector_cosine_ops"))]
+);
 
 export type Thread = typeof threads.$inferSelect;
 export type NewThread = typeof threads.$inferInsert;

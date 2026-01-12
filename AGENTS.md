@@ -15,3 +15,5 @@
   - ensure code modularity and separation of concerns
   - ensure code respects project guidelines
   - ensure the code uses best practices for React and Next.js
+- **Always** use mcp servers for latest documentation:
+  - use specific mcp servers if available, otherwise use the content7 server.

@@ -28,7 +28,7 @@ SEARXNG_PORT="${SEARXNG_PORT:-8888}"
 
 # Pull images
 docker pull valkey/valkey:7.2
-docker pull postgres:16-alpine
+docker pull pgvector/pgvector:pg16
 docker pull docker.io/searxng/searxng:latest
 
 # Stop and remove existing Valkey container if it exists
@@ -65,7 +65,7 @@ docker run -d \
   valkey/valkey:7.2 \
   valkey-server --requirepass "${VALKEY_PASSWORD}"
 
-# Run PostgreSQL container
+# Run PostgreSQL container with pgvector extension
 docker run -d \
   --name postgres \
   --restart unless-stopped \
@@ -74,7 +74,7 @@ docker run -d \
   -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
   -e POSTGRES_DB="${POSTGRES_DB}" \
   -v postgres_data:/var/lib/postgresql/data \
-  postgres:16-alpine
+  pgvector/pgvector:pg16
 
 # Run SearXNG container
 docker run -d \

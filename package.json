@@ -23,10 +23,15 @@
     "db:wipe-dev": "./scripts/wipe-dev-db.sh",
     "start:docker": "./scripts/start-docker.sh",
     "stop:docker": "./scripts/stop-docker.sh",
+    "rag:update": "tsx scripts/update-vector-data.ts",
+    "rag:update:force": "tsx scripts/update-vector-data.ts --force",
     "prepare": "husky"
   },
   "dependencies": {
     "@googleapis/customsearch": "^7.0.1",
+    "@langchain/core": "^1.1.12",
+    "@langchain/ollama": "^1.1.0",
+    "@langchain/textsplitters": "^1.0.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.12",
     "autoprefixer": "^10.4.17",
@@ -60,6 +65,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "tsx": "^4.21.0",
     "vitest": "^4.0.16"
   }
 }
