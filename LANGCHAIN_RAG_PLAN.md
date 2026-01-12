@@ -12,14 +12,18 @@ This plan outlines the steps to integrate LangChain for implementing a Retrieval
 
 ### 1. Install Dependencies
 
-Add the following LangChain packages:
+The following LangChain packages are already installed:
 
-- `langchain` - Core LangChain library
-- `@langchain/ollama` - Ollama integration for embeddings and LLM
-- `@langchain/community` - Community integrations (vector stores, document loaders)
-- `langchain-text-splitters` - Text splitting utilities
+- `@langchain/core` - Core LangChain library ✅ (already installed)
+- `@langchain/ollama` - Ollama integration for embeddings and LLM ✅ (already installed)
+- `@langchain/textsplitters` - Text splitting utilities ✅ (already installed)
+
+Additional requirements:
+
 - `pgvector` extension for PostgreSQL (requires DB migration)
-- `tsx` (dev dependency) - For running TypeScript scripts directly
+- `tsx` (dev dependency) - For running TypeScript scripts directly ✅ (already installed)
+
+**Note**: `@langchain/community` is NOT needed for this implementation since we're using a custom vector store implementation with pgvector directly, rather than LangChain's built-in vector stores.
 
 ### 2. Create RAG Module
 
@@ -244,7 +248,7 @@ export async function generateResponse(
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { Document } from "@langchain/core/documents";
-import { RecursiveCharacterTextSplitter } from "langchain-text-splitters";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { OllamaEmbeddings } from "@langchain/ollama";
 import { storeDocuments } from "@/src/lib/rag";
 import { db } from "@/src/lib/db";
@@ -317,7 +321,7 @@ Add to `package.json`:
 }
 ```
 
-**Note**: Requires `tsx` package for running TypeScript files directly. Install with `npm install --save-dev tsx`.
+**Note**: `tsx` is already installed as a dev dependency, so no additional installation is needed.
 
 ### 5. Database Schema
 
@@ -360,12 +364,16 @@ CREATE INDEX IF NOT EXISTS "embeddingIndex" ON "document_chunks" USING hnsw (emb
 ```typescript
 import { pgTable, serial, text, timestamp, jsonb, vector, index } from "drizzle-orm/pg-core";
 
+// Note: Verify that nomic-embed-text produces 768-dimensional embeddings
+// If using a different embedding model, adjust the dimensions accordingly
+const EMBEDDING_DIMENSIONS = 768;
+
 export const documentChunks = pgTable(
   "document_chunks",
   {
     id: serial("id").primaryKey(),
     content: text("content").notNull(),
-    embedding: vector("embedding", { dimensions: 768 }), // Adjust dimensions based on embedding model
+    embedding: vector("embedding", { dimensions: EMBEDDING_DIMENSIONS }),
     metadata: jsonb("metadata"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -443,7 +451,6 @@ scripts/
 
 - Use an embedding model compatible with Ollama
 - `nomic-embed-text` is a good default choice
-- Ensure embedding model is available locally
 
 ### Data Updates
 
