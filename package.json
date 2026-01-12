@@ -23,6 +23,8 @@
     "db:wipe-dev": "./scripts/wipe-dev-db.sh",
     "start:docker": "./scripts/start-docker.sh",
     "stop:docker": "./scripts/stop-docker.sh",
+    "rag:update": "tsx scripts/update-vector-data.ts",
+    "rag:update:force": "tsx scripts/update-vector-data.ts --force",
     "prepare": "husky"
   },
   "dependencies": {

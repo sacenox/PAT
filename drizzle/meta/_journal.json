@@ -57,6 +57,13 @@
       "when": 1766350897443,
       "tag": "0007_spotty_maestro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768243019725,
+      "tag": "0008_jittery_talon",
+      "breakpoints": true
     }
   ]
 }

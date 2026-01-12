@@ -1,6 +1,7 @@
 import { db } from "@/src/lib/db";
 import { messages, threads } from "@/src/lib/db/schema";
 import { createMessage } from "@/src/lib/messages";
+import { retrieveRelevantContext } from "@/src/lib/rag";
 import { executeToolCall, fetchPageTool, webSearchTool } from "@/src/lib/tools";
 import { asc, eq } from "drizzle-orm";
 import ollama, { type Tool, type ToolCall } from "ollama";
@@ -129,7 +130,39 @@ export async function generateResponse(
     throw new Error("No messages found for this thread");
   }
 
-  const messageHistory = await agentLoop(thread[0].model, messagesList, enqueue);
+  // Extract latest user message
+  const latestUserMessage = messagesList.filter((msg) => msg.role === "user").pop();
+
+  // Retrieve RAG context if user message exists
+  let ragContext: string | null = null;
+  if (latestUserMessage) {
+    try {
+      ragContext = await retrieveRelevantContext(latestUserMessage.content);
+    } catch (error) {
+      console.error("Failed to retrieve RAG context:", error);
+      // Continue without RAG context
+    }
+  }
+
+  // Inject RAG context into message history
+  const enhancedMessageHistory = [...messagesList];
+  if (ragContext) {
+    // Find position after all system messages
+    const lastSystemIndex =
+      enhancedMessageHistory
+        .map((msg, idx) => (msg.role === "system" ? idx : -1))
+        .filter((idx) => idx !== -1)
+        .pop() ?? -1;
+
+    const ragSystemMessage: MessageHistoryEntry = {
+      role: "system",
+      content: `**Relevant Context from Knowledge Base:**\n\n${ragContext}\n\nUse this information to help answer the user's question.`,
+    };
+
+    enhancedMessageHistory.splice(lastSystemIndex + 1, 0, ragSystemMessage);
+  }
+
+  const messageHistory = await agentLoop(thread[0].model, enhancedMessageHistory, enqueue);
 
   // Update the thread with the new message history:
   for (const message of messageHistory) {
